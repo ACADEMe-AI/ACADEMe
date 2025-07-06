@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'qna.dart';
 import 'lessons.dart';
 
@@ -57,7 +59,7 @@ class OverviewScreenState extends State<OverviewScreen>
   Future<void> fetchTopicDetails() async {
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
-      debugPrint("❌ Missing access token");
+      log("❌ Missing access token");
       return;
     }
     if (!mounted) {
@@ -78,7 +80,7 @@ class OverviewScreenState extends State<OverviewScreen>
         },
       );
 
-      debugPrint("🔹 Topic API Response: ${response.body}");
+      log("🔹 Topic API Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final String responseBody = utf8.decode(response.bodyBytes);
@@ -95,14 +97,14 @@ class OverviewScreenState extends State<OverviewScreen>
         }
       }
     } catch (e) {
-      debugPrint("❌ Error fetching topic details: $e");
+      log("❌ Error fetching topic details: $e");
     }
   }
 
   Future<void> fetchSubtopicData() async {
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
-      debugPrint("❌ Missing access token");
+      log("❌ Missing access token");
       return;
     }
     if (!mounted) {
@@ -130,14 +132,46 @@ class OverviewScreenState extends State<OverviewScreen>
           hasSubtopicData = true;
           totalSubtopics = subtopics.length;
         });
+
+        // Store total subtopics for progress calculation
+        _storeTopicTotalSubtopics(widget.courseId, widget.topicId, totalSubtopics);
       }
     } catch (e) {
-      debugPrint("❌ Error fetching subtopic data: $e");
+      log("❌ Error fetching subtopic data: $e");
     } finally {
       setState(() {
         isLoading = false;
       });
     }
+  }
+
+  // Store total subtopics for topic
+  Future<void> _storeTopicTotalSubtopics(String courseId, String topicId, int total) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('total_subtopics_${courseId}_${topicId}', total);
+  }
+
+  // Check if all materials in a subtopic are completed
+  bool _isSubtopicCompleted(String subtopicId) {
+    // Get all materials for this subtopic
+    final subtopicMaterials = userProgress.where((progress) =>
+    progress['subtopic_id'] == subtopicId &&
+        progress['activity_type'] == 'reading');
+
+    // Get all quizzes for this subtopic
+    final subtopicQuizzes = userProgress.where((progress) =>
+    progress['subtopic_id'] == subtopicId &&
+        progress['activity_type'] == 'quiz');
+
+    // Check if any material is not completed
+    final hasIncompleteMaterial = subtopicMaterials.any(
+            (material) => material['status'] != 'completed');
+
+    // Check if any quiz is not completed
+    final hasIncompleteQuiz = subtopicQuizzes.any(
+            (quiz) => quiz['status'] != 'completed');
+
+    return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
 
   Future<void> fetchUserProgress() async {
@@ -172,8 +206,12 @@ class OverviewScreenState extends State<OverviewScreen>
         // Calculate completed subtopics
         final Set<String> completedSubIds = {};
         for (final p in progress) {
-          if (p['status'] == 'completed' && p['subtopic_id'] != null) {
+          if (p['status'] == 'completed' &&
+              p['subtopic_id'] != null &&
+              _isSubtopicCompleted(p['subtopic_id'])) {
             completedSubIds.add(p['subtopic_id']);
+            // Mark subtopic as completed
+            _markSubtopicCompleted(widget.courseId, widget.topicId, p['subtopic_id']);
           }
         }
 
@@ -184,9 +222,60 @@ class OverviewScreenState extends State<OverviewScreen>
               ? completedSubtopics / totalSubtopics
               : 0.0;
         });
+
+        // Save topic progress
+        _saveTopicProgress(widget.courseId, widget.topicId, progressPercentage);
+
+        // Save course progress if topic is completed
+        if (progressPercentage == 1.0) {
+          _saveCourseProgress(widget.courseId);
+        }
       }
     } catch (e) {
-      debugPrint("❌ Error fetching progress: $e");
+      log("❌ Error fetching progress: $e");
+    }
+  }
+
+  // Mark subtopic as completed
+  Future<void> _markSubtopicCompleted(String courseId, String topicId, String subtopicId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'completed_subtopics_${courseId}_${topicId}';
+    List<String> completed = prefs.getStringList(key) ?? [];
+    if (!completed.contains(subtopicId)) {
+      completed.add(subtopicId);
+      await prefs.setStringList(key, completed);
+    }
+  }
+
+  // Save course progress to shared preferences
+  Future<void> _saveCourseProgress(String courseId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final completedCourses = prefs.getStringList('completed_courses') ?? [];
+
+    if (!completedCourses.contains(courseId)) {
+      completedCourses.add(courseId);
+      await prefs.setStringList('completed_courses', completedCourses);
+      log("✅ Saved course progress: $courseId");
+    }
+  }
+
+  // Save topic progress to shared preferences
+  Future<void> _saveTopicProgress(String courseId, String topicId, double progress) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Save progress percentage
+    await prefs.setDouble('progress_${courseId}_${topicId}', progress);
+
+    // Save as completed if progress is 100%
+    if (progress == 1.0) {
+      final completedTopics = prefs.getStringList('completed_topics') ?? [];
+      final topicKey = '$courseId|$topicId';
+
+      if (!completedTopics.contains(topicKey)) {
+        completedTopics.add(topicKey);
+        await prefs.setStringList('completed_topics', completedTopics);
+        log("✅ Saved topic progress: $topicKey");
+      }
     }
   }
 

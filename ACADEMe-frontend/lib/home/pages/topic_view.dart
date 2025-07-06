@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ACADEMe/home/courses/overview/overview.dart';
 
 // Singleton cache manager for topics
@@ -17,7 +19,7 @@ class TopicCacheManager {
   TopicCacheManager._internal();
 
   final Map<String, TopicCacheData> _cache = {};
-  static const Duration _cacheExpiry = Duration(minutes: 15); // Cache expires after 15 minutes
+  static const Duration _cacheExpiry = Duration(minutes: 15);
 
   void cacheTopics(String courseId, String languageCode, List<Map<String, dynamic>> topics) {
     final key = _getCacheKey(courseId, languageCode);
@@ -92,7 +94,6 @@ class AppLifecycleManager extends WidgetsBindingObserver {
         _lastPausedTime = DateTime.now();
         break;
       case AppLifecycleState.resumed:
-      // If app was paused for more than 5 minutes, treat as fresh start
         if (_lastPausedTime != null &&
             DateTime.now().difference(_lastPausedTime!) > const Duration(minutes: 5)) {
           _isAppJustOpened = true;
@@ -156,7 +157,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     final cachedTopics = _cacheManager.getCachedTopics(widget.courseId, targetLanguage);
 
     if (cachedTopics != null && !_lifecycleManager.isAppJustOpened) {
-      // Use cached data if available and app is not just opened
+      // Use cached data
       setState(() {
         _updateTopicsData(cachedTopics);
         isLoading = false;
@@ -164,7 +165,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
       return;
     }
 
-    // Load cached data immediately if available (for instant UI)
+    // Load cached data immediately if available
     if (cachedTopics != null) {
       setState(() {
         _updateTopicsData(cachedTopics);
@@ -174,8 +175,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
     // Fetch fresh data from backend
     await _fetchTopicsFromBackend(showRefreshIndicator: cachedTopics != null);
-
-    // Mark app as used after first successful load
     _lifecycleManager.markAsUsed();
   }
 
@@ -204,20 +203,28 @@ class _TopicViewScreenState extends State<TopicViewScreen>
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
         },
-      ).timeout(const Duration(seconds: 10)); // Add timeout
+      ).timeout(const Duration(seconds: 10));
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
 
-        final allTopics = data.map((topic) {
-          return {
-            "id": topic["id"].toString(),
+        // Store total topics for course
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setInt('total_topics_${widget.courseId}', data.length);
+
+        // Calculate progress for each topic
+        List<Map<String, dynamic>> allTopics = [];
+        for (var topic in data) {
+          String topicId = topic["id"].toString();
+          double progress = await _getTopicProgress(topicId);
+          allTopics.add({
+            "id": topicId,
             "title": topic["title"].toString(),
-            "progress": (topic["progress"] ?? 0.0).toDouble(),
-          };
-        }).toList();
+            "progress": progress * 100, // as percentage
+          });
+        }
 
         // Cache the fresh data
         _cacheManager.cacheTopics(widget.courseId, targetLanguage, allTopics);
@@ -229,9 +236,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
         throw Exception("Failed to fetch topics: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("Error fetching topics: $e");
+      log("Error fetching topics: $e");
       if (mounted) {
-        // Only show error if we don't have cached data
         final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
         final cachedTopics = _cacheManager.getCachedTopics(widget.courseId, languageProvider.locale.languageCode);
 
@@ -246,7 +252,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
             ),
           );
         } else {
-          // Show less intrusive error for refresh failure
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text("Failed to refresh. Showing cached data."),
@@ -263,6 +268,12 @@ class _TopicViewScreenState extends State<TopicViewScreen>
         });
       }
     }
+  }
+
+  // Get topic progress from SharedPreferences
+  Future<double> _getTopicProgress(String topicId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('progress_${widget.courseId}_${topicId}') ?? 0.0;
   }
 
   void _updateTopicsData(List<Map<String, dynamic>> allTopics) {
@@ -388,7 +399,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      physics: const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh even with few items
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: topicList.length,
       itemBuilder: (context, index) {
         return _buildTopicCard(topicList[index]);
@@ -408,11 +419,10 @@ class _TopicViewScreenState extends State<TopicViewScreen>
             ),
           ),
         ).then((_) {
-          // Optionally refresh data when coming back from overview
-          // This ensures progress updates are reflected
+          // Refresh data when coming back from overview
           final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
           final cachedTopics = _cacheManager.getCachedTopics(widget.courseId, languageProvider.locale.languageCode);
-          if (cachedTopics != null && DateTime.now().difference(_cacheManager._cache[_cacheManager._getCacheKey(widget.courseId, languageProvider.locale.languageCode)]?.timestamp ?? DateTime.now()).inMinutes > 2) {
+          if (cachedTopics != null) {
             _fetchTopicsFromBackend(showRefreshIndicator: true);
           }
         });
