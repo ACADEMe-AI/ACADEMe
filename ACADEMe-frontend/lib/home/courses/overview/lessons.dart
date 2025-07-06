@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -8,6 +9,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/home/courses/overview/flashcard.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../report.dart';
 
 class LessonsSection extends StatefulWidget {
@@ -104,7 +106,7 @@ class LessonsSectionState extends State<LessonsSection> {
 
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
-      debugPrint("❌ Missing access token");
+      log("❌ Missing access token");
       setState(() {
         isLoading = false;
       });
@@ -148,10 +150,10 @@ class LessonsSectionState extends State<LessonsSection> {
         // Call determineResumePoint after subtopics are loaded
         determineResumePoint();
       } else {
-        debugPrint("❌ Failed to fetch subtopics: ${response.statusCode}");
+        log("❌ Failed to fetch subtopics: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("❌ Error fetching subtopics: $e");
+      log("❌ Error fetching subtopics: $e");
     } finally {
       setState(() {
         isLoading = false;
@@ -199,7 +201,7 @@ class LessonsSectionState extends State<LessonsSection> {
           };
         }).toList();
       } else {
-        debugPrint(
+        log(
             "❌ Failed to fetch materials: ${materialsResponse.statusCode}");
       }
 
@@ -248,12 +250,12 @@ class LessonsSectionState extends State<LessonsSection> {
               });
             }
           } else {
-            debugPrint(
+            log(
                 "❌ Failed to fetch questions for quiz $quizId: ${questionsResponse.statusCode}");
           }
         }
       } else {
-        debugPrint("❌ Failed to fetch quizzes: ${quizzesResponse.statusCode}");
+        log("❌ Failed to fetch quizzes: ${quizzesResponse.statusCode}");
       }
 
       setState(() {
@@ -262,7 +264,7 @@ class LessonsSectionState extends State<LessonsSection> {
         subtopicLoading[subtopicId] = false;
       });
     } catch (e) {
-      debugPrint("❌ Error fetching materials/quizzes: $e");
+      log("❌ Error fetching materials/quizzes: $e");
     } finally {
       setState(() {
         subtopicLoading[subtopicId] = false;
@@ -279,6 +281,22 @@ class LessonsSectionState extends State<LessonsSection> {
             ? progress['material_id'] == activityId
             : progress['quiz_id'] == activityId) &&
         progress['status'] == 'completed');
+  }
+
+  // Check if all materials in a subtopic are completed
+  bool isSubtopicCompleted(String subtopicId) {
+    final materials = subtopicMaterials[subtopicId] ?? [];
+    final quizzes = subtopicQuizzes[subtopicId] ?? [];
+
+    // Check if any material is not completed
+    final hasIncompleteMaterial = materials.any(
+            (material) => !isActivityCompleted(material['id'], 'material'));
+
+    // Check if any quiz is not completed
+    final hasIncompleteQuiz = quizzes.any(
+            (quiz) => !isActivityCompleted(quiz['id'], 'quiz'));
+
+    return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
 
   // Find first uncompleted material index in a subtopic
@@ -322,7 +340,7 @@ class LessonsSectionState extends State<LessonsSection> {
     return 0; // Default to start if all completed
   }
 
-  // NEW: Find next uncompleted subtopic
+  // Find next uncompleted subtopic
   Future<Map<String, dynamic>?> _findNextUncompletedSubtopic() async {
     final subtopicIdsList = subtopicIds.values.toList();
     int startIndex = resumeSubtopicId != null
@@ -503,6 +521,9 @@ class LessonsSectionState extends State<LessonsSection> {
     List<Map<String, dynamic>> materials = subtopicMaterials[subtopicId] ?? [];
     List<Map<String, dynamic>> quizzes = subtopicQuizzes[subtopicId] ?? [];
 
+    // Check if subtopic is completed
+    final bool isSubtopicComplete = isSubtopicCompleted(subtopicId);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 26),
       child: Column(
@@ -520,6 +541,7 @@ class LessonsSectionState extends State<LessonsSection> {
                     subtopicId,
                     materials.indexOf(m),
                     isActivityCompleted(m["id"], 'material'),
+                    isSubtopicComplete,
                   ),
                 ),
               ],
@@ -537,6 +559,7 @@ class LessonsSectionState extends State<LessonsSection> {
                     subtopicId,
                     quizzes.indexOf(q),
                     isActivityCompleted(q["id"], 'quiz'),
+                    isSubtopicComplete,
                   ),
                 ),
               ],
@@ -554,6 +577,7 @@ class LessonsSectionState extends State<LessonsSection> {
       String subtopicId,
       int index,
       bool isCompleted,
+      bool isSubtopicComplete,
       ) {
     String subtopicTitle = subtopicIds.entries
         .firstWhere((entry) => entry.value == subtopicId)
@@ -609,6 +633,7 @@ class LessonsSectionState extends State<LessonsSection> {
         );
       },
       isCompleted,
+      isSubtopicComplete,
     );
   }
 
@@ -620,6 +645,7 @@ class LessonsSectionState extends State<LessonsSection> {
       String subtopicId,
       int index,
       bool isCompleted,
+      bool isSubtopicComplete,
       ) {
     String subtopicTitle = subtopicIds.entries
         .firstWhere((entry) => entry.value == subtopicId)
@@ -649,6 +675,7 @@ class LessonsSectionState extends State<LessonsSection> {
         );
       },
       isCompleted,
+      isSubtopicComplete,
     );
   }
 
@@ -697,6 +724,7 @@ class LessonsSectionState extends State<LessonsSection> {
       IconData icon,
       VoidCallback onTap,
       bool isCompleted,
+      bool isSubtopicComplete,
       ) {
     String capitalizedTitle = title.substring(title.indexOf(" ") + 1);
     if (capitalizedTitle.isNotEmpty) {
@@ -704,13 +732,16 @@ class LessonsSectionState extends State<LessonsSection> {
           capitalizedTitle[0].toUpperCase() + capitalizedTitle.substring(1);
     }
 
+    // Use subtopic completion status for UI
+    final bool showCompleted = isSubtopicComplete || isCompleted;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(
-            color: isCompleted ? Colors.green : Colors.deepPurple,
+            color: showCompleted ? Colors.green : Colors.deepPurple,
             width: 1,
           ),
           borderRadius: BorderRadius.circular(10),
@@ -742,7 +773,7 @@ class LessonsSectionState extends State<LessonsSection> {
             Stack(
               children: [
                 Icon(icon, color: Colors.deepPurple),
-                if (isCompleted)
+                if (showCompleted)
                   Positioned(
                     right: 0,
                     top: 0,

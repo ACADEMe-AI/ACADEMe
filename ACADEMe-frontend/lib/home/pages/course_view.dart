@@ -1,16 +1,17 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/home/pages/ask_me.dart';
 import 'package:ACADEMe/home/components/askme_button.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'topic_view.dart';
 
 class CourseDataCache {
@@ -79,7 +80,7 @@ class CourseListScreenState extends State<CourseListScreen>
   static bool _hasEverFetched = false;
 
   @override
-  bool get wantKeepAlive => true; // Keep the state alive when switching tabs
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -153,7 +154,7 @@ class CourseListScreenState extends State<CourseListScreen>
 
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
-      debugPrint("No access token found");
+      log("No access token found");
       if (mounted) {
         setState(() {
           isLoading = false;
@@ -195,10 +196,10 @@ class CourseListScreenState extends State<CourseListScreen>
         // Update progress in background
         _updateCourseProgressInBackground();
       } else {
-        debugPrint("Failed to fetch courses: ${response.statusCode}");
+        log("Failed to fetch courses: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("Error fetching courses: $e");
+      log("Error fetching courses: $e");
     } finally {
       if (mounted) {
         setState(() {
@@ -209,11 +210,11 @@ class CourseListScreenState extends State<CourseListScreen>
     }
   }
 
-  // Background task to update course progress without blocking UI
+  // Background task to update course progress
   Future<void> _updateCourseProgressInBackground() async {
     for (int i = 0; i < courses.length; i++) {
       try {
-        double progress = await getCourseProgress(courses[i]["id"]);
+        double progress = await _getLocalCourseProgress(courses[i]["id"]);
         if (mounted) {
           setState(() {
             courses[i]["progress"] = progress;
@@ -226,50 +227,31 @@ class CourseListScreenState extends State<CourseListScreen>
           _cache.setCachedCourses(courses, currentLanguage);
         }
       } catch (e) {
-        debugPrint("Error updating progress for course ${courses[i]["id"]}: $e");
+        log("Error updating progress for course ${courses[i]["id"]}: $e");
       }
     }
   }
 
-  Future<double> getCourseProgress(String courseId) async {
-    try {
-      String userId = "user_id"; // Replace with actual user ID
-      QuerySnapshot progressSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('progress')
-          .where('course_id', isEqualTo: courseId)
-          .get();
+  // Calculate course progress locally
+  Future<double> _getLocalCourseProgress(String courseId) async {
+    final prefs = await SharedPreferences.getInstance();
+    int totalTopics = prefs.getInt('total_topics_$courseId') ?? 0;
+    if (totalTopics == 0) return 0.0;
 
-      int completedActivities = progressSnapshot.docs
-          .where((doc) => doc['status'] == 'completed')
-          .length;
+    List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
+    int count = completedTopics.where((key) => key.startsWith('$courseId|')).length;
 
-      DocumentSnapshot courseDoc = await FirebaseFirestore.instance
-          .collection('courses')
-          .doc(courseId)
-          .get();
-
-      int totalQuizzes = courseDoc['total_quizzes'] ?? 0;
-      int totalMaterials = courseDoc['total_materials'] ?? 0;
-      int totalActivities = totalQuizzes + totalMaterials;
-
-      if (totalActivities == 0) return 0.0;
-      return (completedActivities / totalActivities).clamp(0.0, 1.0);
-    } catch (e) {
-      debugPrint("Error calculating progress for course $courseId: $e");
-      return 0.0;
-    }
+    return count / totalTopics;
   }
 
-  // Method to manually refresh data (can be called from pull-to-refresh)
+  // Method to manually refresh data
   Future<void> refreshCourses() async {
     await fetchCourses(forceRefresh: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
 
     return ASKMeButton(
       onFABPressed: () {
@@ -293,7 +275,6 @@ class CourseListScreenState extends State<CourseListScreen>
             ),
           ),
           actions: [
-            // Add refresh button
             IconButton(
               icon: Icon(Icons.refresh, color: Colors.white),
               onPressed: isLoading ? null : refreshCourses,
@@ -435,7 +416,7 @@ class CourseListScreenState extends State<CourseListScreen>
     return GestureDetector(
       onTap: () async {
         String selectedCourseId = course["id"];
-        debugPrint("Selected Course ID: $selectedCourseId");
+        log("Selected Course ID: $selectedCourseId");
 
         try {
           await storage.write(key: 'course_id', value: selectedCourseId);
@@ -449,7 +430,7 @@ class CourseListScreenState extends State<CourseListScreen>
             ),
           );
         } catch (error) {
-          debugPrint("Error storing course ID: $error");
+          log("Error storing course ID: $error");
         }
       },
       child: Container(
