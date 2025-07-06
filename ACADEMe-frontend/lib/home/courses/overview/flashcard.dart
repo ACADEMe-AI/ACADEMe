@@ -568,6 +568,16 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
                       _handleSwipe();
                       if (_currentPage != index) {
                         final oldPage = _currentPage;
+
+                        // Send progress for the OLD page before switching
+                        if (oldPage < widget.materials.length) {
+                          // Temporarily set _currentPage to oldPage to send correct progress
+                          final tempPage = _currentPage;
+                          _currentPage = oldPage;
+                          _sendProgressToBackend();
+                          _currentPage = tempPage;
+                        }
+
                         _currentPage = index; // Update without setState first
 
                         // Only call setState if UI needs updating (for progress bar)
@@ -577,10 +587,6 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
 
                         _setupVideoController();
                         _preloadAdjacentMaterials();
-
-                        if (index < widget.materials.length) {
-                          _sendProgressToBackend();
-                        }
                       }
                     },
                     itemBuilder: (context, index) {

@@ -34,6 +34,12 @@ class OverviewScreenState extends State<OverviewScreen>
   bool isLoading = true;
   bool hasSubtopicData = false;
 
+  // Progress tracking variables
+  List<Map<String, dynamic>> userProgress = [];
+  double progressPercentage = 0.0;
+  int completedSubtopics = 0;
+  int totalSubtopics = 0;
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +49,9 @@ class OverviewScreenState extends State<OverviewScreen>
   }
 
   Future<void> fetchData() async {
-    await fetchTopicDetails(); // Fetch from topics endpoint
-    await fetchSubtopicData(); // Fetch from subtopics endpoint
+    await fetchTopicDetails();
+    await fetchSubtopicData();
+    await fetchUserProgress();
   }
 
   Future<void> fetchTopicDetails() async {
@@ -54,7 +61,7 @@ class OverviewScreenState extends State<OverviewScreen>
       return;
     }
     if (!mounted) {
-      return; // Ensure widget is still active before using context
+      return;
     }
 
     final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
@@ -99,7 +106,7 @@ class OverviewScreenState extends State<OverviewScreen>
       return;
     }
     if (!mounted) {
-      return; // Ensure widget is still active before using context
+      return;
     }
     final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
         .locale
@@ -116,8 +123,12 @@ class OverviewScreenState extends State<OverviewScreen>
       );
 
       if (response.statusCode == 200) {
+        final String responseBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> subtopics = jsonDecode(responseBody);
+
         setState(() {
           hasSubtopicData = true;
+          totalSubtopics = subtopics.length;
         });
       }
     } catch (e) {
@@ -126,6 +137,56 @@ class OverviewScreenState extends State<OverviewScreen>
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> fetchUserProgress() async {
+    String? token = await storage.read(key: 'access_token');
+    if (token == null) return;
+    if (!mounted) return;
+
+    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+        .locale
+        .languageCode;
+
+    try {
+      final response = await http.get(
+        Uri.parse('$backendUrl/api/progress/?target_language=$targetLanguage'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final String responseBody = utf8.decode(response.bodyBytes);
+        final Map<String, dynamic> data = jsonDecode(responseBody);
+
+        // Filter progress for current course and topic
+        final progress = List<Map<String, dynamic>>.from(data['progress'])
+            .where((progress) =>
+        progress['course_id'] == widget.courseId &&
+            progress['topic_id'] == widget.topicId)
+            .toList();
+
+        // Calculate completed subtopics
+        final Set<String> completedSubIds = {};
+        for (final p in progress) {
+          if (p['status'] == 'completed' && p['subtopic_id'] != null) {
+            completedSubIds.add(p['subtopic_id']);
+          }
+        }
+
+        setState(() {
+          userProgress = progress;
+          completedSubtopics = completedSubIds.length;
+          progressPercentage = totalSubtopics > 0
+              ? completedSubtopics / totalSubtopics
+              : 0.0;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching progress: $e");
     }
   }
 
@@ -249,12 +310,12 @@ class OverviewScreenState extends State<OverviewScreen>
                               ),
                               SizedBox(height: height * 0.005),
                               Text(
-                                  "0/12 ${L10n.getTranslatedText(context, 'Modules')}"),
+                                  "$completedSubtopics/$totalSubtopics ${L10n.getTranslatedText(context, 'Modules')}"),
                               SizedBox(height: height * 0.01),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: LinearProgressIndicator(
-                                  value: 0.0,
+                                  value: progressPercentage,
                                   color: AcademeTheme.appColor,
                                   backgroundColor: const Color(0xFFE8E5FB),
                                   minHeight: height * 0.012,
@@ -293,8 +354,10 @@ class OverviewScreenState extends State<OverviewScreen>
                     children: [
                       hasSubtopicData
                           ? LessonsSection(
-                          courseId: widget.courseId,
-                          topicId: widget.topicId)
+                        courseId: widget.courseId,
+                        topicId: widget.topicId,
+                        userProgress: userProgress,
+                      )
                           : Center(child: CircularProgressIndicator()),
                       QSection(),
                     ],
