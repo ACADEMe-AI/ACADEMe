@@ -8,7 +8,6 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/home/courses/overview/flashcard.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-
 import '../report.dart';
 
 class LessonsSection extends StatefulWidget {
@@ -52,7 +51,7 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   void determineResumePoint() {
-    // Find the last in-progress activity
+    // Find the last in-progress activity across all subtopics
     Map<String, dynamic>? lastProgress;
     for (final progress in widget.userProgress) {
       if (progress['course_id'] == widget.courseId &&
@@ -63,7 +62,7 @@ class LessonsSectionState extends State<LessonsSection> {
       }
     }
 
-    // If no in-progress, find last completed activity
+    // If no in-progress, find last completed activity across all subtopics
     if (lastProgress == null) {
       for (final progress in widget.userProgress.reversed) {
         if (progress['course_id'] == widget.courseId &&
@@ -137,14 +136,17 @@ class LessonsSectionState extends State<LessonsSection> {
           isExpanded = {
             for (int i = 0; i < data.length; i++)
               "${(i + 1).toString().padLeft(2, '0')} - ${data[i]["title"]}":
-                  false
+              false
           };
           subtopicIds = {
             for (var sub in data)
               "${(data.indexOf(sub) + 1).toString().padLeft(2, '0')} - ${sub["title"]}":
-                  sub["id"].toString()
+              sub["id"].toString()
           };
         });
+
+        // Call determineResumePoint after subtopics are loaded
+        determineResumePoint();
       } else {
         debugPrint("❌ Failed to fetch subtopics: ${response.statusCode}");
       }
@@ -228,7 +230,7 @@ class LessonsSectionState extends State<LessonsSection> {
 
           if (questionsResponse.statusCode == 200) {
             final String questionsBody =
-                utf8.decode(questionsResponse.bodyBytes);
+            utf8.decode(questionsResponse.bodyBytes);
             List<dynamic> questionsData = jsonDecode(questionsBody);
             for (var question in questionsData) {
               quizzesList.add({
@@ -237,10 +239,10 @@ class LessonsSectionState extends State<LessonsSection> {
                 "difficulty": quiz["difficulty"] ?? "Unknown",
                 "question_count": questionsData.length.toString(),
                 "question_text":
-                    question["question_text"] ?? "No question text available",
+                question["question_text"] ?? "No question text available",
                 "options":
-                    (question["options"] as List<dynamic>?)?.cast<String>() ??
-                        ["No options available"],
+                (question["options"] as List<dynamic>?)?.cast<String>() ??
+                    ["No options available"],
                 "correct_option": question["correct_option"] ?? 0,
                 "created_at": quiz["created_at"] ?? "",
               });
@@ -271,12 +273,98 @@ class LessonsSectionState extends State<LessonsSection> {
   // Check if activity is completed
   bool isActivityCompleted(String activityId, String activityType) {
     return widget.userProgress.any((progress) =>
-        progress['course_id'] == widget.courseId &&
+    progress['course_id'] == widget.courseId &&
         progress['topic_id'] == widget.topicId &&
         (activityType == 'material'
             ? progress['material_id'] == activityId
             : progress['quiz_id'] == activityId) &&
         progress['status'] == 'completed');
+  }
+
+  // Find first uncompleted material index in a subtopic
+  int _findFirstUncompletedIndex(String subtopicId) {
+    final materials = subtopicMaterials[subtopicId] ?? [];
+    final quizzes = subtopicQuizzes[subtopicId] ?? [];
+
+    // If this is the resume subtopic, find the actual next uncompleted item
+    if (subtopicId == resumeSubtopicId) {
+      // First check materials
+      for (int i = 0; i < materials.length; i++) {
+        if (!isActivityCompleted(materials[i]['id'], 'material')) {
+          return i;
+        }
+      }
+
+      // Then check quizzes
+      for (int i = 0; i < quizzes.length; i++) {
+        if (!isActivityCompleted(quizzes[i]['id'], 'quiz')) {
+          return materials.length + i;
+        }
+      }
+
+      // If all completed in this subtopic, go to next subtopic's first item
+      return 0;
+    }
+
+    // For non-resume subtopics, find first uncompleted
+    for (int i = 0; i < materials.length; i++) {
+      if (!isActivityCompleted(materials[i]['id'], 'material')) {
+        return i;
+      }
+    }
+
+    for (int i = 0; i < quizzes.length; i++) {
+      if (!isActivityCompleted(quizzes[i]['id'], 'quiz')) {
+        return materials.length + i;
+      }
+    }
+
+    return 0; // Default to start if all completed
+  }
+
+  // NEW: Find next uncompleted subtopic
+  Future<Map<String, dynamic>?> _findNextUncompletedSubtopic() async {
+    final subtopicIdsList = subtopicIds.values.toList();
+    int startIndex = resumeSubtopicId != null
+        ? subtopicIdsList.indexOf(resumeSubtopicId!)
+        : 0;
+
+    for (int i = startIndex; i < subtopicIdsList.length; i++) {
+      final subtopicId = subtopicIdsList[i];
+      if (!subtopicMaterials.containsKey(subtopicId)) {
+        await fetchMaterialsAndQuizzes(subtopicId);
+      }
+
+      final materials = subtopicMaterials[subtopicId] ?? [];
+      final quizzes = subtopicQuizzes[subtopicId] ?? [];
+
+      // Check materials
+      for (int j = 0; j < materials.length; j++) {
+        if (!isActivityCompleted(materials[j]['id'], 'material')) {
+          return {
+            'subtopicId': subtopicId,
+            'index': j,
+            'subtopicTitle': subtopicIds.entries
+                .firstWhere((entry) => entry.value == subtopicId)
+                .key,
+          };
+        }
+      }
+
+      // Check quizzes
+      for (int j = 0; j < quizzes.length; j++) {
+        if (!isActivityCompleted(quizzes[j]['id'], 'quiz')) {
+          return {
+            'subtopicId': subtopicId,
+            'index': materials.length + j,
+            'subtopicTitle': subtopicIds.entries
+                .firstWhere((entry) => entry.value == subtopicId)
+                .key,
+          };
+        }
+      }
+    }
+    return null; // All completed
   }
 
   @override
@@ -336,47 +424,48 @@ class LessonsSectionState extends State<LessonsSection> {
         child: ElevatedButton(
           onPressed: isNavigating
               ? null
-              : () {
-                  if (subtopicIds.isEmpty) return;
+              : () async {
+            if (isNavigating) return;
+            setState(() => isNavigating = true);
 
-                  final subtopicId = showResume && resumeSubtopicId != null
-                      ? resumeSubtopicId!
-                      : subtopicIds.values.first;
+            final target = await _findNextUncompletedSubtopic();
 
-                  final subtopicTitle = subtopicIds.entries
-                      .firstWhere((entry) => entry.value == subtopicId)
-                      .key;
+            if (target == null) {
+              // All completed, go to test report
+              setState(() => isNavigating = false);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => TestReportScreen()),
+              );
+              return;
+            }
 
-                  setState(() => isNavigating = true);
-                  fetchMaterialsAndQuizzes(subtopicId).then((_) {
-                    if (!context.mounted) return;
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => FlashCard(
-                          materials: (subtopicMaterials[subtopicId] ?? [])
-                              .map<Map<String, String>>((material) {
-                            return {
-                              "id": material["id"]?.toString() ?? "",
-                              "type": material["type"]?.toString() ?? "",
-                              "content": material["content"]?.toString() ?? "",
-                            };
-                          }).toList(),
-                          quizzes: subtopicQuizzes[subtopicId] ?? [],
-                          onQuizComplete: () =>
-                              _navigateToNextSubtopic(subtopicId),
-                          initialIndex: showResume ? resumeIndex : 0,
-                          courseId: widget.courseId,
-                          topicId: widget.topicId,
-                          subtopicId: subtopicId,
-                          subtopicTitle: subtopicTitle,
-                        ),
-                      ),
-                    ).then((_) {
-                      if (mounted) setState(() => isNavigating = false);
-                    });
-                  });
-                },
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FlashCard(
+                  materials: (subtopicMaterials[target['subtopicId']] ?? [])
+                      .map<Map<String, String>>((material) {
+                    return {
+                      "id": material["id"]?.toString() ?? "",
+                      "type": material["type"]?.toString() ?? "",
+                      "content": material["content"]?.toString() ?? "",
+                    };
+                  }).toList(),
+                  quizzes: subtopicQuizzes[target['subtopicId']] ?? [],
+                  onQuizComplete: () =>
+                      _navigateToNextSubtopic(target['subtopicId']),
+                  initialIndex: target['index'],
+                  courseId: widget.courseId,
+                  topicId: widget.topicId,
+                  subtopicId: target['subtopicId'],
+                  subtopicTitle: target['subtopicTitle'],
+                ),
+              ),
+            ).then((_) {
+              if (mounted) setState(() => isNavigating = false);
+            });
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: AcademeTheme.appColor,
             minimumSize: const Size(double.infinity, 50),
@@ -388,8 +477,8 @@ class LessonsSectionState extends State<LessonsSection> {
             isNavigating
                 ? L10n.getTranslatedText(context, 'Loading...')
                 : showResume
-                    ? L10n.getTranslatedText(context, 'Resume')
-                    : L10n.getTranslatedText(context, 'Start Course'),
+                ? L10n.getTranslatedText(context, 'Resume')
+                : L10n.getTranslatedText(context, 'Start Course'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -423,7 +512,7 @@ class LessonsSectionState extends State<LessonsSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...materials.map(
-                  (m) => _buildMaterialTile(
+                      (m) => _buildMaterialTile(
                     m["id"],
                     m["type"],
                     m["category"],
@@ -440,7 +529,7 @@ class LessonsSectionState extends State<LessonsSection> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...quizzes.map(
-                  (q) => _buildQuizTile(
+                      (q) => _buildQuizTile(
                     q["id"],
                     q["title"],
                     q["difficulty"],
@@ -458,14 +547,14 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   Widget _buildMaterialTile(
-    String id,
-    String type,
-    String category,
-    String content,
-    String subtopicId,
-    int index,
-    bool isCompleted,
-  ) {
+      String id,
+      String type,
+      String category,
+      String content,
+      String subtopicId,
+      int index,
+      bool isCompleted,
+      ) {
     String subtopicTitle = subtopicIds.entries
         .firstWhere((entry) => entry.value == subtopicId)
         .key;
@@ -473,20 +562,20 @@ class LessonsSectionState extends State<LessonsSection> {
     String localizedType = type.toLowerCase() == 'video'
         ? L10n.getTranslatedText(context, 'Video')
         : type.toLowerCase() == 'text'
-            ? L10n.getTranslatedText(context, 'Text')
-            : type.toLowerCase() == 'quiz'
-                ? L10n.getTranslatedText(context, 'Quiz')
-                : type.toLowerCase() == 'document'
-                    ? L10n.getTranslatedText(context, 'Document')
-                    : L10n.getTranslatedText(context, 'Material');
+        ? L10n.getTranslatedText(context, 'Text')
+        : type.toLowerCase() == 'quiz'
+        ? L10n.getTranslatedText(context, 'Quiz')
+        : type.toLowerCase() == 'document'
+        ? L10n.getTranslatedText(context, 'Document')
+        : L10n.getTranslatedText(context, 'Material');
 
     return _buildTile(
       localizedType,
       category,
       _getIconForContentType(type),
-      () {
+          () {
         List<Map<String, String>> materials =
-            (subtopicMaterials[subtopicId] ?? []).map<Map<String, String>>((m) {
+        (subtopicMaterials[subtopicId] ?? []).map<Map<String, String>>((m) {
           return {
             "id": m["id"]?.toString() ?? "",
             "type": m["type"]?.toString() ?? "",
@@ -524,14 +613,14 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   Widget _buildQuizTile(
-    String id,
-    String title,
-    String difficulty,
-    String questionCount,
-    String subtopicId,
-    int index,
-    bool isCompleted,
-  ) {
+      String id,
+      String title,
+      String difficulty,
+      String questionCount,
+      String subtopicId,
+      int index,
+      bool isCompleted,
+      ) {
     String subtopicTitle = subtopicIds.entries
         .firstWhere((entry) => entry.value == subtopicId)
         .key;
@@ -540,7 +629,7 @@ class LessonsSectionState extends State<LessonsSection> {
       title,
       "$difficulty • $questionCount Questions",
       Icons.quiz,
-      () {
+          () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -570,23 +659,19 @@ class LessonsSectionState extends State<LessonsSection> {
       String nextSubtopicTitle = subtopicIds.keys.toList()[currentIndex + 1];
 
       fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
-        List<Map<String, String>> nextMaterials =
-            (subtopicMaterials[nextSubtopicId] ?? [])
-                .map<Map<String, String>>((material) {
-          return {
-            "id": material["id"]?.toString() ?? "",
-            "type": material["type"]?.toString() ?? "",
-            "content": material["content"]?.toString() ?? "",
-          };
-        }).toList();
-
         if (!context.mounted) return;
-
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => FlashCard(
-              materials: nextMaterials,
+              materials: (subtopicMaterials[nextSubtopicId] ?? [])
+                  .map<Map<String, String>>((material) {
+                return {
+                  "id": material["id"]?.toString() ?? "",
+                  "type": material["type"]?.toString() ?? "",
+                  "content": material["content"]?.toString() ?? "",
+                };
+              }).toList(),
               quizzes: subtopicQuizzes[nextSubtopicId] ?? [],
               onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
               initialIndex: 0,
@@ -607,12 +692,12 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   Widget _buildTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    VoidCallback onTap,
-    bool isCompleted,
-  ) {
+      String title,
+      String subtitle,
+      IconData icon,
+      VoidCallback onTap,
+      bool isCompleted,
+      ) {
     String capitalizedTitle = title.substring(title.indexOf(" ") + 1);
     if (capitalizedTitle.isNotEmpty) {
       capitalizedTitle =
