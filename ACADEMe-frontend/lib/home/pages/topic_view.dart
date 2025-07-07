@@ -276,6 +276,19 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     return prefs.getDouble('progress_${widget.courseId}_${topicId}') ?? 0.0;
   }
 
+  Future<String> _getModuleProgressText(String topicId) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Get total modules for this topic
+    int totalModules = prefs.getInt('total_modules_${widget.courseId}_$topicId') ?? 0;
+
+    // Get completed modules for this topic
+    List<String> completedModules = prefs.getStringList('completed_modules_${widget.courseId}_$topicId') ?? [];
+    int completedCount = completedModules.length;
+
+    return "$completedCount/$totalModules ${L10n.getTranslatedText(context, 'Modules')}";
+  }
+
   void _updateTopicsData(List<Map<String, dynamic>> allTopics) {
     topics = allTopics;
     ongoingTopics = topics.where((t) => t["progress"] > 0 && t["progress"] < 100).toList();
@@ -471,12 +484,17 @@ class _TopicViewScreenState extends State<TopicViewScreen>
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          "0/12 ${L10n.getTranslatedText(context, 'Modules')}",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
+                        child: FutureBuilder<String>(
+                          future: _getModuleProgressText(topic["id"]),
+                          builder: (context, snapshot) {
+                            return Text(
+                              snapshot.data ?? "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            );
+                          },
                         ),
                       ),
                       Align(
