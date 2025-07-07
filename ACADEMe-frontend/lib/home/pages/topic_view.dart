@@ -279,14 +279,14 @@ class _TopicViewScreenState extends State<TopicViewScreen>
   Future<String> _getModuleProgressText(String topicId) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Get total modules for this topic
-    int totalModules = prefs.getInt('total_modules_${widget.courseId}_$topicId') ?? 0;
+    // Get total subtopics for this topic (using the same key as overview.dart)
+    int totalSubtopics = prefs.getInt('total_subtopics_${widget.courseId}_$topicId') ?? 0;
 
-    // Get completed modules for this topic
-    List<String> completedModules = prefs.getStringList('completed_modules_${widget.courseId}_$topicId') ?? [];
-    int completedCount = completedModules.length;
+    // Get completed subtopics for this topic (using the same key as overview.dart)
+    List<String> completedSubtopics = prefs.getStringList('completed_subtopics_${widget.courseId}_$topicId') ?? [];
+    int completedCount = completedSubtopics.length;
 
-    return "$completedCount/$totalModules ${L10n.getTranslatedText(context, 'Modules')}";
+    return "$completedCount/$totalSubtopics ${L10n.getTranslatedText(context, 'Modules')}";
   }
 
   void _updateTopicsData(List<Map<String, dynamic>> allTopics) {
