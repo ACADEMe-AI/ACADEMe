@@ -244,6 +244,15 @@ class CourseListScreenState extends State<CourseListScreen>
     return count / totalTopics;
   }
 
+  Future<String> _getModuleProgressText(String courseId) async {
+    final prefs = await SharedPreferences.getInstance();
+    int totalTopics = prefs.getInt('total_topics_$courseId') ?? 0;
+    List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
+    int completedCount = completedTopics.where((key) => key.startsWith('$courseId|')).length;
+
+    return "$completedCount/$totalTopics ${L10n.getTranslatedText(context, 'Modules')}";
+  }
+
   // Method to manually refresh data
   Future<void> refreshCourses() async {
     await fetchCourses(forceRefresh: true);
@@ -491,9 +500,14 @@ class CourseListScreenState extends State<CourseListScreen>
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: Text(
-                          "0/12 ${L10n.getTranslatedText(context, 'Modules')}",
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                        child: FutureBuilder<String>(
+                          future: _getModuleProgressText(course["id"]),
+                          builder: (context, snapshot) {
+                            return Text(
+                              snapshot.data ?? "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
+                              style: TextStyle(fontSize: 12, color: Colors.black54),
+                            );
+                          },
                         ),
                       ),
                       Align(
