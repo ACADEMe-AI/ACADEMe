@@ -98,6 +98,14 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
     _fadeAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
+
+    // Send progress for the initial material
+    if (widget.materials.isNotEmpty && _currentPage < widget.materials.length) {
+      // Delay to ensure widget is fully initialized
+      Future.delayed(const Duration(milliseconds: 500), () {
+        unawaited(_sendProgressToBackend());
+      });
+    }
   }
 
   void _preloadAdjacentMaterials() {
@@ -478,9 +486,6 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   }
 
   Future<void> _nextMaterialOrQuiz() async {
-    // Send progress in background to avoid blocking
-    unawaited(_sendProgressToBackend());
-
     if (_currentPage < widget.materials.length + widget.quizzes.length - 1) {
       _currentPage++;
 
@@ -490,6 +495,11 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
 
       _setupVideoController();
       _preloadAdjacentMaterials();
+
+      // Send progress for the NEW current material
+      if (_currentPage < widget.materials.length) {
+        unawaited(_sendProgressToBackend());
+      }
     } else {
       if (widget.onQuizComplete != null) {
         widget.onQuizComplete!();
@@ -567,17 +577,6 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
                     onIndexChanged: (index) {
                       _handleSwipe();
                       if (_currentPage != index) {
-                        final oldPage = _currentPage;
-
-                        // Send progress for the OLD page before switching
-                        if (oldPage < widget.materials.length) {
-                          // Temporarily set _currentPage to oldPage to send correct progress
-                          final tempPage = _currentPage;
-                          _currentPage = oldPage;
-                          _sendProgressToBackend();
-                          _currentPage = tempPage;
-                        }
-
                         _currentPage = index; // Update without setState first
 
                         // Only call setState if UI needs updating (for progress bar)
@@ -587,6 +586,11 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
 
                         _setupVideoController();
                         _preloadAdjacentMaterials();
+
+                        // Send progress for the NEW current material
+                        if (_currentPage < widget.materials.length) {
+                          unawaited(_sendProgressToBackend());
+                        }
                       }
                     },
                     itemBuilder: (context, index) {
