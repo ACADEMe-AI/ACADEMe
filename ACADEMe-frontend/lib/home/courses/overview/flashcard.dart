@@ -295,7 +295,9 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
 
   void _setupVideoController() async {
     // Dispose old controllers
-    _videoController?.removeListener(_videoListener);
+    if (_videoController != null) {
+      _videoController!.removeListener(_videoListener);
+    }
     _videoController?.dispose();
     _chewieController?.dispose();
 
@@ -370,13 +372,13 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
         _videoController!.value.isInitialized &&
         !_videoController!.value.isPlaying &&
         _videoController!.value.position >= _videoController!.value.duration) {
-      _videoController!.removeListener(_videoListener);
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _nextMaterialOrQuiz();
-        }
-      });
+      // Reset video to beginning and pause (manual looping)
+      _videoController!.seekTo(Duration.zero);
+      _videoController!.pause();
+
+      // Keep the listener active for future plays
+      // Don't navigate to next material automatically - let user swipe manually
     }
   }
 
