@@ -17,7 +17,6 @@ class SummarySection extends StatelessWidget {
       future: Future.wait([
         controller.fetchCourses(),
         controller.fetchOverallGrade(),
-        _getCompletedCoursesCount(),
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -30,119 +29,127 @@ class SummarySection extends StatelessWidget {
 
         List<dynamic> courses = snapshot.data![0] as List<dynamic>;
         double overallGrade = snapshot.data![1] as double;
-        int completedCourses = snapshot.data![2] as int;
 
         int totalCourses = courses.length;
         String letterGrade = ProgressHelpers.getLetterGrade(context, overallGrade);
         double progressValue = overallGrade / 100;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
+        return FutureBuilder<int>(
+          future: _getCompletedCoursesCount(courses),
+          builder: (context, completedSnapshot) {
+            if (completedSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            int completedCourses = completedSnapshot.data ?? 0;
+
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  Expanded(
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(
-                              color: const Color.fromARGB(27, 158, 158, 158)),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(10),
-                              blurRadius: 6,
-                              offset: const Offset(0, 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                  color: const Color.fromARGB(27, 158, 158, 158)),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(10),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
+                            padding: const EdgeInsets.all(16),
+                            child: _buildSummaryItem(
+                                L10n.getTranslatedText(context, 'Total Courses'),
+                                totalCourses.toString()),
+                          ),
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: _buildSummaryItem(
-                            L10n.getTranslatedText(context, 'Total Courses'),
-                            totalCourses.toString()),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          border: Border.all(
-                              color: const Color.fromARGB(27, 158, 158, 158)),
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(10),
-                              blurRadius: 6,
-                              offset: const Offset(0, 4),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border.all(
+                                  color: const Color.fromARGB(27, 158, 158, 158)),
+                              borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(10),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                          ],
+                            padding: const EdgeInsets.all(16),
+                            child: _buildSummaryItem(
+                                L10n.getTranslatedText(context, 'Completed'),
+                                completedCourses.toString()),
+                          ),
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: _buildSummaryItem(
-                            L10n.getTranslatedText(context, 'Completed'),
-                            completedCourses.toString()),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(
-                        color: const Color.fromARGB(27, 158, 158, 158)),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(10),
-                        blurRadius: 6,
-                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(16),
-                  child: _buildSummaryItem(
-                    L10n.getTranslatedText(context, 'Overall Grade'),
-                    overallGrade.toStringAsFixed(2),
-                    isCircular: true,
-                    letterGrade: letterGrade,
-                    progressValue: progressValue,
+                  const SizedBox(height: 16),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(
+                            color: const Color.fromARGB(27, 158, 158, 158)),
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(10),
+                            blurRadius: 6,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: _buildSummaryItem(
+                        L10n.getTranslatedText(context, 'Overall Grade'),
+                        overallGrade.toStringAsFixed(2),
+                        isCircular: true,
+                        letterGrade: letterGrade,
+                        progressValue: progressValue,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _buildMotivationCard(context, overallGrade),
+                ],
               ),
-              const SizedBox(height: 16),
-              _buildMotivationCard(context, overallGrade),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  Future<int> _getCompletedCoursesCount() async {
+  Future<int> _getCompletedCoursesCount(List<dynamic> courses) async {
     final prefs = await SharedPreferences.getInstance();
     int completedCount = 0;
-
-    List<dynamic> courses = await controller.fetchCourses();
 
     for (var course in courses) {
       String courseId = course["id"];
