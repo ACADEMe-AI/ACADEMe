@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/home/pages/motivation_popup.dart';
 import 'package:ACADEMe/localization/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/progress_controller.dart';
 import '../models/progress_models.dart';
 
@@ -13,7 +14,11 @@ class SummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
-      future: Future.wait([controller.fetchCourses(), controller.fetchOverallGrade()]),
+      future: Future.wait([
+        controller.fetchCourses(),
+        controller.fetchOverallGrade(),
+        _getCompletedCoursesCount(),
+      ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -25,6 +30,7 @@ class SummarySection extends StatelessWidget {
 
         List<dynamic> courses = snapshot.data![0] as List<dynamic>;
         double overallGrade = snapshot.data![1] as double;
+        int completedCourses = snapshot.data![2] as int;
 
         int totalCourses = courses.length;
         String letterGrade = ProgressHelpers.getLetterGrade(context, overallGrade);
@@ -86,7 +92,8 @@ class SummarySection extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.all(16),
                         child: _buildSummaryItem(
-                            L10n.getTranslatedText(context, 'Completed'), "2"),
+                            L10n.getTranslatedText(context, 'Completed'),
+                            completedCourses.toString()),
                       ),
                     ),
                   ),
@@ -129,6 +136,28 @@ class SummarySection extends StatelessWidget {
         );
       },
     );
+  }
+
+  Future<int> _getCompletedCoursesCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    int completedCount = 0;
+
+    List<dynamic> courses = await controller.fetchCourses();
+
+    for (var course in courses) {
+      String courseId = course["id"];
+      int totalTopics = prefs.getInt('total_topics_$courseId') ?? 0;
+      if (totalTopics == 0) continue;
+
+      List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
+      int completedTopicsCount = completedTopics.where((key) => key.startsWith('$courseId|')).length;
+
+      if (completedTopicsCount >= totalTopics) {
+        completedCount++;
+      }
+    }
+
+    return completedCount;
   }
 
   Widget _buildSummaryItem(String title, String value,
