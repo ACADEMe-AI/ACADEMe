@@ -54,16 +54,14 @@ class HomePage extends StatelessWidget {
 
   final List<Color?> repeatingColors = [Colors.green[100], Colors.pink[100]];
 
-  Future<List<dynamic>> _fetchCourses() async {
-    final String backendUrl =
-        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
+  Future<List<Map<String, dynamic>>> _fetchCourses() async {
+    final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
     final String? token = await _secureStorage.read(key: 'access_token');
 
     if (token == null) {
       throw Exception("❌ No access token found");
     }
 
-    // Get the current app language from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     final String targetLanguage = prefs.getString('language') ?? 'en';
 
@@ -76,9 +74,26 @@ class HomePage extends StatelessWidget {
     );
 
     if (response.statusCode == 200) {
-      final List<dynamic> data =
-      jsonDecode(utf8.decode(response.bodyBytes)); // Ensure UTF-8 encoding
-      return data; // Return all courses
+      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      List<Map<String, dynamic>> coursesWithProgress = [];
+
+      for (var course in data) {
+        String courseId = course["id"].toString();
+        int totalTopics = prefs.getInt('total_topics_$courseId') ?? 0;
+        List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
+        int completedCount = completedTopics.where((key) => key.startsWith('$courseId|')).length;
+        double progress = totalTopics > 0 ? completedCount / totalTopics : 0.0;
+
+        coursesWithProgress.add({
+          "id": courseId,
+          "title": course["title"],
+          "progress": progress,
+          "completedModules": completedCount,
+          "totalModules": totalTopics,
+        });
+      }
+
+      return coursesWithProgress;
     } else {
       throw Exception("❌ Failed to fetch courses: ${response.statusCode}");
     }
@@ -697,45 +712,12 @@ class HomePage extends StatelessWidget {
                       ),
 
                       const SizedBox(height: 20),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            L10n.getTranslatedText(
-                                context, 'Continue Learning'),
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              onCourseTap();
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              L10n.getTranslatedText(context, 'See All'),
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontSize: 17,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      FutureBuilder<List<dynamic>>(
+                      // Continue Learning Section
+                      FutureBuilder<List<Map<String, dynamic>>>(
                         future: _fetchCourses(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                                child: CircularProgressIndicator());
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
                           } else if (snapshot.hasError) {
                             return Center(
                               child: Text(
@@ -743,46 +725,70 @@ class HomePage extends StatelessWidget {
                                 style: TextStyle(color: Colors.red),
                               ),
                             );
-                          } else if (!snapshot.hasData ||
-                              snapshot.data!.isEmpty) {
-                            return const Center(
-                                child: Text("No courses available"));
-                          } else {
-                            final courses = snapshot.data!;
-                            debugPrint(
-                                "Courses loaded: ${courses.length} items"); // Debug
+                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const SizedBox.shrink(); // Hide if no courses
+                          }
 
-                            return Column(
-                              children: List.generate(
-                                courses.length > 3 ? 3 : courses.length,
-                                    (index) {
-                                  final course = courses[index];
-                                  debugPrint(
-                                      "Course $index ID: ${course["id"]}"); // Verify ID
+                          // Filter courses: progress > 0% and < 100%
+                          final ongoingCourses = snapshot.data!.where((course) =>
+                          course["progress"] > 0 && course["progress"] < 1
+                          ).toList();
 
+                          if (ongoingCourses.isEmpty) {
+                            return const SizedBox.shrink(); // Hide section if no ongoing courses
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    L10n.getTranslatedText(context, 'Continue Learning'),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: onCourseTap,
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: Text(
+                                      L10n.getTranslatedText(context, 'See All'),
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 17,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Column(
+                                children: ongoingCourses.map((course) {
                                   return Column(
                                     children: [
                                       learningCard(
                                         course["title"],
-                                        4, // Placeholder values (modules)
-                                        9, // Placeholder values (completed)
-                                        34, // Placeholder values (total)
-                                        predefinedColors.length > index
-                                            ? predefinedColors[index]!
-                                            : Colors.primaries[index %
+                                        course["completedModules"],
+                                        course["totalModules"],
+                                        (course["progress"] * 100).toInt(),
+                                        predefinedColors.length > ongoingCourses.indexOf(course)
+                                            ? predefinedColors[ongoingCourses.indexOf(course)]!
+                                            : Colors.primaries[ongoingCourses.indexOf(course) %
                                             Colors.primaries.length][100]!,
                                             () {
-                                          // Navigation with verified ID
-                                          debugPrint(
-                                              "Tapped Course ID: ${course["id"]}");
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (context) =>
-                                                  TopicViewScreen(
-                                                    courseId: course["id"]
-                                                        .toString(), // Ensure String
-                                                  ),
+                                              builder: (context) => TopicViewScreen(
+                                                courseId: course["id"],
+                                              ),
                                             ),
                                           );
                                         },
@@ -790,10 +796,10 @@ class HomePage extends StatelessWidget {
                                       const SizedBox(height: 12),
                                     ],
                                   );
-                                },
+                                }).toList(),
                               ),
-                            );
-                          }
+                            ],
+                          );
                         },
                       ),
 
