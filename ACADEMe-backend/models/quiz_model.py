@@ -18,6 +18,7 @@ class QuizResponse(QuizCreate):
 
 # ✅ Model for creating a new question
 class QuestionCreate(BaseModel):
+    id: str
     question_text: str
     options: List[str]  # Example: ["Option1", "Option2", "Option3", "Option4"]
     correct_option: int  # Index of the correct answer (0-3)

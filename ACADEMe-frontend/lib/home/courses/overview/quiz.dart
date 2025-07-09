@@ -256,7 +256,7 @@ class QuizPageState extends State<QuizPage> {
     );
 
     // Navigate after 2 seconds
-    Future.delayed(const Duration(milliseconds: 225), () async {
+    Future.delayed(const Duration(milliseconds: 200), () async {
       if (!mounted) return;
 
       Navigator.pop(context); // Close result dialog
