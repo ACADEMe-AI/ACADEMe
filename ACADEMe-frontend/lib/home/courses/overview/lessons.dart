@@ -237,6 +237,7 @@ class LessonsSectionState extends State<LessonsSection> {
             for (var question in questionsData) {
               quizzesList.add({
                 "id": quizId,
+                "question_id": question["id"]?.toString() ?? "N/A", // Add question_id
                 "title": quiz["title"] ?? "Untitled Quiz",
                 "difficulty": quiz["difficulty"] ?? "Unknown",
                 "question_count": questionsData.length.toString(),
@@ -273,14 +274,45 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   // Check if activity is completed
-  bool isActivityCompleted(String activityId, String activityType) {
-    return widget.userProgress.any((progress) =>
-    progress['course_id'] == widget.courseId &&
-        progress['topic_id'] == widget.topicId &&
-        (activityType == 'material'
-            ? progress['material_id'] == activityId
-            : progress['quiz_id'] == activityId) &&
-        progress['status'] == 'completed');
+  bool isActivityCompleted(String activityId, String activityType, [String? questionId]) {
+    if (activityType == 'quiz') {
+      // For quizzes, check if the specific question is completed
+      if (questionId != null) {
+        return widget.userProgress.any((progress) =>
+        progress['course_id'] == widget.courseId &&
+            progress['topic_id'] == widget.topicId &&
+            progress['quiz_id'] != null &&
+            progress['quiz_id'].toString() == activityId &&
+            progress['question_id'] != null &&
+            progress['question_id'].toString() == questionId &&
+            progress['status'] == 'completed');
+      } else {
+        // For overall quiz completion, check if ALL questions are completed
+        final quizQuestions = subtopicQuizzes.values
+            .expand((quizzes) => quizzes)
+            .where((quiz) => quiz['id'] == activityId)
+            .toList();
+
+        if (quizQuestions.isEmpty) return false;
+
+        return quizQuestions.every((question) =>
+            widget.userProgress.any((progress) =>
+            progress['course_id'] == widget.courseId &&
+                progress['topic_id'] == widget.topicId &&
+                progress['quiz_id'] != null &&
+                progress['quiz_id'].toString() == activityId &&
+                progress['question_id'] != null &&
+                progress['question_id'].toString() == question['question_id'] &&
+                progress['status'] == 'completed'));
+      }
+    } else {
+      // For materials, check normally using material_id
+      return widget.userProgress.any((progress) =>
+      progress['course_id'] == widget.courseId &&
+          progress['topic_id'] == widget.topicId &&
+          progress['material_id'] == activityId &&
+          progress['status'] == 'completed');
+    }
   }
 
   // Check if all materials in a subtopic are completed
@@ -292,9 +324,9 @@ class LessonsSectionState extends State<LessonsSection> {
     final hasIncompleteMaterial = materials.any(
             (material) => !isActivityCompleted(material['id'], 'material'));
 
-    // Check if any quiz is not completed
+    // Check if any quiz question is not completed
     final hasIncompleteQuiz = quizzes.any(
-            (quiz) => !isActivityCompleted(quiz['id'], 'quiz'));
+            (quiz) => !isActivityCompleted(quiz['id'], 'quiz', quiz['question_id']));
 
     return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
@@ -313,9 +345,9 @@ class LessonsSectionState extends State<LessonsSection> {
         }
       }
 
-      // Then check quizzes
+      // Then check quiz questions
       for (int i = 0; i < quizzes.length; i++) {
-        if (!isActivityCompleted(quizzes[i]['id'], 'quiz')) {
+        if (!isActivityCompleted(quizzes[i]['id'], 'quiz', quizzes[i]['question_id'])) {
           return materials.length + i;
         }
       }
@@ -332,7 +364,7 @@ class LessonsSectionState extends State<LessonsSection> {
     }
 
     for (int i = 0; i < quizzes.length; i++) {
-      if (!isActivityCompleted(quizzes[i]['id'], 'quiz')) {
+      if (!isActivityCompleted(quizzes[i]['id'], 'quiz', quizzes[i]['question_id'])) {
         return materials.length + i;
       }
     }
@@ -371,7 +403,7 @@ class LessonsSectionState extends State<LessonsSection> {
 
       // Check quizzes
       for (int j = 0; j < quizzes.length; j++) {
-        if (!isActivityCompleted(quizzes[j]['id'], 'quiz')) {
+        if (!isActivityCompleted(quizzes[j]['id'], 'quiz', quizzes[j]['question_id'])) {
           return {
             'subtopicId': subtopicId,
             'index': materials.length + j,
@@ -550,18 +582,20 @@ class LessonsSectionState extends State<LessonsSection> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ...quizzes.map(
-                      (q) => _buildQuizTile(
+                ...quizzes.map((q) {
+                  bool quizCompleted = isActivityCompleted(q["id"], 'quiz');
+
+                  return _buildQuizTile(
                     q["id"],
                     q["title"],
                     q["difficulty"],
                     q["question_count"],
                     subtopicId,
                     quizzes.indexOf(q),
-                    isActivityCompleted(q["id"], 'quiz'),
+                    quizCompleted,
                     isSubtopicComplete,
-                  ),
-                ),
+                  );
+                }),
               ],
             ),
         ],
@@ -651,6 +685,16 @@ class LessonsSectionState extends State<LessonsSection> {
         .firstWhere((entry) => entry.value == subtopicId)
         .key;
 
+    // Get the specific question for this quiz tile
+    final quizzes = subtopicQuizzes[subtopicId] ?? [];
+    final currentQuiz = quizzes.length > index ? quizzes[index] : null;
+    final questionId = currentQuiz?['question_id'];
+
+    // Check if this specific question is completed
+    final questionCompleted = questionId != null
+        ? isActivityCompleted(id, 'quiz', questionId)
+        : isCompleted;
+
     return _buildTile(
       title,
       "$difficulty • $questionCount Questions",
@@ -674,7 +718,7 @@ class LessonsSectionState extends State<LessonsSection> {
           ),
         );
       },
-      isCompleted,
+      questionCompleted, // Use question-specific completion status
       isSubtopicComplete,
     );
   }

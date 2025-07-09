@@ -110,16 +110,17 @@ async def get_student_progress_list(user_id: str, target_language: str):
         # Add only relevant fields to the response
         progress_entry = {
             "progress_id": doc.id,
-            "course_id": data["course_id"],
-            "topic_id": data["topic_id"],
-            "subtopic_id": data["subtopic_id"],
-            "material_id": data["material_id"],
-            "quiz_id": data["quiz_id"],
-            "score": data["score"],
-            "timestamp": data["timestamp"],
-            "status": translated_data.get("status", data["status"]),
-            "activity_type": translated_data.get("activity_type", data["activity_type"]),
-            "metadata": translated_data.get("metadata", data["metadata"]),
+            "course_id": data.get("course_id"),
+            "topic_id": data.get("topic_id"),
+            "subtopic_id": data.get("subtopic_id"),
+            "material_id": data.get("material_id"),
+            "quiz_id": data.get("quiz_id"),
+            "question_id": data.get("question_id"),
+            "score": data.get("score"),
+            "timestamp": data.get("timestamp"),
+            "status": translated_data.get("status", data.get("status")),
+            "activity_type": translated_data.get("activity_type", data.get("activity_type")),
+            "metadata": translated_data.get("metadata", data.get("metadata", {})),
         }
 
         progress_list.append(progress_entry)

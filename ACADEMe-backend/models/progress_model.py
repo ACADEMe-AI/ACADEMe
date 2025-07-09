@@ -8,6 +8,7 @@ class ProgressBase(BaseModel):
     subtopic_id: Optional[str] = None
     material_id: Optional[str] = None
     quiz_id: Optional[str] = None
+    question_id: Optional[str] = None
     score: Optional[float] = None
     status: str  # 'incomplete', 'complete'
     activity_type: str  # 'view', 'quiz_attempt', 'discussion'
