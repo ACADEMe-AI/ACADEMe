@@ -9,17 +9,21 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class QuizPage extends StatefulWidget {
   final List<Map<String, dynamic>> quizzes;
   final Function()? onQuizComplete;
+  final Function()? onSwipeToNext; // Add this callback
   final String courseId;
   final String topicId;
   final String subtopicId;
+  final bool hasNextMaterial; // Add this to know if there's a next material
 
   const QuizPage({
     super.key,
     required this.quizzes,
     this.onQuizComplete,
+    this.onSwipeToNext, // Add this parameter
     required this.courseId,
     required this.topicId,
     required this.subtopicId,
+    this.hasNextMaterial = false, // Add this parameter with default value
   });
 
   @override
@@ -34,7 +38,7 @@ class QuizPageState extends State<QuizPage> {
       'http://10.0.2.2:8000'; // Replace with your API endpoint
   List<dynamic> _progressList = [];
   final FlutterSecureStorage _storage =
-  const FlutterSecureStorage(); // Add FlutterSecureStorage
+      const FlutterSecureStorage(); // Add FlutterSecureStorage
 
   @override
   void initState() {
@@ -44,13 +48,15 @@ class QuizPageState extends State<QuizPage> {
 
   Future<void> _fetchProgress() async {
     String? token =
-    await _storage.read(key: 'access_token'); // Retrieve the access token
+        await _storage.read(key: 'access_token'); // Retrieve the access token
     if (!mounted) {
       return; // Ensure widget is still active before using context
     }
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(L10n.getTranslatedText(context, 'Access token not found'))),
+        SnackBar(
+            content: Text(
+                L10n.getTranslatedText(context, 'Access token not found'))),
       );
       return;
     }
@@ -60,7 +66,7 @@ class QuizPageState extends State<QuizPage> {
           "$_baseUrl/api/progress/?target_language=en"), // Hardcoded "en" for English
       headers: {
         'Authorization':
-        'Bearer $token', // Include the access token in the headers
+            'Bearer $token', // Include the access token in the headers
         'Content-Type': 'application/json; charset=UTF-8',
       },
     );
@@ -82,7 +88,9 @@ class QuizPageState extends State<QuizPage> {
           return; // Ensure widget is still active before using context
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'No progress records found'))),
+          SnackBar(
+              content: Text(L10n.getTranslatedText(
+                  context, 'No progress records found'))),
         );
       }
     } else {
@@ -90,26 +98,37 @@ class QuizPageState extends State<QuizPage> {
         return; // Ensure widget is still active before using context
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(L10n.getTranslatedText(context, 'Failed to fetch progress'))),
+        SnackBar(
+            content: Text(
+                L10n.getTranslatedText(context, 'Failed to fetch progress'))),
       );
     }
   }
 
-  Future<void> _sendProgress(bool isCorrect, String quizId) async {
+  Future<void> _sendProgress(
+      bool isCorrect, String quizId, String questionId) async {
     String? token = await _storage.read(key: 'access_token');
     if (!mounted) {
-      return; // Ensure widget is still active before using context
-    } // Retrieve the access token
+      return;
+    }
     if (token == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(L10n.getTranslatedText(context, 'Access token not found'))),
+        SnackBar(
+            content: Text(
+                L10n.getTranslatedText(context, 'Access token not found'))),
       );
       return;
     }
 
-    final score = isCorrect ? 100 : 0;
+    // Calculate score per question
+    final totalQuestions = widget.quizzes.length;
+    final scorePerQuestion = totalQuestions > 0 ? (100 / totalQuestions) : 0;
+    final score = isCorrect ? scorePerQuestion : 0;
+
     final existingProgress = _progressList.firstWhere(
-          (progress) => progress["quiz_id"] == quizId,
+      (progress) =>
+          progress["quiz_id"] == quizId &&
+          progress["question_id"] == questionId,
       orElse: () => null,
     );
 
@@ -118,8 +137,7 @@ class QuizPageState extends State<QuizPage> {
       final response = await http.post(
         Uri.parse("$_baseUrl/api/progress/"),
         headers: {
-          'Authorization':
-          'Bearer $token', // Include the access token in the headers
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: json.encode({
@@ -128,25 +146,30 @@ class QuizPageState extends State<QuizPage> {
           "subtopic_id": widget.subtopicId,
           "material_id": null,
           "quiz_id": quizId,
+          "question_id": questionId, // Add question_id
           "score": score,
           "status": "completed",
           "activity_type": "quiz",
           "metadata": {
-            "time_spent": "5 minutes", // Example metadata
+            "time_spent": "5 minutes",
           },
           "timestamp": DateTime.now().toIso8601String(),
         }),
       );
       if (!mounted) {
-        return; // Ensure widget is still active before using context
+        return;
       }
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'Progress saved successfully'))),
+          SnackBar(
+              content: Text(L10n.getTranslatedText(
+                  context, 'Progress saved successfully'))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'Failed to save progress'))),
+          SnackBar(
+              content: Text(
+                  L10n.getTranslatedText(context, 'Failed to save progress'))),
         );
       }
     } else {
@@ -155,53 +178,59 @@ class QuizPageState extends State<QuizPage> {
       final response = await http.put(
         Uri.parse("$_baseUrl/api/progress/$progressId"),
         headers: {
-          'Authorization':
-          'Bearer $token', // Include the access token in the headers
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: json.encode({
           "status": "completed",
           "score": score,
           "metadata": {
-            "time_spent": "5 minutes", // Example metadata
+            "time_spent": "5 minutes",
           },
         }),
       );
       if (!mounted) {
-        return; // Ensure widget is still active before using context
+        return;
       }
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'Progress updated successfully'))),
+          SnackBar(
+              content: Text(L10n.getTranslatedText(
+                  context, 'Progress updated successfully'))),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'Failed to update progress'))),
+          SnackBar(
+              content: Text(L10n.getTranslatedText(
+                  context, 'Failed to update progress'))),
         );
       }
     }
   }
 
-  void _showResultPopup(bool isCorrect, String quizId) {
+  void _showResultPopup(
+      bool isCorrect, String submittedQuizId, String questionId) {
     // Show a dialog with the result and an icon
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissing by tapping outside
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
           backgroundColor: isCorrect ? Colors.green : Colors.red,
           content: Column(
-            mainAxisSize: MainAxisSize.min, // Minimize the height of the dialog
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isCorrect ? Icons.check : Icons.close,
                 color: Colors.white,
-                size: 48, // Icon size
+                size: 48,
               ),
-              const SizedBox(height: 16), // Spacing between icon and text
+              const SizedBox(height: 16),
               Text(
-                isCorrect ? L10n.getTranslatedText(context, 'Correct Answer!') : L10n.getTranslatedText(context, 'Wrong Answer!'),
+                isCorrect
+                    ? L10n.getTranslatedText(context, 'Correct Answer!')
+                    : L10n.getTranslatedText(context, 'Wrong Answer!'),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -210,7 +239,7 @@ class QuizPageState extends State<QuizPage> {
                 textAlign: TextAlign.center,
               ),
               if (isCorrect) ...[
-                const SizedBox(height: 8), // Spacing between text and bonus
+                const SizedBox(height: 8),
                 const Text(
                   "+1 🔥",
                   style: TextStyle(
@@ -226,23 +255,26 @@ class QuizPageState extends State<QuizPage> {
       },
     );
 
-    // Send progress after showing the result
-    _sendProgress(isCorrect, quizId);
-
     // Navigate after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (!mounted) {
-        return; // Ensure widget is still active before using context
-      }
-      Navigator.pop(context); // Close the dialog
-      if (_currentQuestionIndex < widget.quizzes.length - 1) {
-        setState(() {
-          isSubmitting = false;
-          _currentQuestionIndex++;
-          _selectedAnswer = null;
-        });
+    Future.delayed(const Duration(milliseconds: 225), () async {
+      if (!mounted) return;
+
+      Navigator.pop(context); // Close result dialog
+
+      // FIXED: Send progress BEFORE any state changes or callbacks
+      await _sendProgress(isCorrect, submittedQuizId, questionId);
+
+      // Reset quiz state
+      setState(() {
+        isSubmitting = false;
+        _currentQuestionIndex = 0;
+        _selectedAnswer = null;
+      });
+
+      // Trigger next material if exists, else complete quiz
+      if (widget.hasNextMaterial && widget.onSwipeToNext != null) {
+        widget.onSwipeToNext!(); // Trigger swipe to next material
       } else {
-        // All quizzes completed
         if (widget.onQuizComplete != null) {
           widget.onQuizComplete!();
         }
@@ -255,20 +287,6 @@ class QuizPageState extends State<QuizPage> {
     if (widget.quizzes.isEmpty) {
       return Scaffold(
         backgroundColor: Colors.white,
-        // appBar: AppBar(
-        //   backgroundColor: Colors.white,
-        //   elevation: 0,
-        //   automaticallyImplyLeading: false,
-        //   // title: const Text(
-        //   //   'Quiz',
-        //   //   style: TextStyle(
-        //   //     color: Colors.black,
-        //   //     fontWeight: FontWeight.bold,
-        //   //     fontSize: 18,
-        //   //   ),
-        //   // ),
-        //   centerTitle: true,
-        // ),
         body: Center(
           child: Text(
             L10n.getTranslatedText(context, 'No quizzes available'),
@@ -289,20 +307,6 @@ class QuizPageState extends State<QuizPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // appBar: AppBar(
-      //   backgroundColor: Colors.white,
-      //   elevation: 0,
-      //   automaticallyImplyLeading: false,
-      //   title: const Text(
-      //     'Quiz',
-      //     style: TextStyle(
-      //       color: Colors.black,
-      //       fontWeight: FontWeight.bold,
-      //       fontSize: 18,
-      //     ),
-      //   ),
-      //   centerTitle: true,
-      // ),
       body: Column(
         children: [
           Expanded(
@@ -343,7 +347,7 @@ class QuizPageState extends State<QuizPage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2, // Two options per row
                         crossAxisSpacing: 12, // Horizontal spacing
                         mainAxisSpacing: 12, // Vertical spacing
@@ -406,34 +410,46 @@ class QuizPageState extends State<QuizPage> {
                 onPressed: isSubmitting
                     ? null
                     : () {
-                  if (_selectedAnswer != null) {
-                    setState(() {
-                      isSubmitting = true;
-                    });
+                        if (_selectedAnswer != null) {
+                          setState(() {
+                            isSubmitting = true;
+                          });
 
-                    bool isCorrect = _selectedAnswer == correctOption;
-                    _showResultPopup(isCorrect, quizId);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                          content: Text(L10n.getTranslatedText(context, 'Please select an answer!'))),
-                    );
-                  }
-                },
+                          final submittedQuizId = quizId;
+                          final currentQuiz =
+                              widget.quizzes[_currentQuestionIndex];
+                          final questionId =
+                              currentQuiz["question_id"]?.toString() ??
+                                  currentQuiz["id"]?.toString() ??
+                                  "";
+                          final submittedQuestionIndex = _currentQuestionIndex;
+                          bool isCorrect = _selectedAnswer == correctOption;
+
+                          _showResultPopup(
+                              isCorrect, submittedQuizId, questionId);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(L10n.getTranslatedText(
+                                    context, 'Please select an answer!'))),
+                          );
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
-                  Colors.yellow, // Fixed color (won't change when disabled)
+                      Colors.yellow, // Fixed color (won't change when disabled)
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   // Ensures no overlay effect on disabled state
                   disabledBackgroundColor:
-                  Colors.yellow, // Keep the same as enabled state
+                      Colors.yellow, // Keep the same as enabled state
                   disabledForegroundColor: Colors.black, // Keep text color same
                 ),
                 child: Text(
-                  L10n.getTranslatedText(context, 'Submit'), // Keep the text fixed
+                  L10n.getTranslatedText(
+                      context, 'Submit'), // Keep the text fixed
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

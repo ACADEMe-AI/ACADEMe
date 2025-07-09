@@ -63,6 +63,7 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   bool _isTransitioning = false;
+  SwiperController? _swiperController;
   final Map<int, File> _cachedVideos = {};
   final Map<int, File> _cachedImages = {};
   final Map<int, File> _cachedAudios = {};
@@ -72,6 +73,13 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   List<int> _preloadQueue = [];
   final Map<int, VideoPlayerController> _preloadedControllers = {};
   final Map<int, ChewieController> _preloadedChewieControllers = {};
+  late AnimationController _celebrationController;
+  late Animation<double> _bounceAnimation;
+  late Animation<double> _scaleAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _rotateAnimation;
+  bool _showCelebration = false;
 
   @override
   void initState() {
@@ -95,6 +103,51 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+
+    _celebrationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _bounceAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _celebrationController,
+      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _celebrationController,
+      curve: const Interval(0.2, 0.8, curve: Curves.bounceOut),
+    ));
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _celebrationController,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOutBack),
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _celebrationController,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
+    ));
+
+    _rotateAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.1,
+    ).animate(CurvedAnimation(
+      parent: _celebrationController,
+      curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
+    ));
     _fadeAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
@@ -129,8 +182,12 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   }
 
   void _processPreloadQueue() async {
-    while (_preloadQueue.isNotEmpty) {
+    while (_preloadQueue.isNotEmpty && mounted) {
       final index = _preloadQueue.removeAt(0);
+
+      // Check if widget is still mounted before processing
+      if (!mounted) break;
+
       if (index < widget.materials.length) {
         final material = widget.materials[index];
         switch (material["type"]) {
@@ -143,23 +200,27 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
           case "image":
             if (!_cachedImages.containsKey(index)) {
               final file = await _preloadImage(material["content"]!);
-              if (file != null) _cachedImages[index] = file;
+              if (file != null && mounted) _cachedImages[index] = file;
             }
             break;
           case "audio":
             if (!_cachedAudios.containsKey(index)) {
               final file = await _preloadFile(material["content"]!);
-              if (file != null) _cachedAudios[index] = file;
+              if (file != null && mounted) _cachedAudios[index] = file;
             }
             break;
           case "document":
             if (!_cachedDocuments.containsKey(index)) {
               final file = await _preloadFile(material["content"]!);
-              if (file != null) _cachedDocuments[index] = file;
+              if (file != null && mounted) _cachedDocuments[index] = file;
             }
             break;
         }
       }
+
+      // Check mounted again before delay
+      if (!mounted) break;
+
       // Add small delay between preloads
       await Future.delayed(const Duration(milliseconds: 100));
     }
@@ -294,6 +355,9 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   }
 
   void _setupVideoController() async {
+    // Early return if widget is disposed
+    if (!mounted) return;
+
     // Dispose old controllers
     if (_videoController != null) {
       _videoController!.removeListener(_videoListener);
@@ -315,7 +379,9 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
         _preloadedChewieControllers.remove(_currentPage);
 
         // Start playing immediately
-        _videoController!.play();
+        if (mounted) {
+          _videoController!.play();
+        }
 
         // Add listener for video completion
         _videoController!.addListener(_videoListener);
@@ -325,38 +391,44 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
         debugPrint("✅ Using cached video file");
         final videoFile = _cachedVideos[_currentPage]!;
         _videoController = VideoPlayerController.file(videoFile);
-        await _videoController!.initialize();
 
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
-          autoPlay: true,
-          looping: false,
-          allowMuting: true,
-          allowFullScreen: true,
-          allowPlaybackSpeedChanging: true,
-        );
+        if (mounted) {
+          await _videoController!.initialize();
 
-        // Add listener for video completion
-        _videoController!.addListener(_videoListener);
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController!,
+            autoPlay: true,
+            looping: false,
+            allowMuting: true,
+            allowFullScreen: true,
+            allowPlaybackSpeedChanging: true,
+          );
+
+          // Add listener for video completion
+          _videoController!.addListener(_videoListener);
+        }
       }
       // Fallback to network
       else {
         debugPrint("⚠️ Using network video");
         final videoUrl = widget.materials[_currentPage]["content"]!;
         _videoController = VideoPlayerController.network(videoUrl);
-        await _videoController!.initialize();
 
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
-          autoPlay: true,
-          looping: false,
-          allowMuting: true,
-          allowFullScreen: true,
-          allowPlaybackSpeedChanging: true,
-        );
+        if (mounted) {
+          await _videoController!.initialize();
 
-        // Add listener for video completion
-        _videoController!.addListener(_videoListener);
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController!,
+            autoPlay: true,
+            looping: false,
+            allowMuting: true,
+            allowFullScreen: true,
+            allowPlaybackSpeedChanging: true,
+          );
+
+          // Add listener for video completion
+          _videoController!.addListener(_videoListener);
+        }
       }
     } else {
       // No video needed
@@ -364,7 +436,10 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
       _chewieController = null;
     }
 
-    if (mounted) setState(() {});
+    // Only call setState if widget is still mounted
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _videoListener() {
@@ -426,6 +501,7 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
       "subtopic_id": widget.subtopicId,
       "material_id": materialId,
       "quiz_id": null,
+      "question_id": null,
       "score": 0,
       "status": "completed",
       "activity_type": "reading",
@@ -488,22 +564,83 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   }
 
   Future<void> _nextMaterialOrQuiz() async {
-    if (_currentPage < widget.materials.length + widget.quizzes.length - 1) {
-      _currentPage++;
+    // Early return if widget is disposed
+    if (!mounted) return;
+
+    // Check if there are more materials/quizzes
+    final totalItems = widget.materials.length + widget.quizzes.length;
+    final hasNextPage = _currentPage < totalItems - 1;
+
+    if (hasNextPage) {
+      // Show celebration animation - check mounted before setState
+      if (mounted) {
+        setState(() {
+          _showCelebration = true;
+        });
+      }
+
+      // Start celebration animation
+      if (mounted) {
+        _celebrationController.forward();
+      }
+
+      // Wait for the celebration to play, then start page transition
+      await Future.delayed(const Duration(milliseconds: 1200));
+
+      // Check if still mounted after delay
+      if (!mounted) return;
+
+      // Force navigation to next page
+      final nextPage = _currentPage + 1;
 
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _currentPage = nextPage;
+          _isTransitioning = true;
+        });
       }
 
-      _setupVideoController();
-      _preloadAdjacentMaterials();
+      // Use Swiper controller to animate to next page
+      try {
+        if (_swiperController != null && mounted) {
+          _swiperController!.move(nextPage, animation: true);
+        }
+      } catch (e) {
+        debugPrint("Swiper controller error: $e");
+      }
 
-      // Send progress for the NEW current material
-      if (_currentPage < widget.materials.length) {
-        unawaited(_sendProgressToBackend());
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (mounted) {
+        setState(() {
+          _isTransitioning = false;
+        });
+      }
+
+      // Only proceed if still mounted
+      if (mounted) {
+        _setupVideoController();
+        _preloadAdjacentMaterials();
+
+        // Send progress for the NEW current material (only if it's a material, not a quiz)
+        if (_currentPage < widget.materials.length) {
+          unawaited(_sendProgressToBackend());
+        }
+
+        // Reset celebration animation for next time
+        if (mounted) {
+          _celebrationController.reset();
+        }
+
+        if (mounted) {
+          setState(() {
+            _showCelebration = false;
+          });
+        }
       }
     } else {
-      if (widget.onQuizComplete != null) {
+      // Last page - complete the entire flow
+      if (mounted && widget.onQuizComplete != null) {
         widget.onQuizComplete!();
       }
     }
@@ -517,6 +654,8 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
     _chewieController?.dispose();
     _audioPlayer.dispose();
     _fadeController.dispose();
+    _swiperController?.dispose();
+    _celebrationController.dispose();
     _preloadTimer?.cancel();
 
     // Dispose all preloaded controllers
@@ -566,6 +705,7 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return Swiper(
+                    controller: _swiperController ??= SwiperController(),
                     itemWidth: constraints.maxWidth,
                     itemHeight: constraints.maxHeight,
                     loop: false,
@@ -610,7 +750,7 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
                                 : {
                               "type": "quiz",
                               "quiz": widget.quizzes[index - widget.materials.length],
-                            }),
+                            }, index),
                           ),
                           if (_currentPage != index)
                             IgnorePointer(
@@ -640,6 +780,167 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
                                 ),
                               ),
                             ),
+                          if (_showCelebration)
+                            Positioned.fill(
+                              child: Container(
+                                color: Colors.black54,
+                                child: Center(
+                                  child: AnimatedBuilder(
+                                    animation: _celebrationController,
+                                    builder: (context, child) {
+                                      return Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          // Bouncing stars with continuous animation
+                                          Transform.scale(
+                                            scale: _bounceAnimation.value,
+                                            child: Container(
+                                              width: 100,
+                                              height: 100,
+                                              decoration: BoxDecoration(
+                                                color: Colors.yellow[600],
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.yellow.withOpacity(0.5),
+                                                    blurRadius: 20,
+                                                    spreadRadius: 5,
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Icon(
+                                                Icons.star,
+                                                color: Colors.white,
+                                                size: 50,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 30),
+                                          // Enhanced sliding text with continuous animations
+                                          SlideTransition(
+                                            position: _slideAnimation,
+                                            child: Transform.scale(
+                                              scale: _scaleAnimation.value *
+                                                  (1.0 + 0.1 * (1.0 + (_pulseAnimation.value - 1.0) *
+                                                      (1.0 + 0.5 * (_celebrationController.value * 10) % 1.0))),
+                                              child: Transform.rotate(
+                                                angle: _rotateAnimation.value *
+                                                    (1.0 + 0.3 * ((_celebrationController.value * 8) % 1.0 - 0.5)),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [
+                                                        Colors.green[400]!,
+                                                        Colors.green[600]!,
+                                                        Colors.green[400]!,
+                                                      ],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                      stops: [
+                                                        0.0,
+                                                        0.5 + 0.3 * ((_celebrationController.value * 5) % 1.0),
+                                                        1.0,
+                                                      ],
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(25),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.green.withOpacity(0.4),
+                                                        blurRadius: 15 + 5 * ((_celebrationController.value * 6) % 1.0),
+                                                        spreadRadius: 2,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.check_circle,
+                                                        color: Colors.white,
+                                                        size: 24,
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Text(
+                                                        'Great Job! 🌟',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 22,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 20),
+                                          // Animated confetti-like particles with continuous motion
+                                          ...List.generate(8, (index) {
+                                            final delay = index * 0.1;
+                                            final animationValue = (_celebrationController.value - delay).clamp(0.0, 1.0);
+                                            final continuousMotion = (_celebrationController.value * 4 + index) % 1.0;
+                                            return Transform.translate(
+                                              offset: Offset(
+                                                (index - 4) * 40.0 * animationValue +
+                                                    20 * continuousMotion * (index % 2 == 0 ? 1 : -1),
+                                                -30 * animationValue +
+                                                    10 * continuousMotion * (index % 3 == 0 ? 1 : -1),
+                                              ),
+                                              child: Transform.scale(
+                                                scale: animationValue * (0.8 + 0.4 * continuousMotion),
+                                                child: Transform.rotate(
+                                                  angle: continuousMotion * 6.28,
+                                                  child: Container(
+                                                    width: 18,
+                                                    height: 18,
+                                                    decoration: BoxDecoration(
+                                                      color: [
+                                                        Colors.red, Colors.blue, Colors.green,
+                                                        Colors.orange, Colors.purple, Colors.pink,
+                                                        Colors.teal, Colors.amber
+                                                      ][index],
+                                                      shape: BoxShape.circle,
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black26,
+                                                          blurRadius: 3,
+                                                          spreadRadius: 1,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          // if (_isTransitioning)
+                          //   Positioned.fill(
+                          //     child: AnimatedOpacity(
+                          //       opacity: 1.0,
+                          //       duration: const Duration(milliseconds: 300),
+                          //       child: Container(
+                          //         color: Colors.black54,
+                          //         child: Center(
+                          //           child: Text(
+                          //             L10n.getTranslatedText(context, 'Loading next material...'),
+                          //             style: const TextStyle(
+                          //               color: Colors.white,
+                          //               fontSize: 16,
+                          //             ),
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ),
+                          //   ),
                         ],
                       );
                     },
@@ -709,18 +1010,20 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildMaterial(Map<String, dynamic> material) {
+  // Add index parameter
+  Widget _buildMaterial(Map<String, dynamic> material, int index) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _getMaterialWidget(material),
+          child: _getMaterialWidget(material, index), // Pass index here
         ),
       ],
     );
   }
 
-  Widget _getMaterialWidget(Map<String, dynamic> material) {
+// Add index parameter
+  Widget _getMaterialWidget(Map<String, dynamic> material, int index) {
     switch (material["type"]) {
       case "text":
         return _buildTextContent(material["content"]!);
@@ -733,7 +1036,7 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
       case "document":
         return _buildDocumentContent(material["content"]!);
       case "quiz":
-        return _buildQuizContent(material["quiz"]);
+        return _buildQuizContent(material["quiz"], index); // Pass index here
       default:
         return Center(child: Text(L10n.getTranslatedText(context, 'Unsupported content type')));
     }
@@ -1284,16 +1587,22 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildQuizContent(Map<String, dynamic> quiz) {
+  Widget _buildQuizContent(Map<String, dynamic> quiz, int index) {
     return buildStyledContainer(
       QuizPage(
         quizzes: [quiz],
         onQuizComplete: () {
           _nextMaterialOrQuiz();
         },
+        // ADD THIS: Pass swipe callback and next material status
+        onSwipeToNext: () {
+          _nextMaterialOrQuiz();
+        },
         courseId: widget.courseId,
         topicId: widget.topicId,
         subtopicId: widget.subtopicId,
+        // CRITICAL: Determine if next material exists
+        hasNextMaterial: index < (widget.materials.length + widget.quizzes.length - 1),
       ),
     );
   }
