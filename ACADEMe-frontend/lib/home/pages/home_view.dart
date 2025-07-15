@@ -11,28 +11,231 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
-import 'package:ACADEMe/home/pages/topic_view.dart'; // Import the TopicViewScreen
+import 'package:ACADEMe/home/pages/topic_view.dart';
 import 'package:ACADEMe/started/pages/class.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/askme_button.dart';
 import 'ask_me.dart';
+import 'package:provider/provider.dart';
+import 'package:ACADEMe/localization/language_provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomeCourseDataCache {
+  static final HomeCourseDataCache _instance = HomeCourseDataCache._internal();
+  factory HomeCourseDataCache() => _instance;
+  HomeCourseDataCache._internal();
+
+  List<Map<String, dynamic>>? _cachedCourses;
+  String? _cachedLanguage;
+  DateTime? _lastFetchTime;
+
+  static const Duration _cacheValidDuration = Duration(minutes: 30);
+
+  bool isCacheValid(String language) {
+    if (_lastFetchTime == null || _cachedCourses == null || _cachedLanguage != language) {
+      return false;
+    }
+    return DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration;
+  }
+
+  List<Map<String, dynamic>>? getCachedCourses(String language) {
+    if (isCacheValid(language)) {
+      return _cachedCourses;
+    }
+    return null;
+  }
+
+  void setCachedCourses(List<Map<String, dynamic>> courses, String language) {
+    _cachedCourses = courses;
+    _cachedLanguage = language;
+    _lastFetchTime = DateTime.now();
+  }
+
+  void clearCache() {
+    _cachedCourses = null;
+    _cachedLanguage = null;
+    _lastFetchTime = null;
+  }
+}
+
+class HomePage extends StatefulWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onCourseTap;
-  final int selectedIndex; // Add selectedIndex
-  final PageController _pageController = PageController();
-  final ValueNotifier<bool> _showSearchUI =
-  ValueNotifier(false); // Use ValueNotifier
-  List<dynamic> courses = [];
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final int selectedIndex;
 
-  HomePage({
+  const HomePage({
     super.key,
     required this.onProfileTap,
     required this.onCourseTap,
-    required this.selectedIndex, // Add selectedIndex
+    required this.selectedIndex,
   });
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final PageController _pageController = PageController();
+  final ValueNotifier<bool> _showSearchUI = ValueNotifier(false);
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final HomeCourseDataCache _cache = HomeCourseDataCache();
+  List<Map<String, dynamic>> _courses = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCourses();
+  }
+
+  Future<void> _initializeCourses() async {
+    if (!mounted) return;
+
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final currentLanguage = languageProvider.locale.languageCode;
+
+    List<Map<String, dynamic>>? cachedCourses = _cache.getCachedCourses(currentLanguage);
+    if (cachedCourses != null) {
+      setState(() {
+        _courses = cachedCourses;
+      });
+      // Still fetch fresh data in background to update progress
+      _fetchCourses(currentLanguage);
+      return;
+    }
+
+    await _fetchCourses(currentLanguage);
+  }
+
+  Future<void> _refreshCourses() async {
+    if (!mounted) return;
+
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final currentLanguage = languageProvider.locale.languageCode;
+
+    // Clear cache to force fresh data
+    _cache.clearCache();
+    await _fetchCourses(currentLanguage);
+  }
+
+  Future<void> _fetchCourses(String language) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
+    final String? token = await _secureStorage.read(key: 'access_token');
+
+    if (token == null) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse("$backendUrl/api/courses/?target_language=$language"),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        List<Map<String, dynamic>> coursesWithProgress = [];
+
+        for (var course in data) {
+          String courseId = course["id"].toString();
+          int totalTopics = await _getTotalTopics(courseId);
+          int completedCount = await _getCompletedTopicsCount(courseId);
+          double progress = totalTopics > 0 ? completedCount / totalTopics : 0.0;
+
+          coursesWithProgress.add({
+            "id": courseId,
+            "title": course["title"],
+            "progress": progress,
+            "completedModules": completedCount,
+            "totalModules": totalTopics,
+          });
+        }
+
+        _cache.setCachedCourses(coursesWithProgress, language);
+
+        if (mounted) {
+          setState(() {
+            _courses = coursesWithProgress;
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<int> _getTotalTopics(String courseId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('total_topics_$courseId') ?? 0;
+  }
+
+  Future<int> _getCompletedTopicsCount(String courseId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
+    return completedTopics.where((key) => key.startsWith('$courseId|')).length;
+  }
+
+  Future<void> _fetchAndStoreUserDetails() async {
+    try {
+      final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
+      final String? token = await _secureStorage.read(key: 'access_token');
+
+      if (token == null) return;
+
+      final response = await http.get(
+        Uri.parse("$backendUrl/api/users/me"),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        await _secureStorage.write(key: 'name', value: data['name']);
+        await _secureStorage.write(key: 'email', value: data['email']);
+        await _secureStorage.write(key: 'student_class', value: data['student_class']);
+        await _secureStorage.write(key: 'photo_url', value: data['photo_url']);
+      }
+    } catch (e) {
+      debugPrint("Error fetching user details: $e");
+    }
+  }
+
+  Future<void> _checkAndShowClassSelection() async {
+    final String? studentClass = await _secureStorage.read(key: 'student_class');
+    if (studentClass == null || int.tryParse(studentClass) == null ||
+        int.parse(studentClass) < 1 || int.parse(studentClass) > 12) {
+      if (!mounted) return;
+      await showClassSelectionSheet(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,106 +257,8 @@ class HomePage extends StatelessWidget {
 
   final List<Color?> repeatingColors = [Colors.green[100], Colors.pink[100]];
 
-  Future<List<Map<String, dynamic>>> _fetchCourses() async {
-    final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
-    final String? token = await _secureStorage.read(key: 'access_token');
-
-    if (token == null) {
-      throw Exception("❌ No access token found");
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final String targetLanguage = prefs.getString('language') ?? 'en';
-
-    final response = await http.get(
-      Uri.parse("$backendUrl/api/courses/?target_language=$targetLanguage"),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      List<Map<String, dynamic>> coursesWithProgress = [];
-
-      for (var course in data) {
-        String courseId = course["id"].toString();
-        int totalTopics = prefs.getInt('total_topics_$courseId') ?? 0;
-        List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
-        int completedCount = completedTopics.where((key) => key.startsWith('$courseId|')).length;
-        double progress = totalTopics > 0 ? completedCount / totalTopics : 0.0;
-
-        coursesWithProgress.add({
-          "id": courseId,
-          "title": course["title"],
-          "progress": progress,
-          "completedModules": completedCount,
-          "totalModules": totalTopics,
-        });
-      }
-
-      return coursesWithProgress;
-    } else {
-      throw Exception("❌ Failed to fetch courses: ${response.statusCode}");
-    }
-  }
-
-  Future<void> _fetchAndStoreUserDetails() async {
-    try {
-      final String backendUrl =
-          dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
-      final String? token = await _secureStorage.read(key: 'access_token');
-
-      if (token == null) {
-        throw Exception("❌ No access token found");
-      }
-
-      final response = await http.get(
-        Uri.parse("$backendUrl/api/users/me"),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(
-            utf8.decode(response.bodyBytes)); // Ensure UTF-8 encoding
-
-        // Store user details in secure storage
-        await _secureStorage.write(key: 'name', value: data['name']);
-        await _secureStorage.write(key: 'email', value: data['email']);
-        await _secureStorage.write(
-            key: 'student_class', value: data['student_class']);
-        await _secureStorage.write(key: 'photo_url', value: data['photo_url']);
-
-        debugPrint("✅ User details stored successfully");
-      } else {
-        throw Exception(
-            "❌ Failed to fetch user details: ${response.statusCode}");
-      }
-    } catch (e) {
-      debugPrint("❌ Error fetching user details: $e");
-    }
-  }
-
-  Future<void> _checkAndShowClassSelection(BuildContext context) async {
-    final String? studentClass =
-    await _secureStorage.read(key: 'student_class');
-
-    if (studentClass == null ||
-        int.tryParse(studentClass) == null ||
-        int.parse(studentClass) < 1 ||
-        int.parse(studentClass) > 12) {
-      if (!context.mounted) return; // ✅ Ensure context is valid before use
-      await showClassSelectionSheet(context);
-    }
-  }
-
   Widget _buildSearchUI(BuildContext context) {
-    // Hide the status bar when the search UI is open
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
     ));
@@ -164,12 +269,10 @@ class HomePage extends StatelessWidget {
 
     Future<void> loadCourses() async {
       try {
-        List<dynamic> courses = await _fetchCourses();
-        allCourses =
-            courses.map((course) => course["title"].toString()).toList();
+        allCourses = _courses.map((course) => course["title"].toString()).toList();
         searchResults.value = allCourses;
       } catch (e) {
-        debugPrint("❌ Error fetching courses: $e");
+        debugPrint("Error loading courses: $e");
       }
     }
 
@@ -183,13 +286,12 @@ class HomePage extends StatelessWidget {
           .toList();
     }
 
-    loadCourses(); // Load courses on UI open
+    loadCourses();
 
-    // Only change: Wrapped the existing GestureDetector with WillPopScope
     return WillPopScope(
       onWillPop: () async {
         _showSearchUI.value = false;
-        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
           statusBarColor: Colors.transparent,
           statusBarIconBrightness: Brightness.light,
         ));
@@ -198,7 +300,7 @@ class HomePage extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           _showSearchUI.value = false;
-          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,
             statusBarIconBrightness: Brightness.light,
           ));
@@ -220,7 +322,7 @@ class HomePage extends StatelessWidget {
                   onChanged: searchCourses,
                   decoration: InputDecoration(
                     hintText: "${L10n.getTranslatedText(context, 'Search')}...",
-                    prefixIcon: Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(26.0),
                       borderSide: BorderSide.none,
@@ -233,56 +335,48 @@ class HomePage extends StatelessWidget {
               Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           L10n.getTranslatedText(context, 'Popular Searches'),
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         Wrap(
                           spacing: 8.0,
                           children: [
                             ActionChip(
                               label: Text(L10n.getTranslatedText(
                                   context, 'Machine Learning')),
-                              onPressed: () {
-                                debugPrint("Machine Learning clicked");
-                              },
+                              onPressed: () {},
                             ),
                             ActionChip(
                               label: Text(L10n.getTranslatedText(
                                   context, 'Data Science')),
-                              onPressed: () {
-                                debugPrint("Data Science clicked");
-                              },
+                              onPressed: () {},
                             ),
                             ActionChip(
                               label: Text(
                                   L10n.getTranslatedText(context, 'Flutter')),
-                              onPressed: () {
-                                debugPrint("Flutter clicked");
-                              },
+                              onPressed: () {},
                             ),
                             ActionChip(
                               label: Text(L10n.getTranslatedText(
                                   context, 'Linear Algebra')),
-                              onPressed: () {
-                                debugPrint("Linear Algebra clicked");
-                              },
+                              onPressed: () {},
                             ),
                           ],
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Text(
                           L10n.getTranslatedText(context, 'Search Results'),
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         ValueListenableBuilder<List<String>>(
                           valueListenable: searchResults,
                           builder: (context, results, _) {
@@ -290,32 +384,30 @@ class HomePage extends StatelessWidget {
                               children: results
                                   .map(
                                     (title) => ListTile(
-                                  leading: Icon(Icons.book),
+                                  leading: const Icon(Icons.book),
                                   title: Text(title),
-                                  onTap: () {
-                                    debugPrint("Selected: $title");
-                                  },
+                                  onTap: () {},
                                 ),
                               )
                                   .toList(),
                             );
                           },
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
                         Text(
                           L10n.getTranslatedText(context, 'Recent Searches'),
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 10),
                         ListTile(
-                          leading: Icon(Icons.history),
+                          leading: const Icon(Icons.history),
                           title: Text(L10n.getTranslatedText(
                               context, 'Advanced Python')),
                           onTap: () {},
                         ),
                         ListTile(
-                          leading: Icon(Icons.history),
+                          leading: const Icon(Icons.history),
                           title: Text(L10n.getTranslatedText(
                               context, 'Cyber Security')),
                           onTap: () {},
@@ -334,21 +426,16 @@ class HomePage extends StatelessWidget {
 
   Widget _buildMainUI(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-
-    // GlobalKey for controlling the Scaffold state (drawer)
     final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
     TextEditingController messageController = TextEditingController();
 
-    // Fetch and store user details when the page loads
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _fetchAndStoreUserDetails();
-
-      if (!context.mounted) return; // ✅ Ensure context is valid
-      await _checkAndShowClassSelection(context);
+      if (mounted) await _checkAndShowClassSelection();
     });
 
     return ASKMeButton(
-      showFAB: true, // Show floating action button
+      showFAB: true,
       onFABPressed: () {
         Navigator.push(
           context,
@@ -357,45 +444,42 @@ class HomePage extends StatelessWidget {
       },
       child: WillPopScope(
         onWillPop: () async {
-          // Exit app when back button is pressed
           SystemNavigator.pop();
           return false;
         },
         child: Scaffold(
-          key: scaffoldKey, // Assign the scaffold key
+          key: scaffoldKey,
           appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(105), // Increased height
+            preferredSize: const Size.fromHeight(105),
             child: AppBar(
               backgroundColor: AcademeTheme.appColor,
               automaticallyImplyLeading: false,
               elevation: 0,
-              leading: Container(), // Remove default hamburger
+              leading: Container(),
               flexibleSpace: Padding(
-                padding:
-                const EdgeInsets.only(top: 15.0), // Adjust top padding here
+                padding: const EdgeInsets.only(top: 15.0),
                 child: FutureBuilder<Map<String, String?>>(
                   future: _getUserDetails(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     } else if (snapshot.hasError) {
-                      return Center(child: Text("Error loading user details"));
+                      return const Center(child: Text("Error loading user details"));
                     } else {
                       final String name = snapshot.data?['name'] ?? 'User';
                       final String photoUrl = snapshot.data?['photo_url'] ??
                           'assets/design_course/userImage.png';
                       return getAppBarUI(
-                        onProfileTap,
+                        widget.onProfileTap,
                             () {
-                          scaffoldKey.currentState
-                              ?.openDrawer(); // Open drawer when custom button is clicked
+                          scaffoldKey.currentState?.openDrawer();
                         },
-                        onCourseTap,
+                        widget.onCourseTap,
                         context,
                         name,
                         photoUrl,
                         _pageController,
-                        selectedIndex,
+                        widget.selectedIndex,
                       );
                     }
                   },
@@ -403,50 +487,39 @@ class HomePage extends StatelessWidget {
               ),
             ),
           ),
-          // Use drawer for left-side drawer
-          backgroundColor:
-          AcademeTheme.appColor, // Set background same as AppBar
-
-          body: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24), // Rounded upper edges
-                topRight: Radius.circular(24),
+          backgroundColor: AcademeTheme.appColor,
+          body: RefreshIndicator(
+            onRefresh: _refreshCourses,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
               ),
-            ),
-            child: Column(
-              // Use Column instead of SingleChildScrollView
-              children: [
-                Expanded(
-                  child: ListView(
-                    // Replace SingleChildScrollView with ListView
-                    padding: const EdgeInsets.all(16.0),
-                    children: [
-                      // Search Bar
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.all(16.0),
+                      children: [
                       Padding(
-                        padding:
-                        const EdgeInsets.only(top: 10.0), // Upper padding
+                        padding: const EdgeInsets.only(top: 10.0),
                         child: TextField(
-                          onTap: () {
-                            _showSearchUI.value = true; // Update state properly
-                          },
+                          onTap: () => _showSearchUI.value = true,
                           decoration: InputDecoration(
                             hintText: L10n.getTranslatedText(context, 'search'),
                             prefixIcon: Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 12.0, right: 8.0), // Spacing
+                              padding: const EdgeInsets.only(left: 12.0, right: 8.0),
                               child: Transform.rotate(
-                                angle:
-                                -1.57, // Rotate 90 degrees counterclockwise
-                                child: const Icon(
-                                    Icons.tune), // Rotated Tune Icon (Vertical)
+                                angle: -1.57,
+                                child: const Icon(Icons.tune),
                               ),
                             ),
                             suffixIcon: const Padding(
                               padding: EdgeInsets.only(right: 12.0),
-                              child: Icon(
-                                  Icons.search), // Search icon on the right
+                              child: Icon(Icons.search),
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(26.0),
@@ -457,25 +530,22 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
                       Container(
                         padding: const EdgeInsets.all(16.0),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12.0),
                           border: Border.all(
-                            color: Colors.grey.shade300, // Border color
-                            width: 1.5, // Border width
+                            color: Colors.grey.shade300,
+                            width: 1.5,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color:
-                              Colors.black.withAlpha(30), // Subtle shadow
+                              color: Colors.black.withAlpha(30),
                               blurRadius: 8,
                               spreadRadius: 2,
-                              offset: Offset(0, 4),
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -484,44 +554,35 @@ class HomePage extends StatelessWidget {
                           children: [
                             Row(
                               children: [
-                                // Circular Image Container
                                 Container(
                                   width: 60,
                                   height: 60,
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: Colors.black,
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.all(
-                                        7), // Adjust padding to reduce image size
+                                    padding: const EdgeInsets.all(7),
                                     child: ClipOval(
                                       child: Image.asset(
                                         "assets/icons/ASKMe.png",
-                                        fit: BoxFit
-                                            .contain, // Ensures the image fits within the padding
+                                        fit: BoxFit.contain,
                                       ),
                                     ),
                                   ),
                                 ),
-
                                 const SizedBox(width: 12),
-
-                                // Flexible Texts
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         L10n.getTranslatedText(
                                             context, 'Your Personal Tutor'),
                                         style: TextStyle(
-                                          color:
-                                          Color.fromARGB(255, 10, 10, 10),
+                                          color: const Color.fromARGB(255, 10, 10, 10),
                                           fontSize: width * 0.06,
-                                          fontWeight:
-                                          FontWeight.w800, // Extra bold
+                                          fontWeight: FontWeight.w800,
                                           fontFamily: "Roboto",
                                         ),
                                       ),
@@ -529,7 +590,7 @@ class HomePage extends StatelessWidget {
                                       Text(
                                         "ASKMe",
                                         style: TextStyle(
-                                          color: Color.fromARGB(255, 9, 9, 9),
+                                          color: const Color.fromARGB(255, 9, 9, 9),
                                           fontSize: 16,
                                         ),
                                       ),
@@ -539,45 +600,38 @@ class HomePage extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 16),
-
-                            // Input Field with Send Icon
                             Row(
                               children: [
                                 Expanded(
                                   child: SizedBox(
-                                    height: 40, // Adjust this value as needed
+                                    height: 40,
                                     child: TextField(
                                       controller: messageController,
                                       decoration: InputDecoration(
-                                        contentPadding: EdgeInsets.symmetric(
-                                            vertical: 10,
-                                            horizontal: 12), // Adjust padding
+                                        contentPadding: const EdgeInsets.symmetric(
+                                            vertical: 10, horizontal: 12),
                                         hintText: L10n.getTranslatedText(
                                             context, 'ASKMe Anything...'),
-                                        hintStyle:
-                                        TextStyle(color: Colors.grey[600]),
+                                        hintStyle: TextStyle(color: Colors.grey[600]),
                                         filled: true,
                                         fillColor: Colors.white,
                                         border: OutlineInputBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(8),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade400,
                                             width: 1.5,
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: Colors.grey.shade300,
                                             width: 1.5,
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius:
-                                          BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: const BorderSide(
                                             color: Colors.blue,
                                             width: 2,
                                           ),
@@ -586,28 +640,22 @@ class HomePage extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-
                                 const SizedBox(width: 8),
-
-                                // Send Icon Outside
                                 Transform.rotate(
-                                  angle: -pi / 4, // Rotates 45° to the left
+                                  angle: -pi / 4,
                                   child: IconButton(
                                     icon: const Icon(Icons.send,
                                         color: Colors.blue, size: 24),
                                     onPressed: () {
-                                      String message = messageController.text
-                                          .trim(); // ✅ Get typed message
+                                      String message = messageController.text.trim();
                                       if (message.isNotEmpty) {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                AskMe(initialMessage: message),
+                                            builder: (context) => AskMe(initialMessage: message),
                                           ),
                                         );
-                                        messageController
-                                            .clear(); // Optional: Clear after sending
+                                        messageController.clear();
                                       }
                                     },
                                   ),
@@ -617,10 +665,7 @@ class HomePage extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
-                      // My Progress Section
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -630,11 +675,9 @@ class HomePage extends StatelessWidget {
                           );
                         },
                         child: Card(
-                          color: Colors
-                              .indigoAccent, // Background color similar to the image
+                          color: Colors.indigoAccent,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12.0), // Rounded edges
+                            borderRadius: BorderRadius.circular(12.0),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
@@ -642,7 +685,6 @@ class HomePage extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Left Section: Title & Subtitle
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -650,25 +692,23 @@ class HomePage extends StatelessWidget {
                                     Text(
                                       L10n.getTranslatedText(
                                           context, 'My Progress'),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       L10n.getTranslatedText(
                                           context, 'Track your progress'),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 14,
                                         color: Colors.white70,
                                       ),
                                     ),
                                   ],
                                 ),
-
-                                // Right Section: Fire Icon with Badge
                                 Stack(
                                   alignment: Alignment.center,
                                   children: [
@@ -677,8 +717,7 @@ class HomePage extends StatelessWidget {
                                       height: 50,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: const Color.fromARGB(255, 247,
-                                            177, 55), // Fire icon background
+                                        color: const Color.fromARGB(255, 247, 177, 55),
                                       ),
                                       child: const Icon(
                                           Icons.local_fire_department,
@@ -692,8 +731,7 @@ class HomePage extends StatelessWidget {
                                             horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius:
-                                          BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: const Text(
                                           "420",
@@ -710,297 +748,189 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
-                      // Continue Learning Section
-                      FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _fetchCourses(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
-                          } else if (snapshot.hasError) {
-                            return Center(
-                              child: Text(
-                                "❌ Error: ${snapshot.error}",
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            );
-                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const SizedBox.shrink(); // Hide if no courses
-                          }
-
-                          // Filter courses: progress > 0% and < 100%
-                          final ongoingCourses = snapshot.data!.where((course) =>
-                          course["progress"] > 0 && course["progress"] < 1
-                          ).toList();
-
-                          if (ongoingCourses.isEmpty) {
-                            return const SizedBox.shrink(); // Hide section if no ongoing courses
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    L10n.getTranslatedText(context, 'Continue Learning'),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: onCourseTap,
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    child: Text(
-                                      L10n.getTranslatedText(context, 'See All'),
-                                      style: TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 17,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Column(
-                                children: ongoingCourses.map((course) {
-                                  return Column(
-                                    children: [
-                                      learningCard(
-                                        course["title"],
-                                        course["completedModules"],
-                                        course["totalModules"],
-                                        (course["progress"] * 100).toInt(),
-                                        predefinedColors.length > ongoingCourses.indexOf(course)
-                                            ? predefinedColors[ongoingCourses.indexOf(course)]!
-                                            : Colors.primaries[ongoingCourses.indexOf(course) %
-                                            Colors.primaries.length][100]!,
-                                            () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => TopicViewScreen(
-                                                courseId: course["id"],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-
+                      _buildContinueLearningSection(context),
+                      const SizedBox(height: 20),
                       Container(
+                        padding: const EdgeInsets.all(0.0),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.transparent,
+                          // borderRadius: BorderRadius.circular(12.0),
+                          // border: Border.all(
+                          //   color: Colors.grey.shade300,
+                          //   width: 1.5,
+                          // ),
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: Colors.black.withAlpha(30),
+                          //     blurRadius: 8,
+                          //     spreadRadius: 2,
+                          //     offset: const Offset(0, 4),
+                          //   ),
+                          // ],
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // **Swipeable Banner**
                             buildSwipeableBanner(_pageController, context),
-
-                            SizedBox(height: 16),
-
-                            // **All Courses Section with "See All" Button**
+                            const SizedBox(height: 16),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 0),
+                              padding: const EdgeInsets.symmetric(horizontal: 0),
                               child: Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     L10n.getTranslatedText(
                                         context, 'All Courses'),
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                        fontSize: 18, fontWeight: FontWeight.bold),
                                   ),
                                   TextButton(
-                                    onPressed: () {
-                                      onCourseTap();
-                                    },
+                                    onPressed: widget.onCourseTap,
                                     child: Text(
                                       L10n.getTranslatedText(
                                           context, 'See All'),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 17, color: Colors.blue),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-
-                            SizedBox(height: 0),
-
-                            // **Course Boxes - Two Per Row**
+                            const SizedBox(height: 0),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 1),
                               child: Column(
                                 children: [
                                   Row(
                                     children: [
                                       Expanded(
                                         child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 6,
-                                              horizontal: 10), // Reduced height
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 6, horizontal: 10),
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                            BorderRadius.circular(22),
+                                            borderRadius: BorderRadius.circular(22),
                                             border: Border.all(
                                                 color: Colors.red, width: 1.5),
                                           ),
                                           child: Row(
                                             children: [
                                               Container(
-                                                padding: EdgeInsets.all(
-                                                    4), // Smaller circle
+                                                padding: const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
-                                                  color:
-                                                  Colors.red.withAlpha(50),
+                                                  color: Colors.red.withAlpha(50),
                                                 ),
-                                                child: Icon(Icons.book,
-                                                    size: 16,
-                                                    color: Colors.red),
+                                                child: const Icon(Icons.book,
+                                                    size: 16, color: Colors.red),
                                               ),
-                                              SizedBox(width: 10),
+                                              const SizedBox(width: 10),
                                               Text(
                                                   L10n.getTranslatedText(
                                                       context, 'English'),
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                      FontWeight.w500)),
+                                                      fontWeight: FontWeight.w500)),
                                             ],
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: Container(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                               vertical: 6, horizontal: 10),
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                            BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(20),
                                             border: Border.all(
-                                                color: Colors.orange,
-                                                width: 1.5),
+                                                color: Colors.orange, width: 1.5),
                                           ),
                                           child: Row(
                                             children: [
                                               Container(
-                                                padding: EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
-                                                  color: Colors.orange
-                                                      .withAlpha(50),
+                                                  color: Colors.orange.withAlpha(50),
                                                 ),
-                                                child: Icon(Icons.calculate,
-                                                    size: 16,
-                                                    color: Colors.orange),
+                                                child: const Icon(Icons.calculate,
+                                                    size: 16, color: Colors.orange),
                                               ),
-                                              SizedBox(width: 10),
+                                              const SizedBox(width: 10),
                                               Text(
                                                   L10n.getTranslatedText(
                                                       context, 'Maths'),
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                      FontWeight.w500)),
+                                                      fontWeight: FontWeight.w500)),
                                             ],
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   Row(
                                     children: [
                                       Expanded(
                                         child: Container(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                               vertical: 6, horizontal: 10),
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                            BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(20),
                                             border: Border.all(
                                                 color: Colors.blue, width: 1.5),
                                           ),
                                           child: Row(
                                             children: [
                                               Container(
-                                                padding: EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
-                                                  color:
-                                                  Colors.blue.withAlpha(50),
+                                                  color: Colors.blue.withAlpha(50),
                                                 ),
-                                                child: Icon(Icons.language,
-                                                    size: 16,
-                                                    color: Colors.blue),
+                                                child: const Icon(Icons.language,
+                                                    size: 16, color: Colors.blue),
                                               ),
-                                              SizedBox(width: 10),
+                                              const SizedBox(width: 10),
                                               Text(
                                                   L10n.getTranslatedText(
                                                       context, 'Language'),
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                      FontWeight.w500)),
+                                                      fontWeight: FontWeight.w500)),
                                             ],
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      const SizedBox(width: 8),
                                       Expanded(
                                         child: Container(
-                                          padding: EdgeInsets.symmetric(
+                                          padding: const EdgeInsets.symmetric(
                                               vertical: 6, horizontal: 10),
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                            BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(20),
                                             border: Border.all(
-                                                color: Colors.green,
-                                                width: 1.5),
+                                                color: Colors.green, width: 1.5),
                                           ),
                                           child: Row(
                                             children: [
                                               Container(
-                                                padding: EdgeInsets.all(4),
+                                                padding: const EdgeInsets.all(4),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
-                                                  color: Colors.green
-                                                      .withAlpha(50),
+                                                  color: Colors.green.withAlpha(50),
                                                 ),
-                                                child: Icon(Icons.science,
-                                                    size: 16,
-                                                    color: Colors.green),
+                                                child: const Icon(Icons.science,
+                                                    size: 16, color: Colors.green),
                                               ),
-                                              SizedBox(width: 10),
+                                              const SizedBox(width: 10),
                                               Text(
                                                   L10n.getTranslatedText(
                                                       context, 'Biology'),
-                                                  style: TextStyle(
+                                                  style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight:
-                                                      FontWeight.w500)),
+                                                      fontWeight: FontWeight.w500)),
                                             ],
                                           ),
                                         ),
@@ -1010,32 +940,26 @@ class HomePage extends StatelessWidget {
                                 ],
                               ),
                             ),
-
-                            SizedBox(height: 16),
-
-                            // **My Courses Section**
+                            const SizedBox(height: 16),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 5),
                               child: Row(
-                                mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     L10n.getTranslatedText(
                                         context, 'My Courses'),
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () {
-                                      onCourseTap();
-                                    },
+                                    onPressed: widget.onCourseTap,
                                     child: Text(
                                       L10n.getTranslatedText(
                                           context, 'See All'),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 16,
                                         color: Colors.blue,
                                       ),
@@ -1044,126 +968,79 @@ class HomePage extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            SizedBox(height: 0),
-                            FutureBuilder<List<dynamic>>(
-                              future: _fetchCourses(),
-                              builder: (context, snapshot) {
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Center(
-                                      child: CircularProgressIndicator());
-                                } else if (snapshot.hasError) {
-                                  return Center(
-                                    child: Text(
-                                      "❌ Error: ${snapshot.error}",
-                                      style: TextStyle(color: Colors.red),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  );
-                                } else if (!snapshot.hasData ||
-                                    snapshot.data!.isEmpty) {
-                                  return const Center(
-                                      child: Text("No courses available"));
-                                } else {
-                                  final courses = snapshot.data!;
-
-                                  return GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                    const NeverScrollableScrollPhysics(),
-                                    gridDelegate:
-                                    SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2, // 2 cards per row
-                                      crossAxisSpacing: 8,
-                                      mainAxisSpacing: 8,
-                                      childAspectRatio:
-                                      1.2, // Adjust aspect ratio for better layout
-                                    ),
-                                    itemCount: courses.length,
-                                    itemBuilder: (context, index) {
-                                      return CourseCard(
-                                        courses[index]["title"],
-                                        "${(index + 10) * 2} ${L10n.getTranslatedText(context, 'Lessons')}",
-                                        repeatingColors[
-                                        index % repeatingColors.length]!,
-                                        onTap: () {
-                                          // Debug log to confirm the courseId
-                                          debugPrint(
-                                              "Course ID: ${courses[index]["id"]}");
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  TopicViewScreen(
-                                                    courseId: courses[index]
-                                                    ["id"], // Pass the courseId
-                                                  ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
-                                }
+                            const SizedBox(height: 0),
+                            _isLoading
+                                ? const Center(child: CircularProgressIndicator())
+                                : GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                childAspectRatio: 1.2,
+                              ),
+                              itemCount: _courses.length,
+                              itemBuilder: (context, index) {
+                                return CourseCard(
+                                  _courses[index]["title"],
+                                  "${(index + 10) * 2} ${L10n.getTranslatedText(context, 'Lessons')}",
+                                  repeatingColors[
+                                  index % repeatingColors.length]!,
+                                  onTap: () async {
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TopicViewScreen(
+                                          courseId: _courses[index]["id"],
+                                        ),
+                                      ),
+                                    );
+                                    // Refresh courses when returning from topic view
+                                    _refreshCourses();
+                                  },
+                                );
                               },
                             ),
-
-                            SizedBox(height: 16),
-
-                            // **Recommended Section**
+                            const SizedBox(height: 16),
                             Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: Text(
                                 L10n.getTranslatedText(context, 'Recommended'),
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 4),
-                                child: SizedBox(
-                                  height: 160,
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: CourseCard(
-                                          L10n.getTranslatedText(
-                                              context, 'Marketing'),
-                                          "9 ${L10n.getTranslatedText(context, 'Lessons')}",
-                                          Colors.pink[100]!,
-                                          onTap: () {
-                                            // Navigate to TopicViewScreen with a placeholder courseId
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder: (context) => TopicViewScreen(courseId: 1), // Replace with actual courseId
-                                            //   ),
-                                            // );
-                                          },
-                                        ),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: SizedBox(
+                                height: 160,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: CourseCard(
+                                        L10n.getTranslatedText(
+                                            context, 'Marketing'),
+                                        "9 ${L10n.getTranslatedText(context, 'Lessons')}",
+                                        Colors.pink[100]!,
+                                        onTap: () {},
                                       ),
-                                      SizedBox(width: 8),
-                                      Expanded(
-                                        child: CourseCard(
-                                          L10n.getTranslatedText(
-                                              context, 'Trading'),
-                                          "14 ${L10n.getTranslatedText(context, 'Lessons')}",
-                                          Colors.green[100]!,
-                                          onTap: () {
-                                            // Navigate to TopicViewScreen with a placeholder courseId
-                                            // Navigator.push(
-                                            //   context,
-                                            //   MaterialPageRoute(
-                                            //     builder: (context) => TopicViewScreen(courseId: 2), // Replace with actual courseId
-                                            //   ),
-                                            // );
-                                          },
-                                        ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: CourseCard(
+                                        L10n.getTranslatedText(
+                                            context, 'Trading'),
+                                        "14 ${L10n.getTranslatedText(context, 'Lessons')}",
+                                        Colors.green[100]!,
+                                        onTap: () {},
                                       ),
-                                    ],
-                                  ),
-                                )),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1173,23 +1050,101 @@ class HomePage extends StatelessWidget {
               ],
             ),
           ),
-          // Use drawer for left-side drawer
-          // Use drawer for left-side drawer
-          drawer: HomepageDrawer(
-            onClose: () {
-              Navigator.of(context).pop(); // Close the drawer when tapped
-            },
-            onProfileTap: onProfileTap, onCourseTap: onCourseTap,
-            // Pass the onProfileTap callback here
-          ),
-// Modify drawerEdgeDragWidth to make it open from the right
-          drawerEdgeDragWidth: double
-              .infinity, // Make drawer full-width and allow dragging from anywhere
-          endDrawerEnableOpenDragGesture:
-          true, // Allow drag to open the drawer from the right
         ),
+        drawer: HomepageDrawer(
+          onClose: () => Navigator.of(context).pop(),
+          onProfileTap: widget.onProfileTap,
+          onCourseTap: widget.onCourseTap,
+        ),
+        drawerEdgeDragWidth: double.infinity,
+        endDrawerEnableOpenDragGesture: true,
       ),
+    ),
     );
+  }
+
+  Widget _buildContinueLearningSection(BuildContext context) {
+    // Filter courses: progress > 0% and < 100%
+    final ongoingCourses = _courses.where((course) =>
+    course["progress"] > 0 && course["progress"] < 1).toList();
+
+    if (ongoingCourses.isEmpty || _isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              L10n.getTranslatedText(context, 'Continue Learning'),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            TextButton(
+              onPressed: widget.onCourseTap,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                L10n.getTranslatedText(context, 'See All'),
+                style: const TextStyle(
+                  color: Colors.blue,
+                  fontSize: 17,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Column(
+          children: ongoingCourses.map((course) {
+            return Column(
+              children: [
+                learningCard(
+                  course["title"],
+                  course["completedModules"],
+                  course["totalModules"],
+                  (course["progress"] * 100).toInt(),
+                  predefinedColors.length > ongoingCourses.indexOf(course)
+                      ? predefinedColors[ongoingCourses.indexOf(course)]!
+                      : Colors.primaries[ongoingCourses.indexOf(course) %
+                      Colors.primaries.length][100]!,
+                      () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => TopicViewScreen(
+                          courseId: course["id"],
+                        ),
+                      ),
+                    );
+                    // Refresh courses when returning from topic view
+                    _refreshCourses();
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Future<Map<String, String?>> _getUserDetails() async {
+    final String? name = await _secureStorage.read(key: 'name');
+    final String? photoUrl = await _secureStorage.read(key: 'photo_url');
+    return {
+      'name': name,
+      'photo_url': photoUrl,
+    };
   }
 }
 
@@ -1199,14 +1154,14 @@ Widget barGraph(double yellowHeight, double purpleHeight) {
       Container(
         height: purpleHeight,
         width: 22,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.grey,
         ),
       ),
       Container(
         height: yellowHeight,
         width: 24,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.yellow,
         ),
       ),
@@ -1266,7 +1221,6 @@ Widget learningCard(String title, int completed, int total, int percentage,
   );
 }
 
-// AppBar UI with the Hamburger icon inside a circular button
 Widget getAppBarUI(
     VoidCallback onProfileTap,
     VoidCallback onHamburgerTap,
@@ -1278,38 +1232,35 @@ Widget getAppBarUI(
     int selectedIndex,
     ) {
   return Container(
-    height: 100, // Increased height for the AppBar
+    height: 100,
     padding: const EdgeInsets.only(top: 38.0, left: 18, right: 18, bottom: 5),
     child: Row(
       children: <Widget>[
-        // Profile Picture
         GestureDetector(
           onTap: onProfileTap,
           child: CircleAvatar(
-            radius: 30, // Slightly larger for a prominent look
+            radius: 30,
             backgroundImage: photoUrl.startsWith('http')
                 ? NetworkImage(photoUrl) as ImageProvider
                 : AssetImage(photoUrl),
           ),
         ),
-        const SizedBox(width: 12), // Space between profile picture and text
-
-        // Greeting and Username (arranged vertically)
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               L10n.getTranslatedText(context, 'Hello'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w400,
                 fontSize: 16,
                 color: Colors.white,
               ),
             ),
             Text(
-              name, // Dynamically set this if needed
-              style: TextStyle(
+              name,
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
                 color: Colors.white,
@@ -1317,29 +1268,26 @@ Widget getAppBarUI(
             ),
           ],
         ),
-
-        const Spacer(), // Pushes the menu icon to the right
-
-        // Hamburger Menu Icon inside a circular button
+        const Spacer(),
         Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white, // White background
+            color: Colors.white,
           ),
-          width: 40, // Fixed width for the circular container
-          height: 40, // Fixed height to ensure the circle is smaller
+          width: 40,
+          height: 40,
           child: IconButton(
             icon: const Icon(
               Icons.menu,
-              color: Colors.black, // Black menu icon
-              size: 20, // Icon size
+              color: Colors.black,
+              size: 20,
             ),
             onPressed: () {
               showGeneralDialog(
                 context: context,
-                barrierDismissible: true, // Tapping outside closes it
+                barrierDismissible: true,
                 barrierLabel: "Dismiss",
-                barrierColor: Colors.black.withAlpha(70), // Dim background
+                barrierColor: Colors.black.withAlpha(70),
                 transitionDuration: const Duration(milliseconds: 300),
                 pageBuilder: (context, animation, secondaryAnimation) {
                   return Align(
@@ -1350,13 +1298,9 @@ Widget getAppBarUI(
                       child: Material(
                         color: Colors.white,
                         child: HomepageDrawer(
-                            onClose: () {
-                              Navigator.of(context)
-                                  .pop(); // Close drawer manually
-                            },
+                            onClose: () => Navigator.of(context).pop(),
                             onProfileTap: onProfileTap,
                             onCourseTap: onCourseTap
-                          // Pass the onProfileTap callback here
                         ),
                       ),
                     ),
@@ -1364,7 +1308,6 @@ Widget getAppBarUI(
                 },
                 transitionBuilder:
                     (context, animation, secondaryAnimation, child) {
-                  // Slide in from left
                   final offsetAnimation = Tween<Offset>(
                     begin: const Offset(-1, 0),
                     end: Offset.zero,
@@ -1377,7 +1320,6 @@ Widget getAppBarUI(
                 },
               );
             },
-            // Open the drawer when clicked
           ),
         ),
       ],
@@ -1385,7 +1327,6 @@ Widget getAppBarUI(
   );
 }
 
-// Widget for section headers
 class SectionHeader extends StatelessWidget {
   final String title;
 
@@ -1397,14 +1338,13 @@ class SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         Text("See All", style: TextStyle(color: Colors.blue, fontSize: 14)),
       ],
     );
   }
 }
 
-// **Function for Swipeable Banner**
 Widget buildSwipeableBanner(PageController controller, BuildContext context) {
   return SizedBox(
     height: 170,
@@ -1438,13 +1378,11 @@ Widget buildSwipeableBanner(PageController controller, BuildContext context) {
   );
 }
 
-// **Function to Create an Ad Container**
 Widget adContainer(Color color, String imagePath, BuildContext context) {
   return Container(
     margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
     child: Stack(
       children: [
-        // Main colored container with text
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -1453,11 +1391,9 @@ Widget adContainer(Color color, String imagePath, BuildContext context) {
           ),
           child: Row(
             children: [
-              // Text Content with Right Padding
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(
-                      right: 80), // Adjust padding as needed
+                  padding: const EdgeInsets.only(right: 80),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -1470,7 +1406,7 @@ Widget adContainer(Color color, String imagePath, BuildContext context) {
                           color: Colors.black87,
                         ),
                       ),
-                      SizedBox(height: 6),
+                      const SizedBox(height: 6),
                       Text(
                         "${L10n.getTranslatedText(context, 'Experts ready to clear')} \n${L10n.getTranslatedText(context, 'your doubts anytime')}",
                         style: TextStyle(
@@ -1483,11 +1419,10 @@ Widget adContainer(Color color, String imagePath, BuildContext context) {
                   ),
                 ),
               ),
-              const SizedBox(width: 0), // Space reserved for image
+              const SizedBox(width: 0),
             ],
           ),
         ),
-        // Image Positioned outside bottom padding
         Positioned(
           right: 5,
           top: 8,
@@ -1503,7 +1438,6 @@ Widget adContainer(Color color, String imagePath, BuildContext context) {
   );
 }
 
-// Widget for course tags
 class CourseTag extends StatelessWidget {
   final String text;
   final Color color;
@@ -1513,7 +1447,7 @@ class CourseTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         color: color.withAlpha(40),
         borderRadius: BorderRadius.circular(20),
@@ -1522,8 +1456,8 @@ class CourseTag extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.circle, color: color, size: 12),
-          SizedBox(width: 6),
-          Text(text, style: TextStyle(color: Colors.black, fontSize: 14)),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(color: Colors.black, fontSize: 14)),
         ],
       ),
     );
@@ -1532,7 +1466,7 @@ class CourseTag extends StatelessWidget {
 
 Widget courseBox(IconData icon, String label, Color color) {
   return Container(
-    padding: EdgeInsets.all(12),
+    padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: color, width: 2),
@@ -1541,7 +1475,7 @@ Widget courseBox(IconData icon, String label, Color color) {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Container(
-          padding: EdgeInsets.all(8), // Smaller circle
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color.withAlpha(40),
@@ -1552,56 +1486,54 @@ Widget courseBox(IconData icon, String label, Color color) {
             color: color,
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ],
     ),
   );
 }
 
-// Widget for course cards
 class CourseCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color color;
-  final VoidCallback onTap; // Add this line
+  final VoidCallback onTap;
 
   const CourseCard(
       this.title,
       this.subtitle,
       this.color, {
         super.key,
-        required this.onTap, // Add this line
+        required this.onTap,
       });
 
-  /// **Function to Get Subject-Specific Icons**
   IconData _getSubjectIcon(String title) {
     switch (title.toLowerCase()) {
       case 'mathematics':
       case 'math':
       case 'algebra':
-        return Icons.calculate; // Math Icon
+        return Icons.calculate;
       case 'science':
       case 'physics':
       case 'chemistry':
       case 'biology':
-        return Icons.science; // Science Icon
+        return Icons.science;
       case 'english':
       case 'language':
-        return Icons.menu_book; // English Icon
+        return Icons.menu_book;
       case 'computer':
       case 'programming':
       case 'coding':
-        return Icons.computer; // Computer Icon
+        return Icons.computer;
       case 'history':
       case 'geography':
       case 'social studies':
-        return Icons.public; // History Icon
+        return Icons.public;
       default:
-        return Icons.school; // Default Icon
+        return Icons.school;
     }
   }
 
@@ -1613,9 +1545,9 @@ class CourseCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: width * 0.42, // Controlled width (adjust as per grid layout)
-        height: height * 0.20, // Controlled height for consistency
-        padding: EdgeInsets.all(width * 0.04), // Dynamic padding
+        width: width * 0.42,
+        height: height * 0.20,
+        padding: EdgeInsets.all(width * 0.04),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
@@ -1625,26 +1557,21 @@ class CourseCard extends StatelessWidget {
           children: [
             Icon(
               _getSubjectIcon(title),
-              size: width * 0.10, // Icon scales based on width
+              size: width * 0.10,
               color: Colors.black.withAlpha(180),
             ),
             SizedBox(height: height * 0.015),
-
-            /// Title
             AutoSizeText(
               title,
               style: TextStyle(
-                fontSize: width * 0.045, // Scales well
+                fontSize: width * 0.045,
                 fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
               minFontSize: 12,
               overflow: TextOverflow.ellipsis,
             ),
-
             SizedBox(height: height * 0.008),
-
-            /// Subtitle
             AutoSizeText(
               subtitle,
               style: TextStyle(
@@ -1660,15 +1587,4 @@ class CourseCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// Function to fetch user details from secure storage
-Future<Map<String, String?>> _getUserDetails() async {
-  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
-  final String? name = await secureStorage.read(key: 'name');
-  final String? photoUrl = await secureStorage.read(key: 'photo_url');
-  return {
-    'name': name,
-    'photo_url': photoUrl,
-  };
 }
