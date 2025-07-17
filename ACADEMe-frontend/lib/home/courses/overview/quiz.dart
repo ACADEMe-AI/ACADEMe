@@ -13,6 +13,7 @@ class QuizPage extends StatefulWidget {
   final String courseId;
   final String topicId;
   final String subtopicId;
+  final String subtopicTitle;
   final bool hasNextMaterial; // Add this to know if there's a next material
 
   const QuizPage({
@@ -23,6 +24,7 @@ class QuizPage extends StatefulWidget {
     required this.courseId,
     required this.topicId,
     required this.subtopicId,
+    required this.subtopicTitle,
     this.hasNextMaterial = false, // Add this parameter with default value
   });
 
@@ -209,6 +211,41 @@ class QuizPageState extends State<QuizPage> {
     }
   }
 
+  // Store result in Shared Preferences
+  Future<void> _storeQuizResult(bool isCorrect) async {
+  final String storageKey = 'quiz_results_${widget.courseId}_${widget.topicId}';
+  String? existingResults = await _storage.read(key: storageKey);
+
+  Map<String, dynamic> results = existingResults != null
+      ? json.decode(existingResults)
+      : {
+          'totalQuestions': 0,
+          'correctAnswers': 0,
+          'quizData': [],
+          'lastUpdated': DateTime.now().toIso8601String(),
+        };
+
+  results['totalQuestions'] = (results['totalQuestions'] as int) + 1;
+  if (isCorrect) {
+    results['correctAnswers'] = (results['correctAnswers'] as int) + 1;
+  }
+  
+  // Add current quiz data
+  final currentQuiz = widget.quizzes[_currentQuestionIndex];
+  results['quizData'].add({
+    'title': widget.subtopicTitle,
+
+    'isCorrect': isCorrect,
+    'timestamp': DateTime.now().toIso8601String(),
+  });
+  
+  results['lastUpdated'] = DateTime.now().toIso8601String();
+
+  await _storage.write(
+    key: storageKey,
+    value: json.encode(results),
+  );
+}
   void _showResultPopup(
       bool isCorrect, String submittedQuizId, String questionId) {
     // Show a dialog with the result and an icon
@@ -260,6 +297,8 @@ class QuizPageState extends State<QuizPage> {
       if (!mounted) return;
 
       Navigator.pop(context); // Close result dialog
+
+      await _storeQuizResult(isCorrect);
 
       // FIXED: Send progress BEFORE any state changes or callbacks
       await _sendProgress(isCorrect, submittedQuizId, questionId);

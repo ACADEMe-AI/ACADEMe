@@ -485,7 +485,10 @@ class LessonsSectionState extends State<LessonsSection> {
               setState(() => isNavigating = false);
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => TestReportScreen()),
+                MaterialPageRoute(builder: (context) => TestReportScreen(
+      courseId: widget.courseId,
+      topicId: widget.topicId,
+    ),),
               );
               return;
             }
@@ -757,7 +760,10 @@ class LessonsSectionState extends State<LessonsSection> {
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => TestReportScreen()),
+        MaterialPageRoute(builder: (context) => TestReportScreen(
+      courseId: widget.courseId,
+      topicId: widget.topicId,
+    ),),
       );
     }
   }

@@ -8,9 +8,17 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ACADEMe/home/courses/overview/pdf_report_service.dart';
 
 class TestReportScreen extends StatefulWidget {
-  const TestReportScreen({super.key});
+  final String courseId;
+  final String topicId;
+
+  const TestReportScreen({
+    super.key,
+    required this.courseId,
+    required this.topicId,
+  });
 
   @override
   TestReportScreenState createState() => TestReportScreenState();
@@ -18,10 +26,12 @@ class TestReportScreen extends StatefulWidget {
 
 class TestReportScreenState extends State<TestReportScreen> {
   Map<String, dynamic> visualData = {};
+  Map<String, dynamic>? topicResults;
   bool isLoading = true;
   double overallAverage = 0;
-  // SharedPreferences? _storage;
+  double topicScore = 0;
   final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -29,10 +39,33 @@ class TestReportScreenState extends State<TestReportScreen> {
     _initStorage();
   }
 
-  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-
   Future<void> _initStorage() async {
-    fetchProgressData();
+    await Future.wait([
+      fetchProgressData(), // This loads from API
+      _loadTopicResults(), // This loads our local quiz results
+    ]);
+  }
+
+  Future<void> _loadTopicResults() async {
+    final String storageKey =
+        'quiz_results_${widget.courseId}_${widget.topicId}';
+    String? resultsJson = await _secureStorage.read(key: storageKey);
+
+    if (resultsJson != null) {
+      setState(() {
+        topicResults = json.decode(resultsJson);
+        if (topicResults != null) {
+          final int correct = topicResults!['correctAnswers'] ?? 0;
+          final int total = topicResults!['totalQuestions'] ?? 1;
+          topicScore = total > 0 ? (correct / total) * 100 : 0;
+
+          // Initialize quizData if it doesn't exist
+          if (!topicResults!.containsKey('quizData')) {
+            topicResults!['quizData'] = [];
+          }
+        }
+      });
+    }
   }
 
   Future<void> fetchProgressData() async {
@@ -44,12 +77,11 @@ class TestReportScreenState extends State<TestReportScreen> {
         throw Exception('Missing access token - Please login again');
       }
 
-      // Use the correct URL that works with your curl request
       final response = await http.get(
         Uri.parse('$backendUrl/api/progress-visuals/'),
         headers: {
           'Authorization': 'Bearer $token',
-          'accept': 'application/json', // Added accept header
+          'accept': 'application/json',
           'Content-Type': 'application/json; charset=UTF-8',
         },
       ).timeout(const Duration(seconds: 30));
@@ -66,9 +98,7 @@ class TestReportScreenState extends State<TestReportScreen> {
         throw Exception('Failed to load progress data: ${response.statusCode}');
       }
     } catch (e) {
-      if (!mounted) {
-        return; // ✅ Ensure widget is still mounted before using context
-      }
+      if (!mounted) return;
       debugPrint('❌ Error fetching progress data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}')),
@@ -108,7 +138,7 @@ class TestReportScreenState extends State<TestReportScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildScoreCard(),
+                  _buildTopicScoreCard(),
                   SizedBox(height: 16),
                   _buildPerformanceGraph(),
                   SizedBox(height: 16),
@@ -121,8 +151,13 @@ class TestReportScreenState extends State<TestReportScreen> {
     );
   }
 
-  // 1. Score Summary Card - Updated with dynamic values
-  Widget _buildScoreCard() {
+  Widget _buildTopicScoreCard() {
+    final int correct = topicResults?['correctAnswers'] ?? 0;
+    final int total = topicResults?['totalQuestions'] ?? 1;
+    final String scoreText = total > 0
+        ? "${topicScore.toStringAsFixed(0)}%"
+        : L10n.getTranslatedText(context, 'No data');
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: AcademeTheme.appColor,
@@ -132,7 +167,7 @@ class TestReportScreenState extends State<TestReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(L10n.getTranslatedText(context, 'Overall Score'),
+            Text(L10n.getTranslatedText(context, 'Topic Performance'),
                 style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
@@ -141,17 +176,27 @@ class TestReportScreenState extends State<TestReportScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("${overallAverage.toStringAsFixed(0)}/100",
-                    style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white)),
-                CircularProgressIndicator(
-                  value: overallAverage / 100,
-                  color: _getProgressColor(overallAverage),
-                  backgroundColor: Colors.white30,
-                  strokeWidth: 6,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(scoreText,
+                        style: GoogleFonts.poppins(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white)),
+                    Text(
+                        "$correct/$total ${L10n.getTranslatedText(context, 'correct')}",
+                        style: GoogleFonts.poppins(
+                            fontSize: 14, color: Colors.white70)),
+                  ],
                 ),
+                if (total > 0)
+                  CircularProgressIndicator(
+                    value: topicScore / 100,
+                    color: _getProgressColor(topicScore),
+                    backgroundColor: Colors.white30,
+                    strokeWidth: 6,
+                  ),
               ],
             ),
           ],
@@ -160,39 +205,169 @@ class TestReportScreenState extends State<TestReportScreen> {
     );
   }
 
-  // 2. Performance Graph - Kept exactly the same
-  Widget _buildPerformanceGraph() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: EdgeInsets.all(16),
-      child: BarChart(
-        BarChartData(
-          barGroups: [
-            _buildBar(0, 80),
-            _buildBar(1, 90),
-            _buildBar(2, 60),
-            _buildBar(3, 70),
-            _buildBar(4, 85),
-          ],
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-                sideTitles: _bottomTitles(
-                    ["Plant", "Animal", "Matter", "Mul", "Div"])),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-        ),
-      ),
-    );
-  }
+  //Card For Overall score that shows score from API
+  // Widget _buildOverallScoreCard() {
+  //   return Card(
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //     color: AcademeTheme.appColor,
+  //     elevation: 5,
+  //     child: Padding(
+  //       padding: EdgeInsets.all(20),
+  //       child: Column(
+  //         crossAxisAlignment: CrossAxisAlignment.start,
+  //         children: [
+  //           Text(L10n.getTranslatedText(context, 'Overall Score'),
+  //               style: GoogleFonts.poppins(
+  //                   fontSize: 18,
+  //                   fontWeight: FontWeight.w500,
+  //                   color: Colors.white70)),
+  //           SizedBox(height: 8),
+  //           Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //             children: [
+  //               Text("${overallAverage.toStringAsFixed(0)}/100",
+  //                   style: GoogleFonts.poppins(
+  //                       fontSize: 28,
+  //                       fontWeight: FontWeight.bold,
+  //                       color: Colors.white)),
+  //               CircularProgressIndicator(
+  //                 value: overallAverage / 100,
+  //                 color: _getProgressColor(overallAverage),
+  //                 backgroundColor: Colors.white30,
+  //                 strokeWidth: 6,
+  //               ),
+  //             ],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
-  // Bar Chart Helper - Kept exactly the same
+ Widget _buildPerformanceGraph() {
+  final List<dynamic> quizData = topicResults?['quizData'] ?? [];
+
+  // Limit to last 7 or more depending on your choice
+  final displayData = quizData;
+
+  return Container(
+    width: double.infinity,
+    margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12,
+          blurRadius: 6,
+          offset: Offset(0, 3),
+        ),
+      ],
+    ),
+    child: displayData.isEmpty
+        ? Center(
+            child: Text(
+              L10n.getTranslatedText(context, 'No quiz data available'),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+          )
+        : SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: displayData.length * 80, // More space per bar
+              height: 220,
+              child: BarChart(
+                BarChartData(
+                  barGroups: List.generate(displayData.length, (index) {
+                    final quiz = displayData[index];
+                    final isCorrect = quiz['isCorrect'] == true;
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: isCorrect ? 100 : 5,
+                          width: 20,
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            colors: isCorrect
+                                ? [Colors.greenAccent, Colors.teal]
+                                : [Colors.redAccent, Colors.red.shade900],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < displayData.length) {
+                            String title = displayData[index]['title'] ?? '';
+                            return Container(
+                              width: 60,
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black87,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                        reservedSize: 48,
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: FlGridData(show: false),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final title = displayData[groupIndex]['title'] ?? '';
+                        final correct = displayData[groupIndex]['isCorrect'] == true;
+                        return BarTooltipItem(
+                          '$title\n${correct ? 'Correct' : 'Incorrect'}',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+  );
+}
+
+
+
   BarChartGroupData _buildBar(int x, double y) {
     return BarChartGroupData(
       x: x,
@@ -210,8 +385,11 @@ class TestReportScreenState extends State<TestReportScreen> {
     );
   }
 
-  // 3. Detailed Analysis - Kept exactly the same
   Widget _buildDetailedAnalysis() {
+    final int correct = topicResults?['correctAnswers'] ?? 0;
+    final int total = topicResults?['totalQuestions'] ?? 1;
+    final int incorrect = total - correct;
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: Colors.white,
@@ -227,10 +405,19 @@ class TestReportScreenState extends State<TestReportScreen> {
                     fontWeight: FontWeight.bold,
                     color: Colors.black)),
             SizedBox(height: 10),
-            _buildPerformanceRow(L10n.getTranslatedText(context, 'Correct Answers'), "40/50", Colors.green),
             _buildPerformanceRow(
-                L10n.getTranslatedText(context, 'Incorrect Answers'), "10/50", Colors.redAccent),
-            _buildPerformanceRow(L10n.getTranslatedText(context, 'Skipped Questions'), "5", Colors.orangeAccent),
+                L10n.getTranslatedText(context, 'Correct Answers'),
+                "$correct/$total",
+                Colors.green),
+            _buildPerformanceRow(
+                L10n.getTranslatedText(context, 'Incorrect Answers'),
+                "$incorrect/$total",
+                Colors.redAccent),
+            if (topicResults?['skipped'] != null)
+              _buildPerformanceRow(
+                  L10n.getTranslatedText(context, 'Skipped Questions'),
+                  "${topicResults!['skipped']}",
+                  Colors.orangeAccent),
           ],
         ),
       ),
@@ -256,32 +443,68 @@ class TestReportScreenState extends State<TestReportScreen> {
     );
   }
 
-  // 4. Action Buttons (Download & Share) - Kept exactly the same
   Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _buildActionButton(
-            Icons.picture_as_pdf, L10n.getTranslatedText(context, 'Download Report'), Colors.white),
-        _buildActionButton(Icons.share, L10n.getTranslatedText(context, 'Share Score'), Colors.white),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, Color color) {
-    return ElevatedButton.icon(
-      onPressed: () {},
-      icon: Icon(icon, color: Colors.black),
-      label: Text(label,
-          style:
-              GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    children: [
+      _buildActionButton(
+        Icons.picture_as_pdf,
+        L10n.getTranslatedText(context, 'Download Report'), 
+        Colors.white,
+        () => _handlePdfAction(
+          () => PdfReportService(
+            courseId: widget.courseId,
+            topicId: widget.topicId,
+            topicResults: topicResults,
+            getTranslatedText: (text) => L10n.getTranslatedText(context, text),
+          ).generateAndDownloadReport(),
+        ),
       ),
+      _buildActionButton(
+        Icons.share,
+        L10n.getTranslatedText(context, 'Share Score'), 
+        Colors.white,
+        () => _handlePdfAction(
+          () => PdfReportService(
+            courseId: widget.courseId,
+            topicId: widget.topicId,
+            topicResults: topicResults,
+            getTranslatedText: (text) => L10n.getTranslatedText(context, text),
+          ).shareScore(),
+        ),
+      ),
+    ],
+  );
+}
+Future<void> _handlePdfAction(Future<void> Function() action) async {
+  try {
+    await action();
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString())),
     );
   }
+}
+  Widget _buildActionButton(
+  IconData icon, 
+  String label, 
+  Color color, 
+  VoidCallback onPressed,
+) {
+  return ElevatedButton.icon(
+    onPressed: onPressed,
+    icon: Icon(icon, color: Colors.black),
+    label: Text(label,
+        style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: color,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+  );
+}
+
 
   Color _getProgressColor(double score) {
     if (score >= 80) return Colors.greenAccent;
