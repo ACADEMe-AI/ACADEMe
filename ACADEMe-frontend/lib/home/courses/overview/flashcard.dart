@@ -1588,24 +1588,24 @@ class FlashCardState extends State<FlashCard> with TickerProviderStateMixin {
   }
 
   Widget _buildQuizContent(Map<String, dynamic> quiz, int index) {
-    return buildStyledContainer(
-      QuizPage(
-        quizzes: [quiz],
-        onQuizComplete: () {
-          _nextMaterialOrQuiz();
-        },
-        // ADD THIS: Pass swipe callback and next material status
-        onSwipeToNext: () {
-          _nextMaterialOrQuiz();
-        },
-        courseId: widget.courseId,
-        topicId: widget.topicId,
-        subtopicId: widget.subtopicId,
-        // CRITICAL: Determine if next material exists
-        hasNextMaterial: index < (widget.materials.length + widget.quizzes.length - 1),
-      ),
-    );
-  }
+  return buildStyledContainer(
+    QuizPage(
+      quizzes: [quiz],
+      onQuizComplete: () {
+        _nextMaterialOrQuiz();
+      },
+      onSwipeToNext: () {
+        _nextMaterialOrQuiz();
+      },
+      courseId: widget.courseId,
+      topicId: widget.topicId,
+      subtopicId: widget.subtopicId,
+      subtopicTitle: quiz['title'] ?? 'Untitled Quiz', // ✅ Add this line
+      hasNextMaterial: index < (widget.materials.length + widget.quizzes.length - 1),
+    ),
+  );
+}
+
 
   Widget buildStyledContainer(Widget child) {
     final height = MediaQuery.of(context).size.height;
