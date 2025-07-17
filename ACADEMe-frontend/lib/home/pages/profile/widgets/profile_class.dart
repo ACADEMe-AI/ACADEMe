@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import '../localization/l10n.dart';
+import '../../../../localization/l10n.dart';
 
 class ClassSelectionBottomSheet extends StatefulWidget {
   final VoidCallback onClassSelected;
