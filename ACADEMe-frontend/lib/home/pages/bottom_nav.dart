@@ -5,7 +5,7 @@ import '../admin_panel/courses.dart';
 import 'course_view.dart';
 import 'home_view.dart';
 import 'my_community.dart';
-import 'package:ACADEMe/home/pages/profile.dart';
+import 'package:ACADEMe/home/pages/profile/screens/profile_page.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/providers/bottom_nav_provider.dart'; // Import provider
 

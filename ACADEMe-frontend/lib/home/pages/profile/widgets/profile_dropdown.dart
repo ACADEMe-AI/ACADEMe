@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../academe_theme.dart';
+import '../../../../academe_theme.dart';
 
 class ReusableProfileOption extends StatelessWidget {
   final IconData? icon;
