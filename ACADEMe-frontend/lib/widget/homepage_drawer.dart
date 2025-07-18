@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ACADEMe/home/auth/auth_service.dart';
-import 'package:ACADEMe/home/pages/ask_me.dart';
+import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:ACADEMe/home/pages/progress/screens/progress_screen.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../started/pages/login_view.dart';
@@ -96,7 +96,7 @@ class HomepageDrawer extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AskMe(),
+                    builder: (context) => AskMeScreen(),
                   ),
                 );
               }),

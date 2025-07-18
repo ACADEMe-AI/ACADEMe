@@ -15,7 +15,7 @@ import 'package:ACADEMe/home/pages/topic_view.dart';
 import 'package:ACADEMe/started/pages/class.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/askme_button.dart';
-import 'ask_me.dart';
+import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 
@@ -439,7 +439,7 @@ class _HomePageState extends State<HomePage> {
       onFABPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AskMe()),
+          MaterialPageRoute(builder: (context) => AskMeScreen()),
         );
       },
       child: WillPopScope(
@@ -652,7 +652,7 @@ class _HomePageState extends State<HomePage> {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => AskMe(initialMessage: message),
+                                            builder: (context) => AskMeScreen(initialMessage: message),
                                           ),
                                         );
                                         messageController.clear();
