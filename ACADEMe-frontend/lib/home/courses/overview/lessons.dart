@@ -12,6 +12,7 @@ import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../report.dart';
 
+
 class LessonsSection extends StatefulWidget {
   final String courseId;
   final String topicId;
@@ -27,6 +28,7 @@ class LessonsSection extends StatefulWidget {
   @override
   LessonsSectionState createState() => LessonsSectionState();
 }
+
 
 class LessonsSectionState extends State<LessonsSection> {
   final FlutterSecureStorage storage = const FlutterSecureStorage();
