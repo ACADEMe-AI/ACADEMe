@@ -7,8 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-
-import 'ask_me.dart';
+import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
 
 void showMotivationPopup(BuildContext context) {
   showModalBottomSheet(
@@ -100,7 +99,7 @@ class MotivationPopupState extends State<MotivationPopup> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => AskMe(initialMessage: fullMessage),
+          builder: (context) => AskMeScreen(initialMessage: fullMessage),
         ),
       );
 

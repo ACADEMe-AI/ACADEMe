@@ -4,7 +4,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ACADEMe/academe_theme.dart';
-import 'package:ACADEMe/home/pages/ask_me.dart';
+import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:ACADEMe/home/components/askme_button.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -266,7 +266,7 @@ class CourseListScreenState extends State<CourseListScreen>
       onFABPressed: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => AskMe()),
+          MaterialPageRoute(builder: (context) => AskMeScreen()),
         );
       },
       child: Scaffold(
