@@ -6,14 +6,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../courses/overview/flashcard.dart';
-import '../courses/overview/overview.dart' as overview;
-import '../courses/overview/lessons.dart';
 import '../pages/topic_view.dart' as topic;
 import '../pages/course_view.dart';
-import '../pages/home_view.dart';
-import '../pages/subtopic_view.dart';
 
 class AppUser {
   final String id;

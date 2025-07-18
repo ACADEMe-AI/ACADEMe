@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:ACADEMe/home/courses/overview/lessons.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,7 +11,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'qna.dart';
-import 'lessons.dart';
+import 'package:ACADEMe/home/courses/overview/lessons.dart';
 
 class OverviewScreen extends StatefulWidget {
   final String courseId;
@@ -446,6 +447,7 @@ class OverviewScreenState extends State<OverviewScreen>
                         courseId: widget.courseId,
                         topicId: widget.topicId,
                         userProgress: userProgress,
+
                       )
                           : Center(child: CircularProgressIndicator()),
                       QSection(),
