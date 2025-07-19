@@ -489,12 +489,25 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     shape: const RoundedRectangleBorder(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                     ),
-                    builder: (BuildContext context) {
+                    builder: (BuildContext bottomSheetContext) {
                       return AttachmentOptionsSheet(
-                        onImageSelected: () => controller.pickFile(context, 'Image'),
-                        onDocumentSelected: () => controller.pickFile(context, 'Document'),
-                        onVideoSelected: () => controller.pickFile(context, 'Video'),
-                        onAudioSelected: () => controller.pickFile(context, 'Audio'),
+                        onImageSelected: () {
+                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          // Use the main screen context, not bottom sheet context
+                          controller.pickFile(context, 'Image');
+                        },
+                        onDocumentSelected: () {
+                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          controller.pickFile(context, 'Document');
+                        },
+                        onVideoSelected: () {
+                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          controller.pickFile(context, 'Video');
+                        },
+                        onAudioSelected: () {
+                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          controller.pickFile(context, 'Audio');
+                        },
                       );
                     },
                   );
