@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:ACADEMe/home/auth/auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../home/auth/role.dart';
-import '../../home/pages/bottom_nav.dart';
-import '../../home/pages/forgot_password.dart';
+import '../../home/pages/bottom_nav/bottom_nav.dart';
+import 'forgot_password.dart';
 
 class LogInView extends StatefulWidget {
   const LogInView({super.key});
