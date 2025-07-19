@@ -5,7 +5,7 @@ import '../controllers/overview_controller.dart';
 import '../models/overview_model.dart';
 import '../widgets/overview_widgets.dart';
 import '../../lessons/screens/lessons_screen.dart';
-import 'package:ACADEMe/home/courses/overview/qna.dart';
+import '../widgets/qna.dart';
 
 class OverviewScreen extends StatefulWidget {
   final String courseId;

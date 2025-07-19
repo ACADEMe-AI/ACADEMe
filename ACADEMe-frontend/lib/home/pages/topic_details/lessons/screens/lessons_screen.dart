@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/academe_theme.dart';
-import 'package:ACADEMe/home/courses/overview/flashcard.dart';
-import '../../../../courses/overview/reports/screens/test_report_screen.dart';
+import '../../flashcard.dart';
+import '../../reports/screens/test_report_screen.dart';
 import '../controllers/lessons_controller.dart';
 import '../models/lessons_model.dart';
 import '../widgets/lessons_widgets.dart';
