@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import '../../../../localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-import '../../../../widget/homepage_drawer.dart';
+import '../widgets/homepage_drawer.dart';
 import '../../../components/askme_button.dart';
 import '../../ask_me/screens/ask_me_screen.dart';
 import '../../progress/screens/progress_screen.dart';

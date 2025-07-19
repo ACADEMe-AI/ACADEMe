@@ -4,7 +4,7 @@ import 'package:ACADEMe/home/auth/auth_service.dart';
 import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:ACADEMe/home/pages/progress/screens/progress_screen.dart';
 import 'package:ACADEMe/localization/l10n.dart';
-import '../started/pages/login_view.dart';
+import '../../../../started/pages/login_view.dart';
 
 class HomepageDrawer extends StatelessWidget {
   final VoidCallback onClose;

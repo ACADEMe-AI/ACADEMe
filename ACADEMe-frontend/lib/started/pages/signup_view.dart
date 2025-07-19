@@ -5,7 +5,7 @@ import '../../home/auth/auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../../home/auth/role.dart';
-import '../../home/pages/bottom_nav.dart';
+import '../../home/pages/bottom_nav/bottom_nav.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({super.key});
