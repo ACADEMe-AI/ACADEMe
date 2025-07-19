@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ACADEMe/home/auth/auth_wrapper.dart';
+import 'package:ACADEMe/app/auth/auth_wrapper.dart';
 import 'package:ACADEMe/academe_theme.dart';
 
 class AnimatedSplashScreen extends StatefulWidget {

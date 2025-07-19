@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:ACADEMe/academe_theme.dart';
-import 'package:ACADEMe/home/pages/progress/widgets/motivation_popup.dart';
+import 'package:ACADEMe/app/pages/progress/widgets/motivation_popup.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../controllers/progress_controller.dart';
 import '../models/progress_models.dart';

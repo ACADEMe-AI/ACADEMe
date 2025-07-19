@@ -1,7 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
-import 'package:ACADEMe/home/components/askme_button.dart';
+import 'package:ACADEMe/app/pages/ask_me/screens/ask_me_screen.dart';
+import 'package:ACADEMe/app/components/askme_button.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import '../controllers/course_controller.dart';

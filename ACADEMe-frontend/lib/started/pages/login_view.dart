@@ -2,10 +2,10 @@ import 'package:ACADEMe/started/pages/signup_view.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../../academe_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:ACADEMe/home/auth/auth_service.dart';
+import 'package:ACADEMe/app/auth/auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../home/auth/role.dart';
-import '../../home/pages/bottom_nav/bottom_nav.dart';
+import '../../app/auth/role.dart';
+import '../../app/pages/bottom_nav/bottom_nav.dart';
 import 'forgot_password.dart';
 
 class LogInView extends StatefulWidget {

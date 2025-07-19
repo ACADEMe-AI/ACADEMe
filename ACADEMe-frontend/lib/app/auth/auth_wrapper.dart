@@ -1,4 +1,4 @@
-import 'package:ACADEMe/home/auth/role.dart';
+import 'package:ACADEMe/app/auth/role.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ACADEMe/introduction_page.dart';
