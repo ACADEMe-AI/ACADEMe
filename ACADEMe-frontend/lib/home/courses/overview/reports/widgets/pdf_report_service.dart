@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'package:share_plus/share_plus.dart';
-import 'package:ACADEMe/home/courses/report.dart';
+import '../screens/test_report_screen.dart';
 
 class PdfReportService {
   final String courseId;

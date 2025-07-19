@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../pages/topic_view.dart' as topic;
-import '../pages/course_view.dart';
+import '../pages/topics/controllers/topic_cache_controller.dart' as topic;
+import '../pages/courses/models/course_model.dart';
 
 class AppUser {
   final String id;
@@ -365,7 +365,7 @@ class AuthService {
 
       // 4. Clear cache
       CourseDataCache().clearCache();
-      topic.TopicCacheManager().clearCache();
+      topic.TopicCacheController().clearCache();
 
       debugPrint("✅ Full logout completed successfully");
     } catch (e) {
