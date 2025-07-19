@@ -166,7 +166,7 @@ class CourseCard extends StatelessWidget {
                       Container(
                         height: 5,
                         width: MediaQuery.of(context).size.width *
-                            (course.progress.clamp(0.0, 1.0) * 0.6),
+                            (course.progress.clamp(0.0, 1.0)),
                         decoration: BoxDecoration(
                           color: Colors.blue,
                           borderRadius: BorderRadius.circular(5),
