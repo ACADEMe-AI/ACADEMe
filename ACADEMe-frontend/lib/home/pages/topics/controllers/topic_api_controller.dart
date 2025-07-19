@@ -67,10 +67,10 @@ class TopicApiController {
   Future<String> getModuleProgressText(String courseId, String topicId) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Get total subtopics for this topic (using the same key as overview.dart)
+    // Get total subtopics for this topic (using the same key as overviews.dart)
     int totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
 
-    // Get completed subtopics for this topic (using the same key as overview.dart)
+    // Get completed subtopics for this topic (using the same key as overviews.dart)
     List<String> completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
     int completedCount = completedSubtopics.length;
 

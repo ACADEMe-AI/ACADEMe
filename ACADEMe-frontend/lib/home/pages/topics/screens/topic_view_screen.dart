@@ -5,7 +5,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-import 'package:ACADEMe/home/courses/overview/overview/screens/overview_screen.dart';
+import '../../topic_details/overview/screens/overview_screen.dart';
 import '../controllers/topic_cache_controller.dart';
 import '../controllers/app_lifecycle_controller.dart';
 import '../controllers/topic_api_controller.dart';
@@ -287,7 +287,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
                 ),
               ),
             ).then((_) {
-              // Refresh data when coming back from overview
+              // Refresh data when coming back from overviews
               final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
               final cachedTopics = _cacheController.getCachedTopics(widget.courseId, languageProvider.locale.languageCode);
               if (cachedTopics != null) {
