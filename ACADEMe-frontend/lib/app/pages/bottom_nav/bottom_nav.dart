@@ -1,12 +1,12 @@
-import 'package:ACADEMe/home/pages/bottom_nav/providers/bottom_nav_provider.dart';
+import 'package:ACADEMe/app/pages/bottom_nav/providers/bottom_nav_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../academe_theme.dart';
 import '../../admin_panel/courses.dart';
 import '../courses/screens/course_list_screen.dart';
 import '../homepage/screens/home_screen.dart';
-import 'package:ACADEMe/home/pages/community/screens/community_screen.dart';
-import 'package:ACADEMe/home/pages/profile/screens/profile_page.dart';
+import 'package:ACADEMe/app/pages/community/screens/community_screen.dart';
+import 'package:ACADEMe/app/pages/profile/screens/profile_page.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 
 class BottomNav extends StatelessWidget {

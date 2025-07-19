@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ACADEMe/home/auth/auth_service.dart';
+import 'package:ACADEMe/app/auth/auth_service.dart';
 import '../../academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 

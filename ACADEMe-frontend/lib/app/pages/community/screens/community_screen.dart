@@ -1,8 +1,7 @@
-// screens/my_community_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // Add this dependency if not already present
-import 'package:ACADEMe/home/components/askme_button.dart';
-import 'package:ACADEMe/home/pages/ask_me/screens/ask_me_screen.dart';
+import 'package:ACADEMe/app/components/askme_button.dart';
+import 'package:ACADEMe/app/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../controllers/community_controller.dart';
 import '../widgets/community_widgets.dart';
