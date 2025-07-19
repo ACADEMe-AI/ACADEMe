@@ -3,6 +3,7 @@ import 'package:ACADEMe/home/pages/bottom_nav.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:ACADEMe/services/study_time_tracker.dart'; // Add this import
+import 'package:ACADEMe/home/pages/courses/controllers/course_controller.dart'; // Add this import
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
@@ -79,6 +80,8 @@ void main() async {
             create: (context) => LanguageProvider()), // Language provider
         ChangeNotifierProvider(
             create: (context) => BottomNavProvider()), // BottomNav provider
+        ChangeNotifierProvider(
+            create: (context) => CourseController()), // Course controller provider
       ],
       child: const MyApp(),
     ),
