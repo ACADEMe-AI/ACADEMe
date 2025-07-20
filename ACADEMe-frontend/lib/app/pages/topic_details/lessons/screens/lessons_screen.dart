@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/academe_theme.dart';
-import '../../flashcard.dart';
+import '../../flashcard/screens/flash_card_screen.dart';
 import '../../reports/screens/test_report_screen.dart';
 import '../controllers/lessons_controller.dart';
 import '../models/lessons_model.dart';
 import '../widgets/lessons_widgets.dart';
+import '../../flashcard/controllers/flash_card_controller.dart';
 
 class LessonsSection extends StatefulWidget {
   final String courseId;
@@ -170,50 +171,6 @@ class LessonsSectionState extends State<LessonsSection> {
     return null;
   }
 
-  void _navigateToNextSubtopic(String currentSubtopicId) {
-    int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
-    if (currentIndex < _state.subtopicIds.length - 1) {
-      String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
-      String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
-
-      _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
-        if (!context.mounted) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FlashCard(
-              materials: (_state.subtopicMaterials[nextSubtopicId] ?? [])
-                  .map<Map<String, String>>((material) {
-                return {
-                  "id": material["id"]?.toString() ?? "",
-                  "type": material["type"]?.toString() ?? "",
-                  "content": material["content"]?.toString() ?? "",
-                };
-              }).toList(),
-              quizzes: _state.subtopicQuizzes[nextSubtopicId] ?? [],
-              onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
-              initialIndex: 0,
-              courseId: widget.courseId,
-              topicId: widget.topicId,
-              subtopicId: nextSubtopicId,
-              subtopicTitle: nextSubtopicTitle,
-            ),
-          ),
-        );
-      });
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TestReportScreen(
-            courseId: widget.courseId,
-            topicId: widget.topicId,
-          ),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,29 +301,86 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   void _navigateToFlashcard(String subtopicId, String subtopicTitle, int index) {
+    final materials = (_state.subtopicMaterials[subtopicId] ?? [])
+        .map<Map<String, String>>((material) {
+      return {
+        "id": material["id"]?.toString() ?? "",
+        "type": material["type"]?.toString() ?? "",
+        "content": material["content"]?.toString() ?? "",
+      };
+    }).toList();
+
+    final quizzes = _state.subtopicQuizzes[subtopicId] ?? [];
+
+    final controller = FlashCardController(
+      materials: materials,
+      quizzes: quizzes,
+      onQuizComplete: () => _navigateToNextSubtopic(subtopicId),
+      initialIndex: index,
+      courseId: widget.courseId,
+      topicId: widget.topicId,
+      subtopicId: subtopicId,
+      subtopicTitle: subtopicTitle,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => FlashCard(
-          materials: (_state.subtopicMaterials[subtopicId] ?? [])
-              .map<Map<String, String>>((material) {
-            return {
-              "id": material["id"]?.toString() ?? "",
-              "type": material["type"]?.toString() ?? "",
-              "content": material["content"]?.toString() ?? "",
-            };
-          }).toList(),
-          quizzes: _state.subtopicQuizzes[subtopicId] ?? [],
-          onQuizComplete: () => _navigateToNextSubtopic(subtopicId),
-          initialIndex: index,
-          courseId: widget.courseId,
-          topicId: widget.topicId,
-          subtopicId: subtopicId,
-          subtopicTitle: subtopicTitle,
-        ),
+        builder: (context) => FlashCardScreen(controller: controller),
       ),
     ).then((_) {
       if (mounted) setState(() => _state = _state.copyWith(isNavigating: false));
     });
+  }
+
+  void _navigateToNextSubtopic(String currentSubtopicId) {
+    int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
+    if (currentIndex < _state.subtopicIds.length - 1) {
+      String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
+      String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
+
+      _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
+        if (!context.mounted) return;
+        
+        final materials = (_state.subtopicMaterials[nextSubtopicId] ?? [])
+            .map<Map<String, String>>((material) {
+          return {
+            "id": material["id"]?.toString() ?? "",
+            "type": material["type"]?.toString() ?? "",
+            "content": material["content"]?.toString() ?? "",
+          };
+        }).toList();
+
+        final quizzes = _state.subtopicQuizzes[nextSubtopicId] ?? [];
+
+        final controller = FlashCardController(
+          materials: materials,
+          quizzes: quizzes,
+          onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
+          initialIndex: 0,
+          courseId: widget.courseId,
+          topicId: widget.topicId,
+          subtopicId: nextSubtopicId,
+          subtopicTitle: nextSubtopicTitle,
+        );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FlashCardScreen(controller: controller),
+          ),
+        );
+      });
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TestReportScreen(
+            courseId: widget.courseId,
+            topicId: widget.topicId,
+          ),
+        ),
+      );
+    }
   }
 }
