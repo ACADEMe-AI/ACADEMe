@@ -32,7 +32,7 @@ class QuizPage extends StatefulWidget {
   QuizPageState createState() => QuizPageState();
 }
 
-class QuizPageState extends State<QuizPage> {
+class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   int _currentQuestionIndex = 0;
   int? _selectedAnswer;
   bool isSubmitting = false;
@@ -40,17 +40,83 @@ class QuizPageState extends State<QuizPage> {
       'http://10.0.2.2:8000'; // Replace with your API endpoint
   List<dynamic> _progressList = [];
   final FlutterSecureStorage _storage =
-      const FlutterSecureStorage(); // Add FlutterSecureStorage
+  const FlutterSecureStorage(); // Add FlutterSecureStorage
+
+  // Animation variables
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _pulseAnimation;
+
+  // Progress line animation variables
+  late AnimationController _progressAnimationController;
+  late Animation<double> _progressAnimation;
+
+  bool _showResultAnimation = false;
+  bool _lastAnswerCorrect = false;
 
   @override
   void initState() {
     super.initState();
     _fetchProgress();
+    _initializeAnimations();
+  }
+
+  void _initializeAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.0, 0.3, curve: Curves.easeIn),
+    ));
+
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: const Interval(0.6, 1.0, curve: Curves.elasticOut),
+    ));
+
+    // Initialize progress line animation
+    _progressAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _progressAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _progressAnimationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _progressAnimationController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchProgress() async {
     String? token =
-        await _storage.read(key: 'access_token'); // Retrieve the access token
+    await _storage.read(key: 'access_token'); // Retrieve the access token
     if (!mounted) {
       return; // Ensure widget is still active before using context
     }
@@ -68,7 +134,7 @@ class QuizPageState extends State<QuizPage> {
           "$_baseUrl/api/progress/?target_language=en"), // Hardcoded "en" for English
       headers: {
         'Authorization':
-            'Bearer $token', // Include the access token in the headers
+        'Bearer $token', // Include the access token in the headers
         'Content-Type': 'application/json; charset=UTF-8',
       },
     );
@@ -128,8 +194,8 @@ class QuizPageState extends State<QuizPage> {
     final score = isCorrect ? scorePerQuestion : 0;
 
     final existingProgress = _progressList.firstWhere(
-      (progress) =>
-          progress["quiz_id"] == quizId &&
+          (progress) =>
+      progress["quiz_id"] == quizId &&
           progress["question_id"] == questionId,
       orElse: () => null,
     );
@@ -161,19 +227,19 @@ class QuizPageState extends State<QuizPage> {
       if (!mounted) {
         return;
       }
-      if (response.statusCode == 201) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(L10n.getTranslatedText(
-                  context, 'Progress saved successfully'))),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  L10n.getTranslatedText(context, 'Failed to save progress'))),
-        );
-      }
+      // if (response.statusCode == 201) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //         content: Text(L10n.getTranslatedText(
+      //             context, 'Progress saved successfully'))),
+      //   );
+      // } else {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //         content: Text(
+      //             L10n.getTranslatedText(context, 'Failed to save progress'))),
+      //   );
+      // }
     } else {
       // Update existing progress
       final progressId = existingProgress["progress_id"];
@@ -195,127 +261,247 @@ class QuizPageState extends State<QuizPage> {
         return;
       }
 
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(L10n.getTranslatedText(
-                  context, 'Progress updated successfully'))),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(L10n.getTranslatedText(
-                  context, 'Failed to update progress'))),
-        );
-      }
+      // if (response.statusCode == 200) {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //         content: Text(L10n.getTranslatedText(
+      //             context, 'Progress updated successfully'))),
+      //   );
+      // } else {
+      //   ScaffoldMessenger.of(context).showSnackBar(
+      //     SnackBar(
+      //         content: Text(L10n.getTranslatedText(
+      //             context, 'Failed to update progress'))),
+      //   );
+      // }
     }
   }
 
   // Store result in Shared Preferences
   Future<void> _storeQuizResult(bool isCorrect) async {
-  final String storageKey = 'quiz_results_${widget.courseId}_${widget.topicId}';
-  String? existingResults = await _storage.read(key: storageKey);
+    final String storageKey = 'quiz_results_${widget.courseId}_${widget.topicId}';
+    String? existingResults = await _storage.read(key: storageKey);
 
-  Map<String, dynamic> results = existingResults != null
-      ? json.decode(existingResults)
-      : {
-          'totalQuestions': 0,
-          'correctAnswers': 0,
-          'quizData': [],
-          'lastUpdated': DateTime.now().toIso8601String(),
-        };
+    Map<String, dynamic> results = existingResults != null
+        ? json.decode(existingResults)
+        : {
+      'totalQuestions': 0,
+      'correctAnswers': 0,
+      'quizData': [],
+      'lastUpdated': DateTime.now().toIso8601String(),
+    };
 
-  results['totalQuestions'] = (results['totalQuestions'] as int) + 1;
-  if (isCorrect) {
-    results['correctAnswers'] = (results['correctAnswers'] as int) + 1;
+    results['totalQuestions'] = (results['totalQuestions'] as int) + 1;
+    if (isCorrect) {
+      results['correctAnswers'] = (results['correctAnswers'] as int) + 1;
+    }
+
+    // Add current quiz data
+    final currentQuiz = widget.quizzes[_currentQuestionIndex];
+    results['quizData'].add({
+      'title': widget.subtopicTitle,
+      'isCorrect': isCorrect,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    results['lastUpdated'] = DateTime.now().toIso8601String();
+
+    await _storage.write(
+      key: storageKey,
+      value: json.encode(results),
+    );
   }
-  
-  // Add current quiz data
-  final currentQuiz = widget.quizzes[_currentQuestionIndex];
-  results['quizData'].add({
-    'title': widget.subtopicTitle,
 
-    'isCorrect': isCorrect,
-    'timestamp': DateTime.now().toIso8601String(),
-  });
-  
-  results['lastUpdated'] = DateTime.now().toIso8601String();
+  Widget _buildCardFlipAnimation() {
+    if (!_showResultAnimation) return const SizedBox.shrink();
 
-  await _storage.write(
-    key: storageKey,
-    value: json.encode(results),
-  );
-}
-  void _showResultPopup(
-      bool isCorrect, String submittedQuizId, String questionId) {
-    // Show a dialog with the result and an icon
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: isCorrect ? Colors.green : Colors.red,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isCorrect ? Icons.check : Icons.close,
-                color: Colors.white,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isCorrect
-                    ? L10n.getTranslatedText(context, 'Correct Answer!')
-                    : L10n.getTranslatedText(context, 'Wrong Answer!'),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              if (isCorrect) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  "+1 🔥",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: Colors.black.withOpacity(0.6 * _fadeAnimation.value),
+          child: Center(
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                ..rotateY(_scaleAnimation.value * 3.14159),
+              child: Container(
+                width: 280,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: _lastAnswerCorrect
+                        ? [const Color(0xFF4CAF50), const Color(0xFF8BC34A)]
+                        : [const Color(0xFFE57373), const Color(0xFFFF7043)],
                   ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 15,
+                      spreadRadius: 3,
+                    ),
+                  ],
                 ),
-              ],
-            ],
+                child: _scaleAnimation.value > 0.5
+                    ? Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()..rotateY(3.14159),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      children: [
+                        // Main content - positioned to fill the container minus progress bar space
+                        Positioned.fill(
+                          bottom: 6, // Leave exact space for progress bar height
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Transform.scale(
+                                  scale: _pulseAnimation.value,
+                                  child: Icon(
+                                    _lastAnswerCorrect
+                                        ? Icons.verified_rounded
+                                        : Icons.error_outline_rounded,
+                                    color: Colors.white,
+                                    size: 50,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  _lastAnswerCorrect
+                                      ? L10n.getTranslatedText(context, 'Perfect!')
+                                      : L10n.getTranslatedText(context, 'Oops!'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_lastAnswerCorrect)
+                                  const Text(
+                                    "Keep it up! 🚀",
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  L10n.getTranslatedText(context, 'Saving progress...'),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Progress bar positioned at the bottom
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: AnimatedBuilder(
+                            animation: _progressAnimation,
+                            builder: (context, child) {
+                              return Container(
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                                child: FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor: _progressAnimation.value,
+                                  child: Container(
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                    : const SizedBox.shrink(),
+              ),
+            ),
           ),
         );
       },
     );
+  }
 
-    // Navigate after 2 seconds
-    Future.delayed(const Duration(milliseconds: 200), () async {
+
+  void _showResultPopup(
+      bool isCorrect, String submittedQuizId, String questionId) {
+    // Set animation state
+    setState(() {
+      _lastAnswerCorrect = isCorrect;
+      _showResultAnimation = true;
+    });
+
+    // Start the card flip animation
+    _animationController.forward();
+
+    // Start progress bar animation after card animation completes
+    Future.delayed(const Duration(milliseconds: 1500), () {
       if (!mounted) return;
+      _progressAnimationController.forward();
+    });
 
-      Navigator.pop(context); // Close result dialog
+    // Navigate after animation completes
+    Future.delayed(const Duration(milliseconds: 3500), () async {
+      if (!mounted) return;
 
       await _storeQuizResult(isCorrect);
 
       // FIXED: Send progress BEFORE any state changes or callbacks
       await _sendProgress(isCorrect, submittedQuizId, questionId);
 
-      // Reset quiz state
+      // Hide animations
       setState(() {
-        isSubmitting = false;
-        _currentQuestionIndex = 0;
-        _selectedAnswer = null;
+        _showResultAnimation = false;
       });
+      _animationController.reset();
+      _progressAnimationController.reset();
 
-      // Trigger next material if exists, else complete quiz
-      if (widget.hasNextMaterial && widget.onSwipeToNext != null) {
-        widget.onSwipeToNext!(); // Trigger swipe to next material
+      // Check if there are more questions in the current quiz
+      if (_currentQuestionIndex < widget.quizzes.length - 1) {
+        // Move to next question in current quiz
+        setState(() {
+          isSubmitting = false;
+          _currentQuestionIndex++;
+          _selectedAnswer = null;
+        });
       } else {
-        if (widget.onQuizComplete != null) {
-          widget.onQuizComplete!();
+        // All questions completed - reset and trigger callbacks
+        setState(() {
+          isSubmitting = false;
+          _currentQuestionIndex = 0;
+          _selectedAnswer = null;
+        });
+
+        // Trigger next material if exists, else complete quiz
+        if (widget.hasNextMaterial && widget.onSwipeToNext != null) {
+          widget.onSwipeToNext!(); // Trigger swipe to next material
+        } else {
+          if (widget.onQuizComplete != null) {
+            widget.onQuizComplete!();
+          }
         }
       }
     });
@@ -346,158 +532,164 @@ class QuizPageState extends State<QuizPage> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Question Box with Increased Minimum Height
-                  Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(
-                      minHeight: 155, // Set minimum height here
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AcademeTheme.appColor,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Center(
-                      child: Text(
-                        questionText,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 1.5,
+          Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Question Box with Increased Minimum Height
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(
+                          minHeight: 155, // Set minimum height here
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Answer Options
-                  Expanded(
-                    child: GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, // Two options per row
-                        crossAxisSpacing: 12, // Horizontal spacing
-                        mainAxisSpacing: 12, // Vertical spacing
-                        childAspectRatio: 1.5, // Adjust aspect ratio
-                      ),
-                      itemCount: options.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          onTap: () {
-                            if (!isSubmitting) {
-                              setState(() {
-                                _selectedAnswer = index;
-                              });
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: _selectedAnswer == index
-                                  ? AcademeTheme.appColor
-                                  : Colors.white,
-                              border: Border.all(
-                                color: AcademeTheme.appColor,
-                                width: 1.5,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AcademeTheme.appColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
+                          child: Text(
+                            questionText,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              height: 1.5,
                             ),
-                            padding: const EdgeInsets.all(16),
-                            child: Center(
-                              child: Text(
-                                options[index],
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: _selectedAnswer == index
-                                      ? Colors.white
-                                      : AcademeTheme.appColor,
-                                ),
-                                textAlign: TextAlign.center,
-                                overflow: TextOverflow.visible,
-                                maxLines: 2,
-                              ),
-                            ),
+                            textAlign: TextAlign.center,
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Answer Options
+                      Expanded(
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2, // Two options per row
+                            crossAxisSpacing: 12, // Horizontal spacing
+                            mainAxisSpacing: 12, // Vertical spacing
+                            childAspectRatio: 1.5, // Adjust aspect ratio
+                          ),
+                          itemCount: options.length,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              onTap: () {
+                                if (!isSubmitting) {
+                                  setState(() {
+                                    _selectedAnswer = index;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _selectedAnswer == index
+                                      ? AcademeTheme.appColor
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: AcademeTheme.appColor,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: Center(
+                                  child: Text(
+                                    options[index],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: _selectedAnswer == index
+                                          ? Colors.white
+                                          : AcademeTheme.appColor,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Submit Button Fixed at Bottom
+              SafeArea(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white,
+                  child: ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () {
+                      if (_selectedAnswer != null) {
+                        setState(() {
+                          isSubmitting = true;
+                        });
+
+                        final submittedQuizId = quizId;
+                        final currentQuiz =
+                        widget.quizzes[_currentQuestionIndex];
+                        final questionId =
+                            currentQuiz["question_id"]?.toString() ??
+                                currentQuiz["id"]?.toString() ??
+                                "";
+                        final submittedQuestionIndex = _currentQuestionIndex;
+                        bool isCorrect = _selectedAnswer == correctOption;
+
+                        _showResultPopup(
+                            isCorrect, submittedQuizId, questionId);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(L10n.getTranslatedText(
+                                  context, 'Please select an answer!'))),
                         );
-                      },
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                      Colors.yellow, // Fixed color (won't change when disabled)
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      // Ensures no overlay effect on disabled state
+                      disabledBackgroundColor:
+                      Colors.yellow, // Keep the same as enabled state
+                      disabledForegroundColor: Colors.black, // Keep text color same
+                    ),
+                    child: Text(
+                      L10n.getTranslatedText(
+                          context, 'Submit'), // Keep the text fixed
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // Submit Button Fixed at Bottom
-          SafeArea(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: ElevatedButton(
-                onPressed: isSubmitting
-                    ? null
-                    : () {
-                        if (_selectedAnswer != null) {
-                          setState(() {
-                            isSubmitting = true;
-                          });
-
-                          final submittedQuizId = quizId;
-                          final currentQuiz =
-                              widget.quizzes[_currentQuestionIndex];
-                          final questionId =
-                              currentQuiz["question_id"]?.toString() ??
-                                  currentQuiz["id"]?.toString() ??
-                                  "";
-                          final submittedQuestionIndex = _currentQuestionIndex;
-                          bool isCorrect = _selectedAnswer == correctOption;
-
-                          _showResultPopup(
-                              isCorrect, submittedQuizId, questionId);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(L10n.getTranslatedText(
-                                    context, 'Please select an answer!'))),
-                          );
-                        }
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Colors.yellow, // Fixed color (won't change when disabled)
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  // Ensures no overlay effect on disabled state
-                  disabledBackgroundColor:
-                      Colors.yellow, // Keep the same as enabled state
-                  disabledForegroundColor: Colors.black, // Keep text color same
-                ),
-                child: Text(
-                  L10n.getTranslatedText(
-                      context, 'Submit'), // Keep the text fixed
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
                 ),
               ),
-            ),
+            ],
           ),
+          // Card flip animation overlay
+          _buildCardFlipAnimation(),
         ],
       ),
     );

@@ -52,6 +52,15 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _initializeCourses();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await _controller.fetchAndStoreUserDetails();
+        if (mounted) await _checkAndShowClassSelection();
+      } catch (e) {
+        debugPrint("Error in post frame callback: $e");
+      }
+    });
   }
 
   @override
@@ -107,15 +116,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      try {
-        await _controller.fetchAndStoreUserDetails();
-        if (mounted) await _checkAndShowClassSelection();
-      } catch (e) {
-        debugPrint("Error in post frame callback: $e");
-      }
-    });
 
     return ASKMeButton(
       showFAB: true,
