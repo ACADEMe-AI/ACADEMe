@@ -177,7 +177,7 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
     required List<String> options,
     required int correctOption,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestions(widget.courseId, widget.topicId, widget.quizId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestionsNoLang(widget.courseId, widget.topicId, widget.quizId));
 
     try {
       String? token = await _storage.read(key: "access_token");

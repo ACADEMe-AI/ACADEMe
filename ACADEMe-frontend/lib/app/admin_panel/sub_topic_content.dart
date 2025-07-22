@@ -286,7 +286,7 @@ class SubTopicContentState extends State<SubTopicContent>
     String? textContent,
     String? filePath,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsNoLang(widget.courseId, widget.topicId, widget.subtopicId));
 
     try {
       String? token =
@@ -395,7 +395,7 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(widget.courseId, widget.topicId, widget.subtopicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesNoLang(widget.courseId, widget.topicId, widget.subtopicId));
 
     try {
       String? token =

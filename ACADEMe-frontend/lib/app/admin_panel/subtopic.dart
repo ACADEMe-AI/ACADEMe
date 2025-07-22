@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:provider/provider.dart';
@@ -110,7 +109,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
   }
 
   Future<void> _fetchMaterials() async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -235,7 +234,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitSubtopic(
       {required String title, required String description}) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(widget.courseId, widget.topicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -408,7 +407,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
     String? textContent,
     String? filePath,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -537,7 +536,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitQuiz(
       {required String title, required String description}) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzes(widget.courseId, widget.topicId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzesNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
