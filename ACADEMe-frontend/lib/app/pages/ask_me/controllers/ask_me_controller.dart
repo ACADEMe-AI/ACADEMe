@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -189,8 +190,7 @@ class AskMeController extends ChangeNotifier {
   }
 
   Future<void> uploadFile(File file, String fileType, String prompt) async {
-    var url = Uri.parse(
-        '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/process_${fileType.toLowerCase()}');
+    var url = ApiEndpoints.getUri(ApiEndpoints.processFile(fileType));
 
     var request = http.MultipartRequest('POST', url);
     request.fields.addAll({
@@ -334,8 +334,7 @@ class AskMeController extends ChangeNotifier {
       notifyListeners();
 
       // Backend API URL
-      var url = Uri.parse(
-          '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/process_stt');
+      var url = ApiEndpoints.getUri(ApiEndpoints.processStt);
 
       var request = http.MultipartRequest('POST', url);
 
@@ -435,8 +434,7 @@ class AskMeController extends ChangeNotifier {
       );
     });
 
-    var url = Uri.parse(
-        '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/process_text');
+    var url = ApiEndpoints.getUri(ApiEndpoints.processText);
 
     try {
       var response = await http.post(
