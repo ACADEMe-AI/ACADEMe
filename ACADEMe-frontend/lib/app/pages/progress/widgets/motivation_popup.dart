@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:ACADEMe/academe_theme.dart';
+import 'package:ACADEMe/app/pages/progress/widgets/progress_loading_animation.dart';
+import 'package:ACADEMe/app/pages/progress/widgets/text_formatter.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-import 'package:ACADEMe/app/pages/ask_me/screens/ask_me_screen.dart';
+
+import '../../ask_me/screens/ask_me_screen.dart';
+import '../controllers/progress_controller.dart';
+
 
 void showMotivationPopup(BuildContext context) {
   showModalBottomSheet(
@@ -32,7 +34,7 @@ class MotivationPopup extends StatefulWidget {
 class MotivationPopupState extends State<MotivationPopup> {
   late Future<String> _recommendationFuture;
   final TextEditingController _messageController = TextEditingController();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final ProgressController _progressControl = ProgressController();
 
   @override
   void initState() {
@@ -40,70 +42,104 @@ class MotivationPopupState extends State<MotivationPopup> {
     _recommendationFuture = _fetchRecommendations();
   }
 
-  /// **Fetch recommendations from the backend**
+  /// **Fetch recommendations using ProgressController**
   Future<String> _fetchRecommendations() async {
-    final String backendUrl =
-        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
-    final String? token = await _storage.read(key: 'access_token');
-    if (!mounted) {
-      return ''; // ✅ Ensure widget is still mounted before using context
-    }
+    try {
+      // Get the target language from the app's language provider
+      final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+          .locale
+          .languageCode;
 
-    if (token == null) {
-      throw Exception("❌ No access token found");
-    }
+      // Use the ProgressController to fetch recommendations
+      final recommendations = await _progressControl.fetchRecommendations(
+        targetLanguage: targetLanguage,
+      );
 
-    // Get the target language from the app's language provider
-    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-        .locale
-        .languageCode;
-
-    final response = await http.get(
-      Uri.parse(
-          "$backendUrl/api/recommendations/?target_language=$targetLanguage"),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      // Decode the response body using UTF-8
-      final String responseBody = utf8.decode(response.bodyBytes);
-      final data = jsonDecode(responseBody);
-      return data["recommendations"];
-    } else {
-      throw Exception(
-          "❌ Failed to fetch recommendations: ${response.statusCode}");
+      // Convert the response to string if it's not already
+      if (recommendations is String) {
+        return recommendations;
+      } else {
+        // If it's a complex object, you might want to format it
+        return jsonEncode(recommendations);
+      }
+    } catch (error) {
+      // Handle errors appropriately
+      throw Exception("❌ Failed to fetch recommendations: $error");
     }
   }
 
   void _sendFollowUpToChatbot() async {
     String followUpMessage = _messageController.text.trim();
+
+    // Debug: Print the follow-up message
+    print('Follow-up message: "$followUpMessage"');
+
     if (followUpMessage.isNotEmpty) {
       String recommendationText = "";
+
       try {
+        // Wait for the recommendation to complete
         recommendationText = await _recommendationFuture;
+        print('Recommendation text length: ${recommendationText.length}');
+        print('Recommendation preview: ${recommendationText.substring(0, recommendationText.length > 100 ? 100 : recommendationText.length)}...');
       } catch (error) {
-        recommendationText =
-            "⚠️ Error fetching recommendation. Please try again.";
+        print('Error fetching recommendation: $error');
+        recommendationText = "⚠️ Error fetching recommendation. Please try again.";
       }
 
       // Combine Recommendation + Follow-up
-      String fullMessage =
-          "📊 Recommendation: \n$recommendationText\n\n🗨️ Follow-up: $followUpMessage";
+      String fullMessage = "📊 Recommendation: \n$recommendationText\n\n🗨️ Follow-up: $followUpMessage";
+
+      // Debug: Print the full message
+      print('Full message length: ${fullMessage.length}');
+      print('Navigation about to start...');
+
       if (!mounted) {
+        print('Widget not mounted, returning early');
         return; // Ensure widget is still active before using context
       }
-      // Navigate to Chatbot Screen with message
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AskMeScreen(initialMessage: fullMessage),
-        ),
-      );
+
+      try {
+        // Close the current bottom sheet first
+        Navigator.pop(context);
+
+        // Small delay to ensure the bottom sheet is fully closed
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Navigate to Chatbot Screen with message
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AskMeScreen(initialMessage: fullMessage),
+          ),
+        );
+
+        print('Navigation completed with result: $result');
+
+      } catch (navigationError) {
+        print('Navigation error: $navigationError');
+        // If navigation fails, show an error message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to open chat: $navigationError'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+
 
       _messageController.clear();
+    } else {
+      print('Follow-up message is empty');
+      // Optionally show a message that input is required
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(L10n.getTranslatedText(context, 'Please enter a follow-up message')),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -116,6 +152,17 @@ class MotivationPopupState extends State<MotivationPopup> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Drag handle
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
               // **Scrollable Content (Fetched Data)**
               Expanded(
                 child: Padding(
@@ -124,24 +171,91 @@ class MotivationPopupState extends State<MotivationPopup> {
                     future: _recommendationFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        // Use the ProgressLoadingWidget instead of custom loading animation
+                        return ProgressLoadingWidget(
+                          primaryText: L10n.getTranslatedText(context, 'Analyzing your progress...'),
+                          secondaryText: L10n.getTranslatedText(context, 'Generating personalized insights'),
+                          primaryColor: AcademeTheme.appColor,
+                          motivationalTips: [
+                            L10n.getTranslatedText(context, 'Reviewing your study patterns'),
+                            L10n.getTranslatedText(context, 'Identifying improvement areas'),
+                            L10n.getTranslatedText(context, 'Creating personalized suggestions'),
+                            L10n.getTranslatedText(context, 'Preparing detailed analysis'),
+                          ],
+                        );
                       } else if (snapshot.hasError || !snapshot.hasData) {
                         return _errorView();
                       }
-                      return SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "📊 ${L10n.getTranslatedText(context, 'Your Progress Analysis')}",
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87),
-                            ),
-                            const SizedBox(height: 10),
-                            _formattedText(snapshot.data!),
-                          ],
+
+                      // Success state with fade-in animation
+                      return AnimatedOpacity(
+                        opacity: 1.0,
+                        duration: const Duration(milliseconds: 600),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header with icon
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AcademeTheme.appColor.withOpacity(0.1),
+                                      AcademeTheme.appColor.withOpacity(0.05),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AcademeTheme.appColor.withOpacity(0.2),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AcademeTheme.appColor.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        Icons.analytics,
+                                        color: AcademeTheme.appColor,
+                                        size: 28,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            L10n.getTranslatedText(context, 'Your Progress Analysis'),
+                                            style: const TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            L10n.getTranslatedText(context, 'Personalized insights ready'),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              _formattedText(snapshot.data!),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -152,16 +266,22 @@ class MotivationPopupState extends State<MotivationPopup> {
               // **Message Input Field (Fixed at Bottom)**
               Padding(
                 padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context)
-                      .viewInsets
-                      .bottom, // Moves input above keyboard
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border(
-                        top: BorderSide(color: Colors.grey.shade300, width: 1)),
+                      top: BorderSide(color: Colors.grey.shade200, width: 1),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -170,24 +290,48 @@ class MotivationPopupState extends State<MotivationPopup> {
                         child: TextField(
                           controller: _messageController,
                           decoration: InputDecoration(
-                            hintText:
-                                "${L10n.getTranslatedText(context, 'Ask follow-up')}...",
+                            hintText: "${L10n.getTranslatedText(context, 'Ask follow-up')}...",
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(25),
+                              borderSide: BorderSide(color: Colors.grey.shade300),
                             ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(25),
+                              borderSide: BorderSide(color: AcademeTheme.appColor),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 10),
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
 
                       // **Send Button**
-                      IconButton(
-                        icon: const Icon(Icons.send,
-                            color: AcademeTheme.appColor),
-                        onPressed:
-                            _sendFollowUpToChatbot, // Directly call the function
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AcademeTheme.appColor,
+                              AcademeTheme.appColor.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AcademeTheme.appColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: _sendFollowUpToChatbot,
+                        ),
                       ),
                     ],
                   ),
@@ -202,149 +346,69 @@ class MotivationPopupState extends State<MotivationPopup> {
 
   /// **Error View when API fails**
   Widget _errorView() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Text(
-          "⚠️ Failed to load recommendations. Please try again.",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.red),
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red.shade400,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            L10n.getTranslatedText(context, 'Unable to load recommendations'),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            L10n.getTranslatedText(context, 'Please check your connection and try again'),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            onPressed: () {
+              setState(() {
+                _recommendationFuture = _fetchRecommendations();
+              });
+            },
+            icon: const Icon(Icons.refresh),
+            label: Text(L10n.getTranslatedText(context, 'Try Again')),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AcademeTheme.appColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              elevation: 4,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   /// **Formats raw recommendation text with bold headings, bullet points, and other markdown symbols**
+  /// **Filters out IDs and only shows titles**
   Widget _formattedText(String text) {
-    List<Widget> formattedWidgets = [];
-    List<String> parts = text.split("\n");
-
-    for (String part in parts) {
-      if (part.trim().isEmpty) {
-        formattedWidgets.add(const SizedBox(height: 8)); // Adds spacing
-      } else if (part.startsWith("**") && part.endsWith("**")) {
-        // Bold text (double asterisks) - Treat as a key
-        formattedWidgets.add(Text(
-          part.replaceAll("**", ""),
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-        ));
-      } else if (part.startsWith("*") && part.endsWith("*")) {
-        // Bold text (single asterisks) - Treat as a key
-        formattedWidgets.add(Text(
-          part.replaceAll("*", ""),
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-        ));
-      } else if (part.startsWith("- ")) {
-        // Bullet points
-        formattedWidgets.add(_buildBulletPoint(part.replaceFirst("- ", "")));
-      } else if (part.startsWith("# ")) {
-        // Heading 1
-        formattedWidgets.add(Text(
-          part.replaceFirst("# ", ""),
-          style: const TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-        ));
-      } else if (part.startsWith("## ")) {
-        // Heading 2
-        formattedWidgets.add(Text(
-          part.replaceFirst("## ", ""),
-          style: const TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-        ));
-      } else if (part.startsWith("### ")) {
-        // Heading 3
-        formattedWidgets.add(Text(
-          part.replaceFirst("### ", ""),
-          style: const TextStyle(
-              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
-        ));
-      } else if (part.startsWith(">")) {
-        // Blockquote
-        formattedWidgets.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Text(
-              part.replaceFirst(">", "").trim(),
-              style: const TextStyle(fontSize: 14, color: Colors.black87),
-            ),
-          ),
-        ));
-      } else if (part.startsWith("`") && part.endsWith("`")) {
-        // Inline code
-        formattedWidgets.add(Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            part.replaceAll("`", ""),
-            style: const TextStyle(
-                fontFamily: 'monospace', fontSize: 14, color: Colors.black87),
-          ),
-        ));
-      } else {
-        // Regular text (with inline bold formatting)
-        formattedWidgets.add(_parseInlineBoldText(part));
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: formattedWidgets,
-    );
-  }
-
-  /// **Helper function to parse inline bold text (e.g., *bold* or **bold**)**
-  Widget _parseInlineBoldText(String text) {
-    List<InlineSpan> spans = [];
-    List<String> parts = text.split(RegExp(r'(\*\*|\*)'));
-
-    for (int i = 0; i < parts.length; i++) {
-      if (i % 2 == 1) {
-        // Odd indices are bold text (treat as keys)
-        spans.add(TextSpan(
-          text: parts[i],
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-        ));
-      } else {
-        // Even indices are regular text (treat as values)
-        spans.add(TextSpan(
-          text: parts[i],
-          style: const TextStyle(fontSize: 16, color: Colors.black87),
-        ));
-      }
-    }
-
-    return RichText(
-      text: TextSpan(children: spans),
-    );
-  }
-
-  /// **Helper function for bullet points**
-  Widget _buildBulletPoint(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.check_circle, color: Colors.blue, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child:
-                _parseInlineBoldText(text), // Parse bold text in bullet points
-          ),
-        ],
-      ),
-    );
+    return RecommendationTextFormatter.formatText(text, context);
   }
 }
