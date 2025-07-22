@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../academe_theme.dart';
+import '../../api_endpoints.dart';
 
 class TopicQuizScreen extends StatefulWidget {
   final String courseId;
@@ -42,8 +43,7 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
   }
 
   Future<void> _fetchQuestions() async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/quizzes/${widget.quizId}/questions/?target_language=${widget.targetLanguage}");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestions(widget.courseId, widget.topicId, widget.quizId, widget.targetLanguage));
 
     try {
       String? token = await _storage.read(key: "access_token");
@@ -177,8 +177,7 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
     required List<String> options,
     required int correctOption,
   }) async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/quizzes/${widget.quizId}/questions/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestions(widget.courseId, widget.topicId, widget.quizId, null));
 
     try {
       String? token = await _storage.read(key: "access_token");

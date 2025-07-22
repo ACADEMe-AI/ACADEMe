@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:provider/provider.dart';
 import '../../academe_theme.dart';
+import '../../api_endpoints.dart';
 import '../../localization/l10n.dart';
 import 'topic_quiz.dart'; // Import the TopicQuiz screen
 import 'material.dart'; // Import the MaterialScreen
@@ -77,8 +78,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/?target_language=$targetLanguage");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(widget.courseId, widget.topicId, targetLanguage));
 
     try {
       String? token =
@@ -110,8 +110,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
   }
 
   Future<void> _fetchMaterials() async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/materials/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, null));
 
     try {
       String? token =
@@ -147,8 +146,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/quizzes/?target_language=$targetLanguage");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzes(widget.courseId, widget.topicId, targetLanguage));
 
     try {
       String? token =
@@ -237,8 +235,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitSubtopic(
       {required String title, required String description}) async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(widget.courseId, widget.topicId, null));
 
     try {
       String? token =
@@ -411,8 +408,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
     String? textContent,
     String? filePath,
   }) async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/materials/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, null));
 
     try {
       String? token =
@@ -541,8 +537,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitQuiz(
       {required String title, required String description}) async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/quizzes/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzes(widget.courseId, widget.topicId, null));
 
     try {
       String? token =
