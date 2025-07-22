@@ -34,6 +34,13 @@ class _AskMeScreenState extends State<AskMeScreen> {
   void initState() {
     super.initState();
     Global.context = context;
+
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   final controller = Provider.of<AskMeController>(context, listen: false);
+    //   if (widget.initialMessage?.isNotEmpty ?? false) {
+    //     controller.sendMessage(widget.initialMessage!);
+    //   }
+    // });
   }
 
   void _loadChatSession(ChatSession chat) {
@@ -64,9 +71,15 @@ class _AskMeScreenState extends State<AskMeScreen> {
                 _loadChatSession(chat);
               },
             ),
-            body: controller.chatMessages.isEmpty
-                ? _buildInitialUI(context)
-                : _buildChatUI(context, controller),
+            body: Builder(
+              builder: (context) {
+                // 🚀 Inject message AFTER controller is fully available
+                controller.handleInitialMessage(widget.initialMessage);
+                return controller.chatMessages.isEmpty
+                    ? _buildInitialUI(context)
+                    : _buildChatUI(context, controller);
+              },
+            ),
             bottomNavigationBar: _buildInputBar(context, controller),
           );
         },
