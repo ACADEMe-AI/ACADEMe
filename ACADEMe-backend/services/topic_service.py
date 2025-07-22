@@ -4,17 +4,15 @@ import firebase_admin
 from datetime import datetime
 from firebase_admin import firestore
 from services.course_service import CourseService
+import utils.firestore_helpers as firestore_helpers
 from models.topic_model import TopicCreate, SubtopicCreate
 
 db = firestore.client()  # Firestore DB instance
 
-TOPICS_FILE = "assets/topics.json"
-SUBTOPICS_FILE = "assets/subtopics.json"
-
 class TopicService:
     @staticmethod
     async def create_topic(course_id: str, topic_id: str, topic: TopicCreate):
-        """Creates a new topic inside a course with multilingual support and updates assets/topics.json."""
+        """Creates a new topic inside a course with multilingual support and updates Firestore ID mapping."""
         detected_lang = await CourseService.detect_language([topic.title, topic.description]) or "en"
 
         languages = {
@@ -40,13 +38,13 @@ class TopicService:
         topic_data = {
             "id": topic_id,
             "created_at": datetime.utcnow(),
-            "languages": languages,  # ✅ Use "languages" instead of "translations"
+            "languages": languages,
         }
 
         db.collection("courses").document(course_id).collection("topics").document(topic_id).set(topic_data)
 
-        # 🔄 **Update `topics.json`**
-        TopicService._update_json_file(TOPICS_FILE, topic_id, topic.title)
+        # ✅ **Store ID mapping in Firestore instead of JSON**
+        firestore_helpers.FirestoreUtils.store_id_mapping("topics", topic_id, topic.title)
 
         return {"message": "Topic created successfully", "topic_id": topic_id}
 
@@ -76,7 +74,7 @@ class TopicService:
 
     @staticmethod
     async def create_subtopic(course_id: str, topic_id: str, subtopic_id: str, subtopic: SubtopicCreate):
-        """Creates a subtopic under a specific topic with multilingual support and updates assets/subtopics.json."""
+        """Creates a subtopic under a specific topic with multilingual support and updates Firestore ID mapping."""
         detected_lang = await CourseService.detect_language([subtopic.title, subtopic.description]) or "en"
 
         languages = {
@@ -103,13 +101,13 @@ class TopicService:
             "id": subtopic_id,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
-            "languages": languages,  # ✅ Store translations under "languages"
+            "languages": languages,
         }
 
         db.collection("courses").document(course_id).collection("topics").document(topic_id).collection("subtopics").document(subtopic_id).set(subtopic_data)
 
-        # 🔄 **Update `subtopics.json`**
-        TopicService._update_json_file(SUBTOPICS_FILE, subtopic_id, subtopic.title)
+        # ✅ **Store ID mapping in Firestore instead of JSON**
+        firestore_helpers.FirestoreUtils.store_id_mapping("subtopics", subtopic_id, subtopic.title)
 
         return {"message": "Subtopic added successfully", "subtopic_id": subtopic_id}
 
@@ -136,24 +134,3 @@ class TopicService:
             })
 
         return subtopics
-    
-    @staticmethod
-    def _update_json_file(file_path: str, entry_id: str, entry_title: str):
-        """Helper method to update JSON files (`topics.json` or `subtopics.json`)."""
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)  # ✅ Ensure `assets/` exists
-
-        data = {}
-        if os.path.exists(file_path):
-            try:
-                with open(file_path, "r", encoding="utf-8") as file:
-                    data = json.load(file)  # ✅ Load existing data
-            except json.JSONDecodeError:
-                print(f"⚠️ Detected empty or invalid JSON file: {file_path}. Resetting...")
-                data = {}  # ✅ Reset to empty dictionary
-
-        data[entry_id] = entry_title  # ✅ Add new entry
-
-        with open(file_path, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)  # ✅ Save updated data
-
-        print(f"📌 Updated {file_path}: {entry_id} → {entry_title}")

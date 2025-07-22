@@ -16,7 +16,7 @@ class ApiEndpoints {
   static String get adminEmails => '$baseUrl/api/users/admins';
 
   // Course Endpoints
-  static String courses(String language) => '$baseUrl/api/courses/?target_language=$language';
+  static String courses(String? language) => '$baseUrl/api/courses/?target_language=$language';
   static String courseTopics(String courseId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/?target_language=$language';
   static String topicSubtopics(String courseId, String topicId, String language) =>

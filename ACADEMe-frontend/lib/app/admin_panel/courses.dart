@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../academe_theme.dart';
+import '../../api_endpoints.dart';
 import '../../localization/l10n.dart';
 import 'topic.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -44,8 +45,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
     }
 
     final response = await http.get(
-      Uri.parse(
-          '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/?target_language=$_targetLanguage'),
+      ApiEndpoints.getUri(ApiEndpoints.courses(_targetLanguage)),
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type":
@@ -117,8 +117,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
                 }
 
                 final response = await http.post(
-                  Uri.parse(
-                      '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/'),
+                  ApiEndpoints.getUri(ApiEndpoints.courses(null)),
                   headers: {
                     "Authorization": "Bearer $token",
                     "Content-Type":
