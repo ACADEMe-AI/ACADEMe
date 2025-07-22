@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:provider/provider.dart';
+import '../../api_endpoints.dart';
 import '../../localization/language_provider.dart'; // Import the LanguageProvider
 
 class MaterialScreen extends StatefulWidget {
@@ -64,10 +65,8 @@ class MaterialScreenState extends State<MaterialScreen> {
 
     // Construct the URL based on whether subtopicId is provided
     final url = widget.subtopicId == null
-        ? Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/materials/?target_language=$targetLanguage")
-        : Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/${widget.subtopicId}/materials/?target_language=$targetLanguage");
+        ? ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, targetLanguage))
+        : ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId!, targetLanguage));
 
     try {
       String? token = await _storage.read(key: "access_token");

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart'; // For file picking
 import 'package:http_parser/http_parser.dart'; // For multipart requests
+import '../../api_endpoints.dart';
 import 'material.dart'; // Import the MaterialScreen
 import 'subtopic_quiz.dart'; // Import the SubTopicQuiz screen
 import 'package:provider/provider.dart';
@@ -76,8 +77,7 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/${widget.subtopicId}/materials/?target_language=$targetLanguage");
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
 
     try {
       String? token =
@@ -114,8 +114,7 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/${widget.subtopicId}/quizzes/?target_language=$targetLanguage");
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
 
     try {
       String? token =
@@ -287,8 +286,7 @@ class SubTopicContentState extends State<SubTopicContent>
     String? textContent,
     String? filePath,
   }) async {
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/${widget.subtopicId}/materials/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId, null));
 
     try {
       String? token =
@@ -397,8 +395,7 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = Uri.parse(
-        "${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/${widget.topicId}/subtopics/${widget.subtopicId}/quizzes/");
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(widget.courseId, widget.topicId, widget.subtopicId, null));
 
     try {
       String? token =

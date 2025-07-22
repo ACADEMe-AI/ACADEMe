@@ -9,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../api_endpoints.dart';
 import '../../localization/l10n.dart';
 
 class TopicScreen extends StatefulWidget {
@@ -64,8 +65,7 @@ class TopicScreenState extends State<TopicScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/?target_language=$_targetLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.courseTopics(widget.courseId, _targetLanguage)),
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type":
@@ -144,9 +144,7 @@ class TopicScreenState extends State<TopicScreen> {
             ElevatedButton(
               onPressed: () async {
                 final response = await http.post(
-                  Uri.parse(
-                    '${dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000'}/api/courses/${widget.courseId}/topics/',
-                  ),
+                  ApiEndpoints.getUri(ApiEndpoints.courseTopics(widget.courseId, null)),
                   headers: {
                     "Authorization": "Bearer $token",
                     "Content-Type": "application/json; charset=UTF-8",
