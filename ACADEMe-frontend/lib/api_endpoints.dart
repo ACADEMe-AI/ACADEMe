@@ -35,7 +35,7 @@ class ApiEndpoints {
       '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/$quizId/questions/?target_language=$language';
 
   // Progress Endpoints
-  static String get progress => '$baseUrl/api/progress/';
+  static String progress(String? language) => '$baseUrl/api/progress/?target_language=$language';
   static String progressRecord(String progressId) => '$baseUrl/api/progress/$progressId';
   static String get progressVisuals => '$baseUrl/api/progress-visuals/';
 
