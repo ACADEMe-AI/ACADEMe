@@ -312,6 +312,18 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     );
   }
 
+  double _calculateFontSize(String text) {
+    if (text.length <= 15) {
+      return 16.0; // Original size for short text
+    } else if (text.length <= 30) {
+      return 14.0; // Slightly smaller for medium text
+    } else if (text.length <= 50) {
+      return 12.0; // Smaller for longer text
+    } else {
+      return 10.0; // Smallest for very long text
+    }
+  }
+
   Widget _buildCardFlipAnimation() {
     if (!_showResultAnimation) return const SizedBox.shrink();
 
@@ -578,10 +590,13 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                             crossAxisCount: 2, // Two options per row
                             crossAxisSpacing: 12, // Horizontal spacing
                             mainAxisSpacing: 12, // Vertical spacing
-                            childAspectRatio: 1.5, // Adjust aspect ratio
+                            childAspectRatio: 1.2, // Reduced from 1.5 to 1.2 for taller boxes
                           ),
                           itemCount: options.length,
                           itemBuilder: (context, index) {
+                            // Calculate text size based on content length
+                            double fontSize = _calculateFontSize(options[index]);
+
                             return GestureDetector(
                               onTap: () {
                                 if (!isSubmitting) {
@@ -601,12 +616,12 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(12), // Reduced padding to fit more text
                                 child: Center(
                                   child: Text(
                                     options[index],
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: fontSize,
                                       fontWeight: FontWeight.w600,
                                       color: _selectedAnswer == index
                                           ? Colors.white
@@ -614,7 +629,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                                     ),
                                     textAlign: TextAlign.center,
                                     overflow: TextOverflow.visible,
-                                    maxLines: 2,
+                                    maxLines: null, // Allow unlimited lines
                                   ),
                                 ),
                               ),
