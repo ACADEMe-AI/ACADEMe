@@ -12,7 +12,7 @@ import '../models/course_model.dart';
 class CourseController extends ChangeNotifier {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final CourseDataCache _cache = CourseDataCache();
-  final String _backendUrl = dotenv.env['BACKEND_URL'] ?? '';
+  final String _backendUrl = dotenv.env['BACKEND_URL'] ?? 'https://10.0.2.2:8000';
 
   List<Course> _courses = [];
   bool _isLoading = false;
