@@ -5,46 +5,126 @@ import 'package:ACADEMe/localization/l10n.dart';
 class CourseProgressSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView( // Wrap entire content
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+    return Stack(
+      children: [
+        // Original content with reduced opacity
+        Opacity(
+          opacity: 0.3,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildMePoints(context),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildMePoints(context),
+                      ],
+                    ),
+                  ),
+                  _buildSectionTitle(
+                      L10n.getTranslatedText(context, 'Course Progress')),
+                  _buildCourseCard(
+                      L10n.getTranslatedText(context, 'Linear Algebra'),
+                      L10n.getTranslatedText(context, 'Mathematics'),
+                      80,
+                      L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
+                  _buildCourseCard(
+                      L10n.getTranslatedText(context, 'Organic Chemistry'),
+                      L10n.getTranslatedText(context, 'Chemistry'),
+                      25,
+                      L10n.getTranslatedText(context, '5 ${L10n.getTranslatedText(context, 'Modules')}')),
+                  _buildCourseCard(
+                      L10n.getTranslatedText(context, 'Linear Algebra'),
+                      L10n.getTranslatedText(context, 'Mathematics'),
+                      80,
+                      L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
+                  _buildQuizScores(context),
                 ],
               ),
             ),
-            _buildSectionTitle(
-                L10n.getTranslatedText(context, 'Course Progress')),
-            _buildCourseCard(
-                L10n.getTranslatedText(context, 'Linear Algebra'),
-                L10n.getTranslatedText(context, 'Mathematics'),
-                80,
-                L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
-            _buildCourseCard(
-                L10n.getTranslatedText(context, 'Organic Chemistry'),
-                L10n.getTranslatedText(context, 'Chemistry'),
-                25,
-                L10n.getTranslatedText(context, '5 ${L10n.getTranslatedText(context, 'Modules')}')),
-            _buildCourseCard(
-                L10n.getTranslatedText(context, 'Linear Algebra'),
-                L10n.getTranslatedText(context, 'Mathematics'),
-                80,
-                L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
-            _buildQuizScores(context),
-          ],
+          ),
         ),
-      ),
+        // Premium lock overlay
+        Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 50,
+                    color: Colors.grey[300],
+                  ),
+                const SizedBox(height: 20),
+                Text(
+                  L10n.getTranslatedText(context, 'Premium Feature'),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  L10n.getTranslatedText(context, 'Upgrade to Premium to view your progress'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 25),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Handle upgrade to premium
+                      // You can add your premium upgrade logic here
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AcademeTheme.appColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: Text(
+                      L10n.getTranslatedText(context, 'Upgrade to Premium'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  // All other methods remain unchanged...
   Widget _buildMePoints(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
@@ -318,7 +398,7 @@ class CourseProgressSection extends StatelessWidget {
               height: 10,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(5),
-                color: const Color.fromARGB(147, 221, 218, 218),
+                color: const Color.fromARGB(201, 221, 218, 218),
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
