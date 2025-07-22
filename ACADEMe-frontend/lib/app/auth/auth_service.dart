@@ -4,8 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../api_endpoints.dart';
 import '../pages/topics/controllers/topic_cache_controller.dart' as topic;
 import '../pages/courses/models/course_model.dart';
 
@@ -40,13 +40,11 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  static final String _baseUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
-
   /// ✅ Send OTP to email for registration
   Future<(bool, String?)> sendOTP(String email) async {
     try {
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/send-otp"),
+        ApiEndpoints.getUri(ApiEndpoints.sendOtp),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"email": email}),
       );
@@ -67,7 +65,7 @@ class AuthService {
   Future<(bool, String?)> sendForgotPasswordOTP(String email) async {
     try {
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/forgot-password"),
+        ApiEndpoints.getUri(ApiEndpoints.sendForgotPasswordOtp),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"email": email}),
       );
@@ -88,7 +86,7 @@ class AuthService {
   Future<(bool, String?)> resetPasswordWithOTP(String email, String otp, String newPassword) async {
     try {
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/reset-password"),
+        ApiEndpoints.getUri(ApiEndpoints.resetPassword),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
@@ -114,7 +112,7 @@ class AuthService {
       String studentClass, String photoUrl, String otp) async {
     try {
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/signup"),
+        ApiEndpoints.getUri(ApiEndpoints.signup),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
@@ -177,7 +175,7 @@ class AuthService {
 
       // Now register with backend using Firebase UID
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/signup"),
+        ApiEndpoints.getUri(ApiEndpoints.signup),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
@@ -235,7 +233,7 @@ class AuthService {
   Future<(AppUser?, String?)> signIn(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/users/login"),
+        ApiEndpoints.getUri(ApiEndpoints.login),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"email": email, "password": password}),
       );
@@ -334,7 +332,7 @@ class AuthService {
   Future<bool> checkIfUserExists(String email) async {
     try {
       final response = await http.get(
-        Uri.parse("$_baseUrl/api/users/exists?email=$email"),
+        ApiEndpoints.getUri(ApiEndpoints.userExists(email)),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -401,7 +399,7 @@ class AuthService {
 
     try {
       final response = await http.get(
-        Uri.parse("$_baseUrl/api/users/me"),
+        ApiEndpoints.getUri(ApiEndpoints.userDetails),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
