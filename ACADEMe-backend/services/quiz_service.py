@@ -6,20 +6,19 @@ from datetime import datetime
 from fastapi import HTTPException
 from firebase_admin import firestore
 from services.course_service import CourseService
+import utils.firestore_helpers as firestore_helpers
 from models.quiz_model import QuizResponse, QuestionResponse
 from models.quiz_model import QuizCreate, QuizResponse, QuestionCreate, QuestionResponse
 
 db = firestore.client()
 
-QUIZZES_JSON_PATH = "assets/quizzes.json"
-
 class QuizService:
     @staticmethod
     async def add_quiz(
-        course_id: str, 
-        topic_id: str, 
-        quiz_data: QuizCreate,  
-        is_subtopic: bool = False, 
+        course_id: str,
+        topic_id: str,
+        quiz_data: QuizCreate,
+        is_subtopic: bool = False,
         subtopic_id: str = None
     ) -> QuizResponse:
         """Adds a quiz under a topic or subtopic in Firestore with multilingual support."""
@@ -36,7 +35,7 @@ class QuizService:
             # ✅ Define target languages
             target_languages = ["fr", "es", "de", "zh", "ar", "hi", "en"]
             if detected_language not in target_languages:
-                detected_language = "en"  # Default to English if unsupported
+                detected_language = "en"
 
             quiz_dict["languages"] = {detected_language: {"title": quiz_data.title, "description": quiz_data.description}}
 
@@ -72,16 +71,8 @@ class QuizService:
 
             ref.set(quiz_dict, merge=True)
 
-            # ✅ Update quizzes.json
-            quizzes = {}
-            if os.path.exists(QUIZZES_JSON_PATH):
-                with open(QUIZZES_JSON_PATH, "r", encoding="utf-8") as f:
-                    quizzes = json.load(f)
-
-            quizzes[quiz_id] = quiz_data.title  # Store quiz ID and title
-
-            with open(QUIZZES_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(quizzes, f, indent=4, ensure_ascii=False)
+            # ✅ **Store ID mapping in Firestore instead of JSON**
+            firestore_helpers.FirestoreUtils.store_id_mapping("quizzes", quiz_id, quiz_data.title)
 
             return QuizResponse(**quiz_dict)
 

@@ -6,18 +6,17 @@ from fastapi import HTTPException
 from firebase_admin import firestore
 from services.course_service import CourseService
 from models.material_model import MaterialResponse
+import utils.firestore_helpers as firestore_helpers
 
 db = firestore.client()
-
-MATERIALS_JSON_PATH = "assets/materials.json"
 
 class MaterialService:
     @staticmethod
     async def add_material(
-        course_id: str, 
-        topic_id: str, 
-        material: dict,  
-        is_subtopic: bool = False, 
+        course_id: str,
+        topic_id: str,
+        material: dict,
+        is_subtopic: bool = False,
         subtopic_id: str = None
     ) -> MaterialResponse:
         """Adds a material under a topic or subtopic in Firestore with multilingual support."""
@@ -54,11 +53,11 @@ class MaterialService:
 
             for lang in target_languages:
                 languages[lang] = {
-                    "content": await translation_tasks[lang]["content"] if translation_tasks[lang]["content"] else material["content"],  # ✅ Keeps original content if not text
+                    "content": await translation_tasks[lang]["content"] if translation_tasks[lang]["content"] else material["content"],
                     "optional_text": await translation_tasks[lang]["optional_text"] if translation_tasks[lang]["optional_text"] else "",
                 }
-            
-            material["languages"] = languages  # ✅ Store translations properly
+
+            material["languages"] = languages
 
             # 🔹 Determine Firestore reference
             if is_subtopic and subtopic_id:
@@ -84,16 +83,8 @@ class MaterialService:
 
             ref.set(material, merge=True)
 
-            # ✅ Update materials.json
-            materials = {}
-            if os.path.exists(MATERIALS_JSON_PATH):
-                with open(MATERIALS_JSON_PATH, "r", encoding="utf-8") as f:
-                    materials = json.load(f)
-
-            materials[material_id] = material["content"]  # Store material ID and content
-
-            with open(MATERIALS_JSON_PATH, "w", encoding="utf-8") as f:
-                json.dump(materials, f, indent=4, ensure_ascii=False)
+            # ✅ **Store ID mapping in Firestore instead of JSON**
+            firestore_helpers.FirestoreUtils.store_id_mapping("materials", material_id, material["content"])
 
             return MaterialResponse(**material)
 
