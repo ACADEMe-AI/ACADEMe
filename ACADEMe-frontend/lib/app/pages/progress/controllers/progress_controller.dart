@@ -70,4 +70,33 @@ class ProgressController {
           "❌ Failed to fetch overall grade: ${response.statusCode}");
     }
   }
+
+  Future<dynamic> fetchRecommendations({String targetLanguage = 'en'}) async {
+    final String backendUrl =
+        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
+    final String? token = await _storage.read(key: 'access_token');
+
+    if (token == null) {
+      throw Exception("❌ No access token found");
+    }
+
+    final response = await http.get(
+      Uri.parse(
+          "$backendUrl/api/recommendations/?target_language=$targetLanguage"),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Decode the response body using UTF-8
+      final String responseBody = utf8.decode(response.bodyBytes);
+      final data = jsonDecode(responseBody);
+      return data["recommendations"];
+    } else {
+      throw Exception(
+          "❌ Failed to fetch recommendations: ${response.statusCode}");
+    }
+  }
 }
