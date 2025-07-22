@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -7,14 +8,12 @@ class ProgressController {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   Future<List<dynamic>> fetchCourses() async {
-    final String backendUrl =
-        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
     final String? token = await _storage.read(key: 'access_token');
 
     if (token == null) throw Exception("❌ No access token found");
 
     final response = await http.get(
-      Uri.parse("$backendUrl/api/courses/?target_language=en"),
+      ApiEndpoints.getUri(ApiEndpoints.courses('en')),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -29,8 +28,6 @@ class ProgressController {
   }
 
   Future<double> fetchOverallGrade() async {
-    final String backendUrl =
-        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
     final String? token =
     await const FlutterSecureStorage().read(key: 'access_token');
 
@@ -39,7 +36,7 @@ class ProgressController {
     }
 
     final response = await http.get(
-      Uri.parse("$backendUrl/api/progress-visuals/"),
+      ApiEndpoints.getUri(ApiEndpoints.progressVisuals),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -72,8 +69,6 @@ class ProgressController {
   }
 
   Future<dynamic> fetchRecommendations({String targetLanguage = 'en'}) async {
-    final String backendUrl =
-        dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
     final String? token = await _storage.read(key: 'access_token');
 
     if (token == null) {
@@ -81,8 +76,7 @@ class ProgressController {
     }
 
     final response = await http.get(
-      Uri.parse(
-          "$backendUrl/api/recommendations/?target_language=$targetLanguage"),
+      ApiEndpoints.getUri(ApiEndpoints.recommendations(targetLanguage)),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json; charset=UTF-8',
