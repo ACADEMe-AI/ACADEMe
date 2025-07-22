@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../api_endpoints.dart';
 import '../models/course_model.dart';
 
 class CourseController extends ChangeNotifier {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final CourseDataCache _cache = CourseDataCache();
-  final String _backendUrl = dotenv.env['BACKEND_URL'] ?? 'https://10.0.2.2:8000';
 
   List<Course> _courses = [];
   bool _isLoading = false;
@@ -87,7 +86,7 @@ class CourseController extends ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('$_backendUrl/api/courses/?target_language=$currentLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.courses(currentLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

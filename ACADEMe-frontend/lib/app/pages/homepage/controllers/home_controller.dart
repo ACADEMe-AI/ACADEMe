@@ -2,8 +2,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../api_endpoints.dart';
 
 class HomeCourseDataCache {
   static final HomeCourseDataCache _instance = HomeCourseDataCache._internal();
@@ -53,7 +53,6 @@ class HomeController {
       return cachedCourses;
     }
 
-    final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
     final String? token = await _secureStorage.read(key: 'access_token');
 
     if (token == null) {
@@ -62,7 +61,7 @@ class HomeController {
 
     try {
       final response = await http.get(
-        Uri.parse("$backendUrl/api/courses/?target_language=$language"),
+        ApiEndpoints.getUri(ApiEndpoints.courses(language)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -138,13 +137,12 @@ class HomeController {
 
   Future<void> fetchAndStoreUserDetails() async {
     try {
-      final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
       final String? token = await _secureStorage.read(key: 'access_token');
 
       if (token == null) return;
 
       final response = await http.get(
-        Uri.parse("$backendUrl/api/users/me"),
+        ApiEndpoints.getUri(ApiEndpoints.userDetails),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

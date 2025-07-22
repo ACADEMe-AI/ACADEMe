@@ -70,7 +70,7 @@ class ApiEndpoints {
   static String get progressVisuals => '$baseUrl/api/progress-visuals/';
 
   // AI Processing Endpoints
-  static String processFile(String fileType) => '$baseUrl/api/process_$fileType';
+  static String processFile(String fileType) => '$baseUrl/api/process_${fileType.toLowerCase()}';
   static String get processStt => '$baseUrl/api/process_stt';
   static String get processText => '$baseUrl/api/process_text';
 
