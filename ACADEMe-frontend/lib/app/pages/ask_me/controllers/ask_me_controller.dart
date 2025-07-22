@@ -26,6 +26,7 @@ class AskMeController extends ChangeNotifier {
   Timer? timer;
   int seconds = 0;
   bool isConverting = false;
+  bool _hasProcessedInitialMessage = false;
 
   String searchQuery = "";
   List<Map<String, String>> languages = [
@@ -79,6 +80,13 @@ class AskMeController extends ChangeNotifier {
     timer?.cancel();
     seconds = 0;
     notifyListeners();
+  }
+
+  void handleInitialMessage(String? message) {
+    if (!_hasProcessedInitialMessage && message?.isNotEmpty == true) {
+      sendMessage(message!);
+      _hasProcessedInitialMessage = true;
+    }
   }
 
   @override
