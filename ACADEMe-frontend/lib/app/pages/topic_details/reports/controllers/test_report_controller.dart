@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class TestReportController {
@@ -23,8 +23,6 @@ class TestReportController {
   double overallAverage = 0;
   double topicScore = 0;
 
-  // Constants
-  final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   // Initialize data loading
@@ -68,7 +66,7 @@ class TestReportController {
       }
 
       final response = await http.get(
-        Uri.parse('$backendUrl/api/progress-visuals/'),
+        ApiEndpoints.getUri(ApiEndpoints.progressVisuals),
         headers: {
           'Authorization': 'Bearer $token',
           'accept': 'application/json',

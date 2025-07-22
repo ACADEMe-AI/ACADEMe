@@ -53,6 +53,16 @@ class ApiEndpoints {
   static String topicQuizQuestionsNoLang(String courseId, String topicId, String quizId) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/$quizId/questions/';
 
+  // Added order_by parameter
+  static String topicSubtopicsOrdered(String courseId, String topicId, String language) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/?target_language=$language&order_by=created_at';
+  static String subtopicMaterialsOrdered(String courseId, String topicId, String subtopicId, String language) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/materials/?target_language=$language&order_by=created_at';
+  static String subtopicQuizzesOrdered(String courseId, String topicId, String subtopicId, String language) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/?target_language=$language&order_by=created_at';
+  static String subtopicQuizQuestionsOrdered(String courseId, String topicId, String subtopicId, String quizId, String language) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/$quizId/questions/?target_language=$language&order_by=created_at';
+
   // Progress Endpoints
   static String get progressNoLang => '$baseUrl/api/progress/';
   static String progress(String? language) => '$baseUrl/api/progress/?target_language=$language';
