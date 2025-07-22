@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:async' show unawaited;
 import 'dart:io';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -268,7 +269,7 @@ class FlashCardController with ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/'),
+        ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsNoLang(courseId, topicId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -400,7 +401,7 @@ class FlashCardController with ChangeNotifier {
 
     try {
       final response = await http.post(
-        Uri.parse('$backendUrl/api/progress/'),
+        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -422,7 +423,7 @@ class FlashCardController with ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('$backendUrl/api/progress/'),
+        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',

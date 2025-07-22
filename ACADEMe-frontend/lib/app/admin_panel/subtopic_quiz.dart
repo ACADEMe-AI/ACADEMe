@@ -181,7 +181,7 @@ class SubTopicQuizScreenState extends State<SubTopicQuizScreen> {
     required List<String> options,
     required int correctOption,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizQuestions(widget.courseId, widget.topicId, widget.subtopicId, widget.quizId, null));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizQuestionsNoLang(widget.courseId, widget.topicId, widget.subtopicId, widget.quizId));
 
     try {
       String? token = await _storage.read(key: "access_token");

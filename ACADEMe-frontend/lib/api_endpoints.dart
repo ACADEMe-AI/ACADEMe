@@ -15,26 +15,46 @@ class ApiEndpoints {
   static String get updateClass => '$baseUrl/api/users/update_class/';
   static String get adminEmails => '$baseUrl/api/users/admins';
 
-  // Course Endpoints
-  static String courses(String? language) => '$baseUrl/api/courses/?target_language=$language';
-  static String courseTopics(String courseId, String? language) =>
+  // Course Endpoints with Language Parameters
+  static String courses(String language) => '$baseUrl/api/courses/?target_language=$language';
+  static String courseTopics(String courseId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/?target_language=$language';
-  static String topicSubtopics(String courseId, String topicId, String? language) =>
+  static String topicSubtopics(String courseId, String topicId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/?target_language=$language';
-  static String subtopicMaterials(String courseId, String topicId, String subtopicId, String? language) =>
+  static String subtopicMaterials(String courseId, String topicId, String subtopicId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/materials/?target_language=$language';
-  static String subtopicQuizzes(String courseId, String topicId, String subtopicId, String? language) =>
+  static String subtopicQuizzes(String courseId, String topicId, String subtopicId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/?target_language=$language';
-  static String subtopicQuizQuestions(String courseId, String topicId, String subtopicId, String quizId, String? language) =>
+  static String subtopicQuizQuestions(String courseId, String topicId, String subtopicId, String quizId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/$quizId/questions/?target_language=$language';
-  static String topicMaterials(String courseId, String topicId, String? language) =>
+  static String topicMaterials(String courseId, String topicId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/materials/?target_language=$language';
-  static String topicQuizzes(String courseId, String topicId, String? language) =>
+  static String topicQuizzes(String courseId, String topicId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/?target_language=$language';
-  static String topicQuizQuestions(String courseId, String topicId, String quizId, String? language) =>
+  static String topicQuizQuestions(String courseId, String topicId, String quizId, String language) =>
       '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/$quizId/questions/?target_language=$language';
 
+  // Course Endoints with No Language Parameters
+  static String get coursesNoLang => '$baseUrl/api/courses/';
+  static String courseTopicsNoLang(String courseId) =>
+      '$baseUrl/api/courses/$courseId/topics/';
+  static String topicSubtopicsNoLang(String courseId, String topicId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/';
+  static String subtopicMaterialsNoLang(String courseId, String topicId, String subtopicId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/materials/';
+  static String subtopicQuizzesNoLang(String courseId, String topicId, String subtopicId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/';
+  static String subtopicQuizQuestionsNoLang(String courseId, String topicId, String subtopicId, String quizId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/$quizId/questions/';
+  static String topicMaterialsNoLang(String courseId, String topicId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/materials/';
+  static String topicQuizzesNoLang(String courseId, String topicId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/';
+  static String topicQuizQuestionsNoLang(String courseId, String topicId, String quizId) =>
+      '$baseUrl/api/courses/$courseId/topics/$topicId/quizzes/$quizId/questions/';
+
   // Progress Endpoints
+  static String get progressNoLang => '$baseUrl/api/progress/';
   static String progress(String? language) => '$baseUrl/api/progress/?target_language=$language';
   static String progressRecord(String progressId) => '$baseUrl/api/progress/$progressId';
   static String get progressVisuals => '$baseUrl/api/progress-visuals/';

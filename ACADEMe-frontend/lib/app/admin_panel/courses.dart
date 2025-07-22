@@ -45,7 +45,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
     }
 
     final response = await http.get(
-      ApiEndpoints.getUri(ApiEndpoints.courses(_targetLanguage)),
+      ApiEndpoints.getUri(ApiEndpoints.courses(_targetLanguage!)),
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type":
@@ -117,7 +117,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
                 }
 
                 final response = await http.post(
-                  ApiEndpoints.getUri(ApiEndpoints.courses(null)),
+                  ApiEndpoints.getUri(ApiEndpoints.coursesNoLang),
                   headers: {
                     "Authorization": "Bearer $token",
                     "Content-Type":
