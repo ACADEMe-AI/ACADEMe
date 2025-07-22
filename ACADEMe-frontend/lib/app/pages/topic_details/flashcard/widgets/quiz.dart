@@ -1,4 +1,5 @@
 import 'package:ACADEMe/academe_theme.dart';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -130,8 +131,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     }
 
     final response = await http.get(
-      Uri.parse(
-          "$_baseUrl/api/progress/?target_language=en"), // Hardcoded "en" for English
+      ApiEndpoints.getUri(ApiEndpoints.progress('en')), // Hardcoded "en" for English
       headers: {
         'Authorization':
         'Bearer $token', // Include the access token in the headers
@@ -203,7 +203,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     if (existingProgress == null) {
       // Create new progress
       final response = await http.post(
-        Uri.parse("$_baseUrl/api/progress/"),
+        ApiEndpoints.getUri(ApiEndpoints.progress(null)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -244,7 +244,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
       // Update existing progress
       final progressId = existingProgress["progress_id"];
       final response = await http.put(
-        Uri.parse("$_baseUrl/api/progress/$progressId"),
+        ApiEndpoints.getUri(ApiEndpoints.progressRecord(progressId)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',

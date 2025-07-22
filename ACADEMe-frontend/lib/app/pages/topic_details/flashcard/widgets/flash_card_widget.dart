@@ -7,7 +7,7 @@ import 'package:chewie/chewie.dart';
 import 'package:flutter/gestures.dart';
 import '../controllers/flash_card_controller.dart';
 import 'quiz.dart';
-import '../../../../../widget/whatsapp_audio.dart';
+import 'whatsapp_audio.dart';
 
 class ProgressIndicatorWidget extends StatelessWidget {
   final FlashCardController controller;
