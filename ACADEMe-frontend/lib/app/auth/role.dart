@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../api_endpoints.dart';
 
 class UserRoleManager {
   static final UserRoleManager _instance = UserRoleManager._internal();
@@ -32,9 +32,7 @@ class AdminRoles {
   /// Fetches admin emails from the API and updates the list.
   static Future<void> fetchAdminEmails() async {
     try {
-      // Ensure BACKEND_URL is not null, else use default
-      String baseUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
-      final response = await http.get(Uri.parse("$baseUrl/api/users/admins"));
+      final response = await http.get(ApiEndpoints.getUri(ApiEndpoints.adminEmails),);
 
       if (response.statusCode == 200) {
         List<dynamic> emails = json.decode(response.body);
