@@ -1,16 +1,15 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/lessons_model.dart';
 
 class LessonsController {
   final FlutterSecureStorage storage = const FlutterSecureStorage();
-  final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
 
   Future<List<Map<String, dynamic>>> fetchSubtopics({
     required BuildContext context,
@@ -29,8 +28,7 @@ class LessonsController {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            '$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/?target_language=$targetLanguage&order_by=created_at'),
+        ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsOrdered(courseId, topicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -66,8 +64,7 @@ class LessonsController {
     try {
       // Fetch materials
       final materialsResponse = await http.get(
-        Uri.parse(
-            '$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/materials/?target_language=$targetLanguage&order_by=created_at'),
+        ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsOrdered(courseId, topicId, subtopicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -83,8 +80,7 @@ class LessonsController {
       // Fetch quizzes
       List<Map<String, dynamic>> quizzesList = [];
       final quizzesResponse = await http.get(
-        Uri.parse(
-            '$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/?target_language=$targetLanguage&order_by=created_at'),
+        ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesOrdered(courseId, topicId, subtopicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -98,8 +94,7 @@ class LessonsController {
         for (var quiz in quizzesData) {
           final quizId = quiz["id"]?.toString() ?? "N/A";
           final questionsResponse = await http.get(
-            Uri.parse(
-                '$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/$subtopicId/quizzes/$quizId/questions/?target_language=$targetLanguage&order_by=created_at'),
+            ApiEndpoints.getUri(ApiEndpoints.subtopicQuizQuestionsOrdered(courseId, topicId, subtopicId, quizId, targetLanguage)),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json; charset=UTF-8',

@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 
 class OverviewController {
@@ -14,7 +14,6 @@ class OverviewController {
   final BuildContext context;
   
   final FlutterSecureStorage storage = const FlutterSecureStorage();
-  final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://127.0.0.1:8000';
 
   OverviewController({
     required this.courseId,
@@ -35,8 +34,7 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            '$backendUrl/api/courses/$courseId/topics/?target_language=$targetLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.courseTopics(courseId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -82,8 +80,7 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        Uri.parse(
-            '$backendUrl/api/courses/$courseId/topics/$topicId/subtopics/?target_language=$targetLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(courseId, topicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -119,7 +116,7 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        Uri.parse('$backendUrl/api/progress/?target_language=$targetLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.progress(targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',

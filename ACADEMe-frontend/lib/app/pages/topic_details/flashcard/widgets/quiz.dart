@@ -2,7 +2,6 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/api_endpoints.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -37,8 +36,6 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   int _currentQuestionIndex = 0;
   int? _selectedAnswer;
   bool isSubmitting = false;
-  final String _baseUrl = dotenv.env['BACKEND_URL'] ??
-      'http://10.0.2.2:8000'; // Replace with your API endpoint
   List<dynamic> _progressList = [];
   final FlutterSecureStorage _storage =
   const FlutterSecureStorage(); // Add FlutterSecureStorage

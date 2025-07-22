@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,7 +10,6 @@ class TopicApiController {
   factory TopicApiController() => _instance;
   TopicApiController._internal();
 
-  final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
   final FlutterSecureStorage storage = const FlutterSecureStorage();
 
   Future<List<Map<String, dynamic>>> fetchTopicsFromBackend(
@@ -22,7 +21,7 @@ class TopicApiController {
       if (token == null) throw Exception("No access token found");
 
       final response = await http.get(
-        Uri.parse('$backendUrl/api/courses/$courseId/topics/?target_language=$targetLanguage'),
+        ApiEndpoints.getUri(ApiEndpoints.courseTopics(courseId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
