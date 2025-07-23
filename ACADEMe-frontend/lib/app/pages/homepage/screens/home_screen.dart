@@ -186,131 +186,159 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMainContent() {
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: [
-        // Search field
-        TextField(
-          onTap: () => _showSearchUI.value = true,
-          decoration: InputDecoration(
-            hintText: L10n.getTranslatedText(context, 'search'),
-            prefixIcon: Padding(
-              padding: const EdgeInsets.only(left: 12.0, right: 8.0),
-              child: Transform.rotate(
-                angle: -1.57,
-                child: const Icon(Icons.tune),
+ Widget _buildMainContent() {
+  return ListView(
+    padding: const EdgeInsets.all(16.0),
+    children: [
+      // Search field
+      TextField(
+        onTap: () => _showSearchUI.value = true,
+        decoration: InputDecoration(
+          hintText: L10n.getTranslatedText(context, 'search'),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 12.0, right: 8.0),
+            child: Transform.rotate(
+              angle: -1.57,
+              child: const Icon(Icons.tune),
+            ),
+          ),
+          suffixIcon: const Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: Icon(Icons.search),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(26.0),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: const Color.fromARGB(205, 232, 238, 239),
+        ),
+      ),
+      const SizedBox(height: 20),
+      AskMeCard(messageController: _messageController),
+      const SizedBox(height: 20),
+      ProgressCard(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ProgressScreen()),
+        ),
+      ),
+      const SizedBox(height: 20),
+      ContinueLearningSection(
+        courses: _courses,
+        refreshCourses: _refreshCourses,
+      ),
+      const SizedBox(height: 20),
+      SwipeableBanner(pageController: _pageController),
+      const SizedBox(height: 16),
+      
+      // All Courses header above tags
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              L10n.getTranslatedText(context, 'All Courses'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            suffixIcon: const Padding(
-              padding: EdgeInsets.only(right: 12.0),
-              child: Icon(Icons.search),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(26.0),
-              borderSide: BorderSide.none,
-            ),
-            filled: true,
-            fillColor: const Color.fromARGB(205, 232, 238, 239),
-          ),
-        ),
-        const SizedBox(height: 20),
-        AskMeCard(messageController: _messageController),
-        const SizedBox(height: 20),
-        ProgressCard(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ProgressScreen()),
-          ),
-        ),
-        const SizedBox(height: 20),
-        ContinueLearningSection(
-          courses: _courses,
-          refreshCourses: _refreshCourses,
-        ),
-        const SizedBox(height: 20),
-        SwipeableBanner(pageController: _pageController),
-        const SizedBox(height: 16),
-        // Course tags
-        const CourseTagsRow(),
-        const SizedBox(height: 8),
-        const CourseTagsRow(isSecondRow: true),
-        const SizedBox(height: 16),
-        // My Courses section
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                L10n.getTranslatedText(context, 'My Courses'),
+            TextButton(
+              onPressed: widget.onCourseTap,
+              child: Text(
+                L10n.getTranslatedText(context, 'See All'),
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.blue,
                 ),
               ),
-              TextButton(
-                onPressed: widget.onCourseTap,
-                child: Text(
-                  L10n.getTranslatedText(context, 'See All'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    color: Colors.blue,
-                  ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      
+      // Course tags - Updated with refresh callback
+      CourseTagsGrid(refreshCourses: _refreshCourses),
+      const SizedBox(height: 16),
+      
+      // My Courses section
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              L10n.getTranslatedText(context, 'My Courses'),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: widget.onCourseTap,
+              child: Text(
+                L10n.getTranslatedText(context, 'See All'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : CoursesGrid(
+              courses: _courses,
+              refreshCourses: _refreshCourses,
+            ),
+      const SizedBox(height: 16),
+      // Recommended section
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Text(
+          L10n.getTranslatedText(context, 'Recommended'),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+      // Recommended courses
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: SizedBox(
+          height: 160,
+          child: Row(
+            children: [
+              Expanded(
+                child: CourseCard(
+                  L10n.getTranslatedText(context, 'Marketing'),
+                  "9 ${L10n.getTranslatedText(context, 'Lessons')}",
+                  Colors.pink[100]!,
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CourseCard(
+                  L10n.getTranslatedText(context, 'Trading'),
+                  "14 ${L10n.getTranslatedText(context, 'Lessons')}",
+                  Colors.green[100]!,
+                  onTap: () {},
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
-        _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : CoursesGrid(
-                courses: _courses,
-                refreshCourses: _refreshCourses,
-              ),
-        const SizedBox(height: 16),
-        // Recommended section
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text(
-            L10n.getTranslatedText(context, 'Recommended'),
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Recommended courses
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: SizedBox(
-            height: 160,
-            child: Row(
-              children: [
-                Expanded(
-                  child: CourseCard(
-                    L10n.getTranslatedText(context, 'Marketing'),
-                    "9 ${L10n.getTranslatedText(context, 'Lessons')}",
-                    Colors.pink[100]!,
-                    onTap: () {},
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: CourseCard(
-                    L10n.getTranslatedText(context, 'Trading'),
-                    "14 ${L10n.getTranslatedText(context, 'Lessons')}",
-                    Colors.green[100]!,
-                    onTap: () {},
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 }

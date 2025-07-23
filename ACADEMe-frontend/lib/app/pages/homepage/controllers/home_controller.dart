@@ -135,6 +135,8 @@ class HomeController {
     }
   }
 
+  
+
   Future<void> fetchAndStoreUserDetails() async {
     try {
       final String? token = await _secureStorage.read(key: 'access_token');
