@@ -121,60 +121,90 @@ class ChatHistoryDrawer extends StatelessWidget {
                 ),
               ),
             ),
-            // Rest of your existing code...
-            Padding(
-              padding:
-              const EdgeInsets.symmetric(vertical: 0.0, horizontal: 20),
-              child: ListTile(
-                leading:
-                Icon(Icons.chat, color: AcademeTheme.appColor, size: 25),
-                title: Text(
-                  L10n.getTranslatedText(context, 'Chat History'),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 20,
-                  ),
-                ),
-                onTap: () => Navigator.pop(context),
+            // Chat History Feature Coming Soon
+            _buildOption(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildOption(BuildContext context) {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Timeline dots
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTimelineDot(true),
+                _buildTimelineLine(),
+                _buildTimelineDot(true),
+                _buildTimelineLine(),
+                _buildTimelineDot(false),
+              ],
+            ),
+            const SizedBox(height: 30),
+            Icon(
+              Icons.schedule,
+              size: 50,
+              color: AcademeTheme.appColor.withOpacity(0.7),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Chat History',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AcademeTheme.appColor,
               ),
             ),
-            const Divider(),
-
-            // Chat Sessions List
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  itemCount: chatHistory.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8.0),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.history,
-                          color: AcademeTheme.appColor,
-                          size: 28,
-                        ),
-                        title: Text(
-                          chatHistory[index].title,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w500, fontSize: 20),
-                        ),
-                        subtitle: Text(chatHistory[index].timestamp),
-                        onTap: () {
-                          onSelectChat(chatHistory[index]);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
-                ),
+            const SizedBox(height: 8),
+            const Text(
+              'In Development',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.orange,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 15),
+            const Text(
+              'We\'re building something amazing\nfor your chat experience',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTimelineDot(bool isCompleted) {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isCompleted
+            ? AcademeTheme.appColor
+            : Colors.grey.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildTimelineLine() {
+    return Container(
+      width: 30,
+      height: 2,
+      color: Colors.grey.withOpacity(0.3),
     );
   }
 
