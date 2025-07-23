@@ -27,6 +27,7 @@ class OverviewScreenState extends State<OverviewScreen>
   late ScrollController _scrollController;
   late OverviewController _controller;
   late OverviewModel _model;
+  final GlobalKey<LessonsSectionState> _lessonsSectionKey = GlobalKey<LessonsSectionState>();
 
   @override
   void initState() {
@@ -57,6 +58,24 @@ class OverviewScreenState extends State<OverviewScreen>
     });
   }
 
+  Future<void> _onRefresh() async {
+    // Show loading state
+    setState(() {
+      _model.updateFromController({
+        ..._model.toMap(),
+        'isLoading': true,
+      });
+    });
+
+    // Refresh overview data
+    await _fetchData();
+
+    // Refresh lessons data if the lessons section is available
+    if (_lessonsSectionKey.currentState != null) {
+      await _lessonsSectionKey.currentState!.refreshData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final height = MediaQuery.of(context).size.height;
@@ -74,10 +93,13 @@ class OverviewScreenState extends State<OverviewScreen>
                 onBackPressed: () => Navigator.pop(context),
               ),
               Expanded(
-                child: NestedScrollView(
-                  controller: _scrollController,
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
+                child: RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  color: AcademeTheme.appColor,
+                  // Key change: Use CustomScrollView instead of NestedScrollView
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
                       SliverToBoxAdapter(
                         child: ProgressSection(
                           height: height,
@@ -96,27 +118,29 @@ class OverviewScreenState extends State<OverviewScreen>
                             indicatorSize: TabBarIndicatorSize.tab,
                             labelStyle: TextStyle(fontSize: width * 0.045),
                             tabs: [
-                              Tab(
-                                  text: L10n.getTranslatedText(
-                                      context, 'Overview')),
+                              Tab(text: L10n.getTranslatedText(context, 'Overview')),
                               Tab(text: L10n.getTranslatedText(context, 'Q&A')),
                             ],
                           ),
                         ),
                       ),
-                    ];
-                  },
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _model.hasSubtopicData
-                          ? LessonsSection(
-                              courseId: widget.courseId,
-                              topicId: widget.topicId,
-                              userProgress: _model.userProgress,
-                            )
-                          : const Center(child: CircularProgressIndicator()),
-                      const QSection(),
+                      // Key change: Use SliverFillRemaining for the tab content
+                      SliverFillRemaining(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _model.hasSubtopicData
+                                ? LessonsSection(
+                                    key: _lessonsSectionKey,
+                                    courseId: widget.courseId,
+                                    topicId: widget.topicId,
+                                    userProgress: _model.userProgress,
+                                  )
+                                : const Center(child: CircularProgressIndicator()),
+                            const QSection(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
