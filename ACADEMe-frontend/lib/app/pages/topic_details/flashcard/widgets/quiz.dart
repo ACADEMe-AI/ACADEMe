@@ -546,12 +546,12 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
           Column(
             children: [
               Expanded(
-                child: SingleChildScrollView(
+                child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Question Box
+                      // Question Box with Increased Minimum Height
                       Container(
                         width: double.infinity,
                         constraints: const BoxConstraints(
@@ -578,59 +578,61 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                       const SizedBox(height: 20),
 
                       // Answer Options
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, // Two options per row
-                          crossAxisSpacing: 12, // Horizontal spacing
-                          mainAxisSpacing: 12, // Vertical spacing
-                          childAspectRatio: 1.2, // Reduced from 1.5 to 1.2 for taller boxes
-                        ),
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          // Calculate text size based on content length
-                          double fontSize = _calculateFontSize(options[index]);
+                      Expanded(
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2, // Two options per row
+                            crossAxisSpacing: 12, // Horizontal spacing
+                            mainAxisSpacing: 12, // Vertical spacing
+                            childAspectRatio: 1.2, // Reduced from 1.5 to 1.2 for taller boxes
+                          ),
+                          itemCount: options.length,
+                          itemBuilder: (context, index) {
+                            // Calculate text size based on content length
+                            double fontSize = _calculateFontSize(options[index]);
 
-                          return GestureDetector(
-                            onTap: () {
-                              if (!isSubmitting) {
-                                setState(() {
-                                  _selectedAnswer = index;
-                                });
-                              }
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: _selectedAnswer == index
-                                    ? AcademeTheme.appColor
-                                    : Colors.white,
-                                border: Border.all(
-                                  color: AcademeTheme.appColor,
-                                  width: 1.5,
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.all(12), // Reduced padding to fit more text
-                              child: Center(
-                                child: Text(
-                                  options[index],
-                                  style: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: FontWeight.w600,
-                                    color: _selectedAnswer == index
-                                        ? Colors.white
-                                        : AcademeTheme.appColor,
+                            return GestureDetector(
+                              onTap: () {
+                                if (!isSubmitting) {
+                                  setState(() {
+                                    _selectedAnswer = index;
+                                  });
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: _selectedAnswer == index
+                                      ? AcademeTheme.appColor
+                                      : Colors.white,
+                                  border: Border.all(
+                                    color: AcademeTheme.appColor,
+                                    width: 1.5,
                                   ),
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.visible,
-                                  maxLines: null, // Allow unlimited lines
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.all(12), // Reduced padding to fit more text
+                                child: Center(
+                                  child: Text(
+                                    options[index],
+                                    style: TextStyle(
+                                      fontSize: fontSize,
+                                      fontWeight: FontWeight.w600,
+                                      color: _selectedAnswer == index
+                                          ? Colors.white
+                                          : AcademeTheme.appColor,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: null, // Allow unlimited lines
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ],
                   ),

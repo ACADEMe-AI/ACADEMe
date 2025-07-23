@@ -29,4 +29,18 @@ class OverviewModel {
     if (data.containsKey('completedSubtopics')) completedSubtopics = data['completedSubtopics'];
     if (data.containsKey('totalSubtopics')) totalSubtopics = data['totalSubtopics'];
   }
+
+  // Add the missing toMap method
+  Map<String, dynamic> toMap() {
+    return {
+      'title': topicTitle,
+      'description': topicDescription,
+      'isLoading': isLoading,
+      'hasSubtopicData': hasSubtopicData,
+      'userProgress': userProgress,
+      'progressPercentage': progressPercentage,
+      'completedSubtopics': completedSubtopics,
+      'totalSubtopics': totalSubtopics,
+    };
+  }
 }

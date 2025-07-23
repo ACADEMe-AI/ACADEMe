@@ -81,6 +81,30 @@ class LessonsSectionState extends State<LessonsSection> {
     }
   }
 
+  // Public method to refresh lessons data from parent
+  Future<void> refreshData() async {
+    // Clear existing data
+    setState(() {
+      _state = _state.copyWith(
+        subtopicMaterials: {},
+        subtopicQuizzes: {},
+        subtopicLoading: {},
+        isLoading: true,
+      );
+    });
+
+    // Re-fetch data
+    await _fetchSubtopics();
+    _determineResumePoint();
+
+    // Re-fetch materials and quizzes for expanded sections
+    for (final entry in _state.isExpanded.entries) {
+      if (entry.value && _state.subtopicIds.containsKey(entry.key)) {
+        await _fetchMaterialsAndQuizzes(_state.subtopicIds[entry.key]!);
+      }
+    }
+  }
+
   Future<void> _fetchMaterialsAndQuizzes(String subtopicId) async {
     setState(() {
       _state = _state.copyWith(
@@ -182,61 +206,67 @@ class LessonsSectionState extends State<LessonsSection> {
                 left: 16, right: 16, top: 16, bottom: 100),
             child: Column(
               children: [
-                ..._state.isExpanded.keys.map((section) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ListTile(
-                        title: Text(
-                          section,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 17,
+                if (_state.isLoading)
+                  const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  )
+                else
+                  ..._state.isExpanded.keys.map((section) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          title: Text(
+                            section,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                            ),
                           ),
-                        ),
-                        trailing: Icon(
-                          _state.isExpanded[section]!
-                              ? Icons.expand_less
-                              : Icons.expand_more,
-                          color: Colors.black,
-                        ),
-                        onTap: () async {
-                          setState(() {
-                            _state = _state.copyWith(
-                              isExpanded: {
-                                ..._state.isExpanded,
-                                section: !_state.isExpanded[section]!,
-                              },
-                            );
-                          });
-                          if (_state.isExpanded[section]! &&
-                              _state.subtopicIds.containsKey(section)) {
-                            await _fetchMaterialsAndQuizzes(
-                                _state.subtopicIds[section]!);
-                          }
-                        },
-                      ),
-                      if (_state.isExpanded[section]! &&
-                          _state.subtopicIds.containsKey(section))
-                        LessonsAndQuizzesWidget(
-                          subtopicId: _state.subtopicIds[section]!,
-                          materials: _state.subtopicMaterials[_state.subtopicIds[section]!] ?? [],
-                          quizzes: _state.subtopicQuizzes[_state.subtopicIds[section]!] ?? [],
-                          isLoading: _state.subtopicLoading[_state.subtopicIds[section]!] ?? false,
-                          userProgress: widget.userProgress,
-                          courseId: widget.courseId,
-                          topicId: widget.topicId,
-                          onTap: (index) => _navigateToFlashcard(
-                            _state.subtopicIds[section]!,
-                            _state.subtopicIds.entries
-                                .firstWhere((entry) => entry.value == _state.subtopicIds[section]!)
-                                .key,
-                            index,
+                          trailing: Icon(
+                            _state.isExpanded[section]!
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            color: Colors.black,
                           ),
+                          onTap: () async {
+                            setState(() {
+                              _state = _state.copyWith(
+                                isExpanded: {
+                                  ..._state.isExpanded,
+                                  section: !_state.isExpanded[section]!,
+                                },
+                              );
+                            });
+                            if (_state.isExpanded[section]! &&
+                                _state.subtopicIds.containsKey(section)) {
+                              await _fetchMaterialsAndQuizzes(
+                                  _state.subtopicIds[section]!);
+                            }
+                          },
                         ),
-                    ],
-                  );
-                }),
+                        if (_state.isExpanded[section]! &&
+                            _state.subtopicIds.containsKey(section))
+                          LessonsAndQuizzesWidget(
+                            subtopicId: _state.subtopicIds[section]!,
+                            materials: _state.subtopicMaterials[_state.subtopicIds[section]!] ?? [],
+                            quizzes: _state.subtopicQuizzes[_state.subtopicIds[section]!] ?? [],
+                            isLoading: _state.subtopicLoading[_state.subtopicIds[section]!] ?? false,
+                            userProgress: widget.userProgress,
+                            courseId: widget.courseId,
+                            topicId: widget.topicId,
+                            onTap: (index) => _navigateToFlashcard(
+                              _state.subtopicIds[section]!,
+                              _state.subtopicIds.entries
+                                  .firstWhere((entry) => entry.value == _state.subtopicIds[section]!)
+                                  .key,
+                              index,
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
               ],
             ),
           ),
