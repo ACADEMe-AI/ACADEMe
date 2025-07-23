@@ -88,63 +88,80 @@ class FlashCardContentWidget extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          return Swiper(
-            controller: controller.swiperController,
-            itemWidth: constraints.maxWidth,
-            itemHeight: constraints.maxHeight,
-            loop: false,
-            duration: 300,
-            layout: SwiperLayout.STACK,
-            axisDirection: AxisDirection.right,
-            index: controller.currentPage,
-            curve: Curves.easeOutCubic,
-            viewportFraction: 1.0,
-            scale: 0.9,
-            onIndexChanged: (index) {
-              controller.updateCurrentPage(index);
+          return GestureDetector(
+            onTapDown: (_) {
+              if (controller.showSwipeHint) {
+                controller.hideSwipeHint();
+              }
             },
-            itemBuilder: (context, index) {
-              return Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+            onPanStart: (_) {
+              if (controller.showSwipeHint) {
+                controller.hideSwipeHint();
+              }
+            },
+            behavior: HitTestBehavior.translucent, // Add this line to ensure touches are captured
+            child: Swiper(
+              controller: controller.swiperController,
+              itemWidth: constraints.maxWidth,
+              itemHeight: constraints.maxHeight,
+              loop: false,
+              duration: 300,
+              layout: SwiperLayout.STACK,
+              axisDirection: AxisDirection.right,
+              index: controller.currentPage,
+              curve: Curves.easeOutCubic,
+              viewportFraction: 1.0,
+              scale: 0.9,
+              onIndexChanged: (index) {
+                controller.updateCurrentPage(index);
+                if (controller.showSwipeHint) {
+                  controller.hideSwipeHint();
+                }
+              },
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                      child: _buildMaterial(index, controller),
                     ),
-                    child: _buildMaterial(index, controller),
-                  ),
-                  if (controller.currentPage != index)
-                    IgnorePointer(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.2),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
+                    if (controller.currentPage != index)
+                      IgnorePointer(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  if (controller.showSwipeHint && index == 0)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/swipe_left_no_bg.gif',
-                            width: 200,
-                            height: 200,
-                            fit: BoxFit.contain,
+                    if (controller.showSwipeHint && index == 0)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/swipe_left_no_bg.gif',
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  if (controller.showCelebration)
-                    CelebrationWidget(controller: controller),
-                ],
-              );
-            },
-            itemCount: controller.materials.length + controller.quizzes.length,
+                    if (controller.showCelebration)
+                      CelebrationWidget(controller: controller),
+                  ],
+                );
+              },
+              itemCount:
+                  controller.materials.length + controller.quizzes.length,
+            ),
           );
         },
       ),
@@ -169,24 +186,24 @@ class FlashCardContentWidget extends StatelessWidget {
     );
   }
 
-  Widget _getMaterialWidget(Map<String, dynamic> material, int index, FlashCardController controller) {
+  Widget _getMaterialWidget(Map<String, dynamic> material, int index,
+      FlashCardController controller) {
     switch (material["type"]) {
       case "text":
-        return TextContentWidget(content: material["content"]!, controller: controller);
+        return TextContentWidget(
+            content: material["content"]!, controller: controller);
       case "video":
         return VideoContentWidget(controller: controller);
       case "image":
-        return ImageContentWidget(imageUrl: material["content"]!, controller: controller);
+        return ImageContentWidget(
+            imageUrl: material["content"]!, controller: controller);
       case "audio":
         return AudioContentWidget(audioUrl: material["content"]!);
       case "document":
         return DocumentContentWidget(docUrl: material["content"]!);
       case "quiz":
         return QuizContentWidget(
-          quiz: material["quiz"], 
-          index: index, 
-          controller: controller
-        );
+            quiz: material["quiz"], index: index, controller: controller);
       default:
         return const Center(child: Text('Unsupported content type'));
     }
@@ -239,13 +256,28 @@ class CelebrationWidget extends StatelessWidget {
                     position: controller.slideAnimation,
                     child: Transform.scale(
                       scale: controller.scaleAnimation.value *
-                          (1.0 + 0.1 * (1.0 + (controller.pulseAnimation.value - 1.0) *
-                              (1.0 + 0.5 * (controller.celebrationController.value * 10) % 1.0))),
+                          (1.0 +
+                              0.1 *
+                                  (1.0 +
+                                      (controller.pulseAnimation.value - 1.0) *
+                                          (1.0 +
+                                              0.5 *
+                                                  (controller
+                                                          .celebrationController
+                                                          .value *
+                                                      10) %
+                                                  1.0))),
                       child: Transform.rotate(
                         angle: controller.rotateAnimation.value *
-                            (1.0 + 0.3 * ((controller.celebrationController.value * 8) % 1.0 - 0.5)),
+                            (1.0 +
+                                0.3 *
+                                    ((controller.celebrationController.value *
+                                                8) %
+                                            1.0 -
+                                        0.5)),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 30, vertical: 15),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
@@ -257,7 +289,12 @@ class CelebrationWidget extends StatelessWidget {
                               end: Alignment.bottomRight,
                               stops: [
                                 0.0,
-                                0.5 + 0.3 * ((controller.celebrationController.value * 5) % 1.0),
+                                0.5 +
+                                    0.3 *
+                                        ((controller.celebrationController
+                                                    .value *
+                                                5) %
+                                            1.0),
                                 1.0,
                               ],
                             ),
@@ -265,7 +302,12 @@ class CelebrationWidget extends StatelessWidget {
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.green.withOpacity(0.4),
-                                blurRadius: 15 + 5 * ((controller.celebrationController.value * 6) % 1.0),
+                                blurRadius: 15 +
+                                    5 *
+                                        ((controller.celebrationController
+                                                    .value *
+                                                6) %
+                                            1.0),
                                 spreadRadius: 2,
                               ),
                             ],
@@ -296,8 +338,12 @@ class CelebrationWidget extends StatelessWidget {
                   const SizedBox(height: 20),
                   ...List.generate(8, (index) {
                     final delay = index * 0.1;
-                    final animationValue = (controller.celebrationController.value - delay).clamp(0.0, 1.0);
-                    final continuousMotion = (controller.celebrationController.value * 4 + index) % 1.0;
+                    final animationValue =
+                        (controller.celebrationController.value - delay)
+                            .clamp(0.0, 1.0);
+                    final continuousMotion =
+                        (controller.celebrationController.value * 4 + index) %
+                            1.0;
                     return Transform.translate(
                       offset: Offset(
                         (index - 4) * 40.0 * animationValue +
@@ -314,9 +360,14 @@ class CelebrationWidget extends StatelessWidget {
                             height: 18,
                             decoration: BoxDecoration(
                               color: [
-                                Colors.red, Colors.blue, Colors.green,
-                                Colors.orange, Colors.purple, Colors.pink,
-                                Colors.teal, Colors.amber
+                                Colors.red,
+                                Colors.blue,
+                                Colors.green,
+                                Colors.orange,
+                                Colors.purple,
+                                Colors.pink,
+                                Colors.teal,
+                                Colors.amber
                               ][index],
                               shape: BoxShape.circle,
                               boxShadow: const [
@@ -347,15 +398,13 @@ class TextContentWidget extends StatelessWidget {
   final String content;
   final FlashCardController controller;
 
-  const TextContentWidget({
-    super.key, 
-    required this.content, 
-    required this.controller
-  });
+  const TextContentWidget(
+      {super.key, required this.content, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    String processedContent = content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
+    String processedContent =
+        content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
 
     return buildStyledContainer(
       context,
@@ -368,7 +417,8 @@ class TextContentWidget extends StatelessWidget {
                 child: _formattedText(processedContent),
               ),
             ),
-            if (controller.quizzes.isEmpty && controller.currentPage == controller.materials.length - 1)
+            if (controller.quizzes.isEmpty &&
+                controller.currentPage == controller.materials.length - 1)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: ElevatedButton(
@@ -681,27 +731,27 @@ class VideoContentWidget extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(0),
               child: controller.chewieController == null ||
-                  controller.videoController == null ||
-                  !controller.videoController!.value.isInitialized
+                      controller.videoController == null ||
+                      !controller.videoController!.value.isInitialized
                   ? SizedBox.expand(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Loading video...",
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontSize: 16,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Loading video...",
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
+                    )
                   : SizedBox.expand(
-                child: Chewie(controller: controller.chewieController!),
-              ),
+                      child: Chewie(controller: controller.chewieController!),
+                    ),
             ),
           ),
           if (controller.quizzes.isEmpty &&
@@ -741,11 +791,8 @@ class ImageContentWidget extends StatelessWidget {
   final String imageUrl;
   final FlashCardController controller;
 
-  const ImageContentWidget({
-    super.key, 
-    required this.imageUrl, 
-    required this.controller
-  });
+  const ImageContentWidget(
+      {super.key, required this.imageUrl, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -763,9 +810,9 @@ class ImageContentWidget extends StatelessWidget {
                   return CachedNetworkImage(
                     imageUrl: imageUrl,
                     placeholder: (context, url) =>
-                    const Center(child: CircularProgressIndicator()),
+                        const Center(child: CircularProgressIndicator()),
                     errorWidget: (context, url, error) =>
-                    const Icon(Icons.error),
+                        const Icon(Icons.error),
                     fit: fit,
                     alignment: Alignment.center,
                   );
@@ -808,7 +855,7 @@ class ImageContentWidget extends StatelessWidget {
   Future<BoxFit> _getImageFit(String imageUrl) async {
     final Completer<ImageInfo> completer = Completer();
     final ImageStream stream =
-    NetworkImage(imageUrl).resolve(const ImageConfiguration());
+        NetworkImage(imageUrl).resolve(const ImageConfiguration());
 
     final listener = ImageStreamListener((ImageInfo info, bool _) {
       completer.complete(info);
@@ -862,21 +909,19 @@ class DocumentContentWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return buildStyledContainer(
       context,
-      Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    debugPrint("Document URL: $docUrl");
-                    launchUrl(Uri.parse(docUrl));
-                  },
-                  child: const Text('Open Document'),
-                ),
-              ),
+      Column(children: [
+        Expanded(
+          child: Center(
+            child: ElevatedButton(
+              onPressed: () {
+                debugPrint("Document URL: $docUrl");
+                launchUrl(Uri.parse(docUrl));
+              },
+              child: const Text('Open Document'),
             ),
-          ]
-      ),
+          ),
+        ),
+      ]),
     );
   }
 }
@@ -886,12 +931,11 @@ class QuizContentWidget extends StatelessWidget {
   final int index;
   final FlashCardController controller;
 
-  const QuizContentWidget({
-    super.key, 
-    required this.quiz, 
-    required this.index, 
-    required this.controller
-  });
+  const QuizContentWidget(
+      {super.key,
+      required this.quiz,
+      required this.index,
+      required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -909,7 +953,8 @@ class QuizContentWidget extends StatelessWidget {
         topicId: controller.topicId,
         subtopicId: controller.subtopicId,
         subtopicTitle: quiz['title'] ?? 'Untitled Quiz',
-        hasNextMaterial: index < (controller.materials.length + controller.quizzes.length - 1),
+        hasNextMaterial: index <
+            (controller.materials.length + controller.quizzes.length - 1),
       ),
     );
   }

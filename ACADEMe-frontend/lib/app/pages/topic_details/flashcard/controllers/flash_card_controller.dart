@@ -83,6 +83,12 @@ class FlashCardController with ChangeNotifier {
         unawaited(_sendProgressToBackend());
       });
     }
+
+    if (_showSwipeHint) {
+      Timer(const Duration(seconds: 3), () {
+        hideSwipeHint();
+      });
+    }
   }
 
   int get currentPage => _currentPage;
@@ -143,6 +149,15 @@ class FlashCardController with ChangeNotifier {
         curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
       ),
     );
+  }
+
+  void hideSwipeHint() async {
+    if (_showSwipeHint) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('show_swipe_hint', false);
+      _showSwipeHint = false;
+      notifyListeners();
+    }
   }
 
   void _preloadAdjacentMaterials() {
