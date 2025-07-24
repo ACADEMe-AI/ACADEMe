@@ -78,6 +78,7 @@ class ContinueLearningSection extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => TopicViewScreen(
                           courseId: course["id"],
+                          courseTitle: course["title"], // Add required courseTitle
                         ),
                       ),
                     );

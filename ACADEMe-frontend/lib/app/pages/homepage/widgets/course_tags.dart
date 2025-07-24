@@ -50,6 +50,8 @@ class _CourseTagsGridState extends State<CourseTagsGrid> {
         MaterialPageRoute(
           builder: (context) => TopicViewScreen(
             courseId: _courses[index]["id"],
+            courseTitle: _courses[index]["title"] ?? 'Untitled Course', // Add required courseTitle
+            
           ),
         ),
       );

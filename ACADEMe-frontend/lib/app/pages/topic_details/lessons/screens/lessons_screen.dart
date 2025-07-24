@@ -11,12 +11,18 @@ import '../../flashcard/controllers/flash_card_controller.dart';
 class LessonsSection extends StatefulWidget {
   final String courseId;
   final String topicId;
+  final String courseTitle;
+  final String topicTitle;
+  final String language;
   final List<Map<String, dynamic>> userProgress;
 
   const LessonsSection({
     super.key,
     required this.courseId,
     required this.topicId,
+    required this.courseTitle,
+    required this.topicTitle,
+    required this.language,
     required this.userProgress,
   });
 
@@ -81,9 +87,7 @@ class LessonsSectionState extends State<LessonsSection> {
     }
   }
 
-  // Public method to refresh lessons data from parent
   Future<void> refreshData() async {
-    // Clear existing data
     setState(() {
       _state = _state.copyWith(
         subtopicMaterials: {},
@@ -93,11 +97,9 @@ class LessonsSectionState extends State<LessonsSection> {
       );
     });
 
-    // Re-fetch data
     await _fetchSubtopics();
     _determineResumePoint();
 
-    // Re-fetch materials and quizzes for expanded sections
     for (final entry in _state.isExpanded.entries) {
       if (entry.value && _state.subtopicIds.containsKey(entry.key)) {
         await _fetchMaterialsAndQuizzes(_state.subtopicIds[entry.key]!);
@@ -317,6 +319,9 @@ class LessonsSectionState extends State<LessonsSection> {
           builder: (context) => TestReportScreen(
             courseId: widget.courseId,
             topicId: widget.topicId,
+            courseTitle: widget.courseTitle,
+            topicTitle: widget.topicTitle,
+            language: widget.language,
           ),
         ),
       );
@@ -408,6 +413,9 @@ class LessonsSectionState extends State<LessonsSection> {
           builder: (context) => TestReportScreen(
             courseId: widget.courseId,
             topicId: widget.topicId,
+            courseTitle: widget.courseTitle,
+            topicTitle: widget.topicTitle,
+            language: widget.language,
           ),
         ),
       );
