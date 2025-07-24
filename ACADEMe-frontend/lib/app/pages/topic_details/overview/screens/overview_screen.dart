@@ -10,11 +10,17 @@ import '../widgets/qna.dart';
 class OverviewScreen extends StatefulWidget {
   final String courseId;
   final String topicId;
+  final String courseTitle;
+  final String topicTitle;
+  final String language;
 
   const OverviewScreen({
     super.key,
     required this.courseId,
     required this.topicId,
+    required this.courseTitle,
+    required this.topicTitle,
+    required this.language,
   });
 
   @override
@@ -59,7 +65,6 @@ class OverviewScreenState extends State<OverviewScreen>
   }
 
   Future<void> _onRefresh() async {
-    // Show loading state
     setState(() {
       _model.updateFromController({
         ..._model.toMap(),
@@ -67,10 +72,8 @@ class OverviewScreenState extends State<OverviewScreen>
       });
     });
 
-    // Refresh overview data
     await _fetchData();
 
-    // Refresh lessons data if the lessons section is available
     if (_lessonsSectionKey.currentState != null) {
       await _lessonsSectionKey.currentState!.refreshData();
     }
@@ -96,7 +99,6 @@ class OverviewScreenState extends State<OverviewScreen>
                 child: RefreshIndicator(
                   onRefresh: _onRefresh,
                   color: AcademeTheme.appColor,
-                  // Key change: Use CustomScrollView instead of NestedScrollView
                   child: CustomScrollView(
                     controller: _scrollController,
                     slivers: [
@@ -124,7 +126,6 @@ class OverviewScreenState extends State<OverviewScreen>
                           ),
                         ),
                       ),
-                      // Key change: Use SliverFillRemaining for the tab content
                       SliverFillRemaining(
                         child: TabBarView(
                           controller: _tabController,
@@ -134,6 +135,9 @@ class OverviewScreenState extends State<OverviewScreen>
                                     key: _lessonsSectionKey,
                                     courseId: widget.courseId,
                                     topicId: widget.topicId,
+                                    courseTitle: widget.courseTitle,
+                                    topicTitle: widget.topicTitle,
+                                    language: widget.language,
                                     userProgress: _model.userProgress,
                                   )
                                 : const Center(child: CircularProgressIndicator()),

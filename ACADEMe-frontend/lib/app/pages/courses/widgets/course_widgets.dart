@@ -92,7 +92,8 @@ class CourseTabBar extends StatelessWidget {
 
 class CourseCard extends StatelessWidget {
   final Course course;
-  final Future<String> Function(String courseId, BuildContext context) getModuleProgressText;
+  final Future<String> Function(String courseId, BuildContext context)
+      getModuleProgressText;
 
   const CourseCard({
     super.key,
@@ -107,7 +108,8 @@ class CourseCard extends StatelessWidget {
         log("Selected Course ID: ${course.id}");
 
         try {
-          final controller = Provider.of<CourseController>(context, listen: false);
+          final controller =
+              Provider.of<CourseController>(context, listen: false);
           await controller.selectCourse(course.id);
 
           if (!context.mounted) return;
@@ -115,7 +117,11 @@ class CourseCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TopicViewScreen(courseId: course.id),
+              builder: (context) => TopicViewScreen(
+                courseId: course.id,
+                courseTitle:
+                    course.title, // Add the required courseTitle parameter
+              ),
             ),
           );
         } catch (error) {
@@ -148,7 +154,8 @@ class CourseCard extends StatelessWidget {
                 children: [
                   Text(
                     course.title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -184,8 +191,10 @@ class CourseCard extends StatelessWidget {
                           future: getModuleProgressText(course.id, context),
                           builder: (context, snapshot) {
                             return Text(
-                              snapshot.data ?? "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
-                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                              snapshot.data ??
+                                  "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black54),
                             );
                           },
                         ),
@@ -194,7 +203,8 @@ class CourseCard extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: Text(
                           "${(course.progress.clamp(0.0, 1.0) * 100).toInt()}%",
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54),
                         ),
                       )
                     ],
@@ -250,7 +260,8 @@ class CourseListView extends StatelessWidget {
   final bool hasInitialized;
   final VoidCallback onRefresh;
   final String emptyMessage;
-  final Future<String> Function(String courseId, BuildContext context) getModuleProgressText;
+  final Future<String> Function(String courseId, BuildContext context)
+      getModuleProgressText;
 
   const CourseListView({
     super.key,

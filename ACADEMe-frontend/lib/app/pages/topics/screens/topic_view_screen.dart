@@ -13,8 +13,13 @@ import '../widgets/topic_card.dart';
 
 class TopicViewScreen extends StatefulWidget {
   final String courseId;
+  final String courseTitle;
 
-  const TopicViewScreen({super.key, required this.courseId});
+  const TopicViewScreen({
+    super.key, 
+    required this.courseId,
+    required this.courseTitle,
+  });
 
   @override
   State<TopicViewScreen> createState() => _TopicViewScreenState();
@@ -58,7 +63,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
 
     if (cachedTopics != null && !_lifecycleController.isAppJustOpened) {
-      // Use cached data
       setState(() {
         _updateTopicsData(cachedTopics);
         isLoading = false;
@@ -66,7 +70,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
       return;
     }
 
-    // Load cached data immediately if available
     if (cachedTopics != null) {
       setState(() {
         _updateTopicsData(cachedTopics);
@@ -74,7 +77,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
       });
     }
 
-    // Fetch fresh data from backend
     await _fetchTopicsFromBackend(showRefreshIndicator: cachedTopics != null);
     _lifecycleController.markAsUsed();
   }
@@ -101,7 +103,6 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
       if (!mounted) return;
 
-      // Cache the fresh data
       _cacheController.cacheTopics(widget.courseId, targetLanguage, allTopics);
 
       setState(() {
@@ -154,12 +155,15 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final language = languageProvider.locale.languageCode;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: AcademeTheme.appColor,
         title: Text(
-          L10n.getTranslatedText(context, 'Topics'),
+          widget.courseTitle,
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -203,9 +207,9 @@ class _TopicViewScreenState extends State<TopicViewScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildTopicList(topics),
-                  _buildTopicList(ongoingTopics),
-                  _buildTopicList(completedTopics),
+                  _buildTopicList(topics, language),
+                  _buildTopicList(ongoingTopics, language),
+                  _buildTopicList(completedTopics, language),
                 ],
               ),
             ),
@@ -228,7 +232,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     );
   }
 
-  Widget _buildTopicList(List<Map<String, dynamic>> topicList) {
+  Widget _buildTopicList(List<Map<String, dynamic>> topicList, String language) {
     if (isLoading && topics.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AcademeTheme.appColor),
@@ -284,12 +288,17 @@ class _TopicViewScreenState extends State<TopicViewScreen>
                 builder: (context) => OverviewScreen(
                   courseId: widget.courseId,
                   topicId: topicList[index]["id"],
+                  courseTitle: widget.courseTitle,
+                  topicTitle: topicList[index]["title"] ?? "Untitled Topic",
+                  language: language,
                 ),
               ),
             ).then((_) {
-              // Refresh data when coming back from overviews
               final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-              final cachedTopics = _cacheController.getCachedTopics(widget.courseId, languageProvider.locale.languageCode);
+              final cachedTopics = _cacheController.getCachedTopics(
+                widget.courseId, 
+                languageProvider.locale.languageCode
+              );
               if (cachedTopics != null) {
                 _fetchTopicsFromBackend(showRefreshIndicator: true);
               }

@@ -12,11 +12,17 @@ import '../widgets/action_buttons.dart';
 class TestReportScreen extends StatefulWidget {
   final String courseId;
   final String topicId;
+  final String courseTitle;
+  final String topicTitle;
+  final String language;
 
   const TestReportScreen({
     super.key,
     required this.courseId,
     required this.topicId,
+    required this.courseTitle,
+    required this.topicTitle,
+    required this.language,
   });
 
   @override
@@ -25,6 +31,9 @@ class TestReportScreen extends StatefulWidget {
 
 class TestReportScreenState extends State<TestReportScreen> {
   late TestReportController _controller;
+  late PdfReportService _pdfService;
+  bool _isDownloadingPdf = false;
+  bool _isSharingPdf = false;
 
   @override
   void initState() {
@@ -32,11 +41,22 @@ class TestReportScreenState extends State<TestReportScreen> {
     _controller = TestReportController(
       courseId: widget.courseId,
       topicId: widget.topicId,
+      courseTitle: widget.courseTitle,
+      topicTitle: widget.topicTitle,
+      language: widget.language,
       onStateChanged: () {
         if (mounted) setState(() {});
       },
     );
+    _initializePdfService();
     _initializeData();
+  }
+
+  Future<void> _initializePdfService() async {
+    _pdfService = await PdfReportService.create(
+      controller: _controller,
+      logoAssetPath: 'assets/academe/academe_logo.png',
+    );
   }
 
   Future<void> _initializeData() async {
@@ -56,61 +76,92 @@ class TestReportScreenState extends State<TestReportScreen> {
     super.dispose();
   }
 
+  Future<void> _handleDownloadAction() async {
+    if (_isDownloadingPdf) return;
+    
+    setState(() => _isDownloadingPdf = true);
+    try {
+      await _pdfService.generateAndDownloadReport();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingPdf = false);
+      }
+    }
+  }
+
+  Future<void> _handleShareAction() async {
+    if (_isSharingPdf) return;
+    
+    setState(() => _isSharingPdf = true);
+    try {
+      await _pdfService.shareScore(
+        getTranslatedText: (text) => L10n.getTranslatedText(context, text),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSharingPdf = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(
           L10n.getTranslatedText(context, 'Test Report'),
-          style: GoogleFonts.poppins(fontSize: 22, color: Colors.white),
+          style: GoogleFonts.poppins(
+            fontSize: 22,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: AcademeTheme.appColor,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                color: AcademeTheme.appColor,
+              ),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TopicScoreCard(controller: _controller),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   PerformanceGraph(controller: _controller),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   DetailedAnalysis(controller: _controller),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   ActionButtons(
-                    onDownloadReport: () => _handlePdfAction(
-                      () => PdfReportService(
-                        courseId: widget.courseId,
-                        topicId: widget.topicId,
-                        topicResults: _controller.topicResults,
-                        getTranslatedText: (text) => L10n.getTranslatedText(context, text),
-                      ).generateAndDownloadReport(),
-                    ),
-                    onShareScore: () => _handlePdfAction(
-                      () => PdfReportService(
-                        courseId: widget.courseId,
-                        topicId: widget.topicId,
-                        topicResults: _controller.topicResults,
-                        getTranslatedText: (text) => L10n.getTranslatedText(context, text),
-                      ).shareScore(),
-                    ),
+                    onDownloadReport: _handleDownloadAction,
+                    onShareScore: _handleShareAction,
+                    isDownloading: _isDownloadingPdf,
+                    isSharing: _isSharingPdf,
                   ),
                 ],
               ),
             ),
     );
-  }
-
-  Future<void> _handlePdfAction(Future<void> Function() action) async {
-    try {
-      await action();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    }
   }
 }

@@ -37,6 +37,7 @@ class CoursesGrid extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => TopicViewScreen(
                   courseId: courses[index]["id"],
+                  courseTitle: courses[index]["title"] ?? 'Untitled Course', // Added required courseTitle
                 ),
               ),
             );
