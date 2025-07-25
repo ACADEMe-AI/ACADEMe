@@ -116,7 +116,7 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.progress(targetLanguage)),
+        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
