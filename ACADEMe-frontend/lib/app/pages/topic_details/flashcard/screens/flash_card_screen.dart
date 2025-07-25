@@ -4,15 +4,29 @@ import '../controllers/flash_card_controller.dart';
 import '../widgets/flash_card_widget.dart';
 import 'package:ACADEMe/academe_theme.dart';
 
-class FlashCardScreen extends StatelessWidget {
+class FlashCardScreen extends StatefulWidget {
   final FlashCardController controller;
 
   const FlashCardScreen({super.key, required this.controller});
 
   @override
+  State<FlashCardScreen> createState() => _FlashCardScreenState();
+}
+
+class _FlashCardScreenState extends State<FlashCardScreen>
+    with TickerProviderStateMixin {
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize animations when the widget is created
+    widget.controller.initializeAnimations(this);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
-      value: controller,
+      value: widget.controller,
       child: Consumer<FlashCardController>(
         builder: (context, controller, child) {
           if (controller.materials.isEmpty && controller.quizzes.isEmpty) {
@@ -34,8 +48,8 @@ class FlashCardScreen extends StatelessWidget {
               title: Text(
                 'Subtopic Materials',
                 style: TextStyle(
-                    color: Colors.black, 
-                    fontWeight: FontWeight.bold, 
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
                     fontSize: 18),
               ),
               centerTitle: true,
