@@ -45,6 +45,7 @@ class FlashCardController with ChangeNotifier {
   final Map<int, VideoPlayerController> _preloadedControllers = {};
   final Map<int, ChewieController> _preloadedChewieControllers = {};
   bool _showCelebration = false;
+  bool _animationsInitialized = false;
   late AnimationController _celebrationController;
   late Animation<double> _bounceAnimation;
   late Animation<double> _scaleAnimation;
@@ -105,27 +106,28 @@ class FlashCardController with ChangeNotifier {
   Animation<Offset> get slideAnimation => _slideAnimation;
   Animation<double> get pulseAnimation => _pulseAnimation;
   Animation<double> get rotateAnimation => _rotateAnimation;
+  bool get areAnimationsInitialized => _animationsInitialized;
 
   void initializeAnimations(TickerProvider vsync) {
     _celebrationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: vsync,
     );
-    
+
     _bounceAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _celebrationController,
         curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
       ),
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _celebrationController,
         curve: const Interval(0.2, 0.8, curve: Curves.bounceOut),
       ),
     );
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
@@ -135,20 +137,22 @@ class FlashCardController with ChangeNotifier {
         curve: const Interval(0.4, 1.0, curve: Curves.easeOutBack),
       ),
     );
-    
+
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
         parent: _celebrationController,
         curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
       ),
     );
-    
+
     _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
       CurvedAnimation(
         parent: _celebrationController,
         curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
       ),
     );
+
+    _animationsInitialized = true;
   }
 
   void hideSwipeHint() async {
