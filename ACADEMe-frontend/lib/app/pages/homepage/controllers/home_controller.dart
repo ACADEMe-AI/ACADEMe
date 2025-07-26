@@ -43,20 +43,63 @@ class HomeCourseDataCache {
   }
 }
 
-class HomeController {
+class HomeController extends ChangeNotifier {
+  static final HomeController _instance = HomeController._internal();
+  factory HomeController() => _instance;
+  HomeController._internal();
+
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final HomeCourseDataCache _cache = HomeCourseDataCache();
 
-  Future<List<Map<String, dynamic>>> fetchCourses(String language) async {
-    List<Map<String, dynamic>>? cachedCourses = _cache.getCachedCourses(language);
-    if (cachedCourses != null) {
-      return cachedCourses;
+  List<Map<String, dynamic>> _courses = [];
+  bool _isLoading = false;
+  String? _currentLanguage;
+  Map<String, String?> _userDetails = {};
+  bool _userDetailsFetched = false;
+
+  // Getters
+  List<Map<String, dynamic>> get courses => _courses;
+  bool get isLoading => _isLoading;
+  Map<String, String?> get userDetails => _userDetails;
+
+  // Ongoing courses getter
+  List<Map<String, dynamic>> get ongoingCourses =>
+      _courses.where((course) => course["progress"] > 0 && course["progress"] < 1).toList();
+
+  Future<void> initializeData(String language) async {
+    if (_currentLanguage == language && _courses.isNotEmpty && !_isLoading) {
+      return; // Data already loaded for this language
     }
+
+    await Future.wait([
+      fetchCourses(language),
+      if (!_userDetailsFetched) fetchAndStoreUserDetails(),
+    ]);
+  }
+
+  Future<void> fetchCourses(String language, {bool forceRefresh = false}) async {
+    if (_isLoading) return;
+
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      List<Map<String, dynamic>>? cachedCourses = _cache.getCachedCourses(language);
+      if (cachedCourses != null && _currentLanguage == language) {
+        _courses = cachedCourses;
+        return;
+      }
+    }
+
+    _isLoading = true;
+    _currentLanguage = language;
+    notifyListeners();
 
     final String? token = await _secureStorage.read(key: 'access_token');
 
     if (token == null) {
-      return [];
+      _courses = [];
+      _isLoading = false;
+      notifyListeners();
+      return;
     }
 
     try {
@@ -87,13 +130,17 @@ class HomeController {
           });
         }
 
+        _courses = coursesWithProgress;
         _cache.setCachedCourses(coursesWithProgress, language);
-        return coursesWithProgress;
+      } else {
+        _courses = [];
       }
-      return [];
     } catch (e) {
       debugPrint("Error fetching courses: $e");
-      return [];
+      _courses = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -118,26 +165,9 @@ class HomeController {
     }
   }
 
-  Future<Map<String, String?>> getUserDetails() async {
-    try {
-      final String? name = await _secureStorage.read(key: 'name');
-      final String? photoUrl = await _secureStorage.read(key: 'photo_url');
-      return {
-        'name': name,
-        'photo_url': photoUrl,
-      };
-    } catch (e) {
-      debugPrint("Error getting user details: $e");
-      return {
-        'name': null,
-        'photo_url': null,
-      };
-    }
-  }
-
-  
-
   Future<void> fetchAndStoreUserDetails() async {
+    if (_userDetailsFetched) return;
+
     try {
       final String? token = await _secureStorage.read(key: 'access_token');
 
@@ -157,13 +187,68 @@ class HomeController {
         await _secureStorage.write(key: 'email', value: data['email']);
         await _secureStorage.write(key: 'student_class', value: data['student_class']);
         await _secureStorage.write(key: 'photo_url', value: data['photo_url']);
+
+        _userDetails = {
+          'name': data['name'],
+          'photo_url': data['photo_url'],
+        };
+        _userDetailsFetched = true;
+        notifyListeners();
       }
     } catch (e) {
       debugPrint("Error fetching user details: $e");
     }
   }
 
+  Future<Map<String, String?>> getUserDetails() async {
+    if (_userDetails.isNotEmpty) {
+      return _userDetails;
+    }
+
+    try {
+      final String? name = await _secureStorage.read(key: 'name');
+      final String? photoUrl = await _secureStorage.read(key: 'photo_url');
+      _userDetails = {
+        'name': name,
+        'photo_url': photoUrl,
+      };
+      return _userDetails;
+    } catch (e) {
+      debugPrint("Error getting user details: $e");
+      return {
+        'name': null,
+        'photo_url': null,
+      };
+    }
+  }
+
   void clearCache() {
     _cache.clearCache();
+    _courses = [];
+    _userDetails = {};
+    _userDetailsFetched = false;
+    _currentLanguage = null;
+    notifyListeners();
+  }
+
+  Future<void> refreshData(String language) async {
+    clearCache();
+    await fetchCourses(language, forceRefresh: true);
+  }
+
+  // Method to update progress without full refresh
+  void updateCourseProgress(String courseId, double newProgress, int completedModules) {
+    final courseIndex = _courses.indexWhere((course) => course['id'] == courseId);
+    if (courseIndex != -1) {
+      _courses[courseIndex]['progress'] = newProgress;
+      _courses[courseIndex]['completedModules'] = completedModules;
+
+      // Update cache
+      if (_currentLanguage != null) {
+        _cache.setCachedCourses(_courses, _currentLanguage!);
+      }
+
+      notifyListeners();
+    }
   }
 }

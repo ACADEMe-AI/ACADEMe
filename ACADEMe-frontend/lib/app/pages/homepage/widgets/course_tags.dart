@@ -2,61 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../topics/screens/topic_view_screen.dart';
 import '../controllers/home_controller.dart';
-import 'package:ACADEMe/localization/language_provider.dart';
 
-class CourseTagsGrid extends StatefulWidget {
-  final Future<void> Function()? refreshCourses;
+class CourseTagsGrid extends StatelessWidget {
+  const CourseTagsGrid({super.key});
 
-  const CourseTagsGrid({super.key, this.refreshCourses});
+  void _onCourseTagTap(BuildContext context, int index) async {
+    final controller = Provider.of<HomeController>(context, listen: false);
+    final courses = controller.courses;
 
-  @override
-  State<CourseTagsGrid> createState() => _CourseTagsGridState();
-}
-
-class _CourseTagsGridState extends State<CourseTagsGrid> {
-  final HomeController _controller = HomeController();
-  List<Map<String, dynamic>> _courses = [];
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchCourses();
-  }
-
-  Future<void> _fetchCourses() async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    final currentLanguage = languageProvider.locale.languageCode;
-
-    setState(() => _isLoading = true);
-    try {
-      final courses = await _controller.fetchCourses(currentLanguage);
-      if (mounted) {
-        setState(() {
-          _courses = courses;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
-      debugPrint("Error fetching courses: $e");
-    }
-  }
-
-  void _onCourseTagTap(int index) async {
-    if (index < _courses.length) {
+    if (index < courses.length) {
       await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => TopicViewScreen(
-            courseId: _courses[index]["id"],
-            courseTitle: _courses[index]["title"] ?? 'Untitled Course', // Add required courseTitle
-            
+            courseId: courses[index]["id"],
+            courseTitle: courses[index]["title"] ?? 'Untitled Course',
           ),
         ),
       );
-      if (widget.refreshCourses != null) await widget.refreshCourses!();
-      await _fetchCourses();
+      // No need to refresh as progress updates will be handled automatically
     }
   }
 
@@ -103,40 +67,50 @@ class _CourseTagsGridState extends State<CourseTagsGrid> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_courses.isEmpty) return const Center(child: Text("No courses found"));
+    return Consumer<HomeController>(
+      builder: (context, controller, child) {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    List<Widget> rows = [];
-    for (int i = 0; i < _courses.length; i += 2) {
-      final first = _courses[i];
-      final second = (i + 1 < _courses.length) ? _courses[i + 1] : null;
+        final courses = controller.courses;
+        if (courses.isEmpty) {
+          return const Center(child: Text("No courses found"));
+        }
 
-      rows.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              _buildCourseTag(
-                text: first['title'] ?? '',
-                icon: Icons.school,
-                color: Colors.primaries[i % Colors.primaries.length],
-                onTap: () => _onCourseTagTap(i),
+        List<Widget> rows = [];
+        for (int i = 0; i < courses.length; i += 2) {
+          final first = courses[i];
+          final second = (i + 1 < courses.length) ? courses[i + 1] : null;
+
+          rows.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  _buildCourseTag(
+                    text: first['title'] ?? '',
+                    icon: Icons.school,
+                    color: Colors.primaries[i % Colors.primaries.length],
+                    onTap: () => _onCourseTagTap(context, i),
+                  ),
+                  if (second != null)
+                    _buildCourseTag(
+                      text: second['title'] ?? '',
+                      icon: Icons.school,
+                      color: Colors.primaries[(i + 1) % Colors.primaries.length],
+                      onTap: () => _onCourseTagTap(context, i + 1),
+                    )
+                  else
+                    const Expanded(child: SizedBox()), // filler if odd
+                ],
               ),
-              if (second != null)
-                _buildCourseTag(
-                  text: second['title'] ?? '',
-                  icon: Icons.school,
-                  color: Colors.primaries[(i + 1) % Colors.primaries.length],
-                  onTap: () => _onCourseTagTap(i + 1),
-                )
-              else
-                const Expanded(child: SizedBox()), // filler if odd
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
 
-    return Column(children: rows);
+        return Column(children: rows);
+      },
+    );
   }
 }
