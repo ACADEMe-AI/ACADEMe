@@ -128,7 +128,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     }
 
     final response = await http.get(
-      ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
+      ApiEndpoints.getUri(ApiEndpoints.progress('en')), // Hardcoded "en" for English
       headers: {
         'Authorization':
         'Bearer $token', // Include the access token in the headers
@@ -200,7 +200,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     if (existingProgress == null) {
       // Create new progress
       final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
+        ApiEndpoints.getUri(ApiEndpoints.progress(null)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -455,8 +455,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   }
 
 
-  void _showResultPopup(
-      bool isCorrect, String submittedQuizId, String questionId) {
+  void _showResultPopup(bool isCorrect, String submittedQuizId, String questionId) async {
     // Set animation state
     setState(() {
       _lastAnswerCorrect = isCorrect;
@@ -477,8 +476,6 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
       if (!mounted) return;
 
       await _storeQuizResult(isCorrect);
-
-      // FIXED: Send progress BEFORE any state changes or callbacks
       await _sendProgress(isCorrect, submittedQuizId, questionId);
 
       // Hide animations
@@ -488,16 +485,16 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
       _animationController.reset();
       _progressAnimationController.reset();
 
-      // Check if there are more questions in the current quiz
+      // Check if there are more quizzes in the current subtopic
       if (_currentQuestionIndex < widget.quizzes.length - 1) {
-        // Move to next question in current quiz
+        // Move to next quiz in current subtopic
         setState(() {
           isSubmitting = false;
           _currentQuestionIndex++;
           _selectedAnswer = null;
         });
       } else {
-        // All questions completed - reset and trigger callbacks
+        // All quizzes completed - reset and trigger callbacks
         setState(() {
           isSubmitting = false;
           _currentQuestionIndex = 0;

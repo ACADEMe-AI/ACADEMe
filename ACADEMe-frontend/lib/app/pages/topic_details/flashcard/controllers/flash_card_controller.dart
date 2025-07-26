@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:async' show unawaited;
 import 'dart:io';
-import 'package:ACADEMe/api_endpoints.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -11,9 +9,9 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter_swiper_view/flutter_swiper_view.dart';
 import 'package:flutter/animation.dart';
+import '../../../../../api_endpoints.dart';
 
 class FlashCardController with ChangeNotifier {
   final List<Map<String, String>> materials;
@@ -24,13 +22,13 @@ class FlashCardController with ChangeNotifier {
   final String topicId;
   final String subtopicId;
   final String subtopicTitle;
+  final String? language;
 
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   int _currentPage = 0;
   final AudioPlayer _audioPlayer = AudioPlayer();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final String backendUrl = dotenv.env['BACKEND_URL'] ?? 'http://10.0.2.2:8000';
   String topicTitle = "Loading...";
   bool _showSwipeHint = true;
   bool isLoading = true;
@@ -45,13 +43,12 @@ class FlashCardController with ChangeNotifier {
   final Map<int, VideoPlayerController> _preloadedControllers = {};
   final Map<int, ChewieController> _preloadedChewieControllers = {};
   bool _showCelebration = false;
-  bool _animationsInitialized = false;
-  late AnimationController _celebrationController;
-  late Animation<double> _bounceAnimation;
-  late Animation<double> _scaleAnimation;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _rotateAnimation;
+  AnimationController? _celebrationController;
+  Animation<double>? _bounceAnimation;
+  Animation<double>? _scaleAnimation;
+  Animation<Offset>? _slideAnimation;
+  Animation<double>? _pulseAnimation;
+  Animation<double>? _rotateAnimation;
   final SwiperController _swiperController = SwiperController();
 
   FlashCardController({
@@ -63,6 +60,7 @@ class FlashCardController with ChangeNotifier {
     required this.topicId,
     required this.subtopicId,
     required this.subtopicTitle,
+    this.language,
   }) : _currentPage = initialIndex {
     _loadSwipeHintState();
     fetchTopicDetails();
@@ -78,8 +76,7 @@ class FlashCardController with ChangeNotifier {
       _preloadAdjacentMaterials();
     }
 
-    // Send progress for the initial material
-    if (materials.isNotEmpty && _currentPage < materials.length) {
+    if (_currentPage < materials.length) {
       Future.delayed(const Duration(milliseconds: 500), () {
         unawaited(_sendProgressToBackend());
       });
@@ -100,15 +97,17 @@ class FlashCardController with ChangeNotifier {
   ChewieController? get chewieController => _chewieController;
   String get currentTopicTitle => topicTitle;
   SwiperController get swiperController => _swiperController;
-  AnimationController get celebrationController => _celebrationController;
-  Animation<double> get bounceAnimation => _bounceAnimation;
-  Animation<double> get scaleAnimation => _scaleAnimation;
-  Animation<Offset> get slideAnimation => _slideAnimation;
-  Animation<double> get pulseAnimation => _pulseAnimation;
-  Animation<double> get rotateAnimation => _rotateAnimation;
-  bool get areAnimationsInitialized => _animationsInitialized;
+  AnimationController? get celebrationController => _celebrationController;
+  Animation<double>? get bounceAnimation => _bounceAnimation;
+  Animation<double>? get scaleAnimation => _scaleAnimation;
+  Animation<Offset>? get slideAnimation => _slideAnimation;
+  Animation<double>? get pulseAnimation => _pulseAnimation;
+  Animation<double>? get rotateAnimation => _rotateAnimation;
+  bool get animationsInitialized => _celebrationController != null;
 
   void initializeAnimations(TickerProvider vsync) {
+    _celebrationController?.dispose();
+
     _celebrationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: vsync,
@@ -116,14 +115,14 @@ class FlashCardController with ChangeNotifier {
 
     _bounceAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _celebrationController,
+        parent: _celebrationController!,
         curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
       ),
     );
 
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _celebrationController,
+        parent: _celebrationController!,
         curve: const Interval(0.2, 0.8, curve: Curves.bounceOut),
       ),
     );
@@ -133,26 +132,24 @@ class FlashCardController with ChangeNotifier {
       end: Offset.zero,
     ).animate(
       CurvedAnimation(
-        parent: _celebrationController,
+        parent: _celebrationController!,
         curve: const Interval(0.4, 1.0, curve: Curves.easeOutBack),
       ),
     );
 
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(
-        parent: _celebrationController,
+        parent: _celebrationController!,
         curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
       ),
     );
 
     _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
       CurvedAnimation(
-        parent: _celebrationController,
+        parent: _celebrationController!,
         curve: const Interval(0.7, 1.0, curve: Curves.easeInOut),
       ),
     );
-
-    _animationsInitialized = true;
   }
 
   void hideSwipeHint() async {
@@ -283,8 +280,12 @@ class FlashCardController with ChangeNotifier {
     }
 
     try {
+      final url = language != null
+          ? ApiEndpoints.topicSubtopics(courseId, topicId, language!)
+          : ApiEndpoints.topicSubtopicsNoLang(courseId, topicId);
+
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsNoLang(courseId, topicId)),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -316,7 +317,7 @@ class FlashCardController with ChangeNotifier {
     notifyListeners();
   }
 
-  void _setupVideoController() async {
+  Future<void> _setupVideoController() async {
     if (_videoController != null) {
       _videoController!.removeListener(_videoListener);
     }
@@ -395,7 +396,7 @@ class FlashCardController with ChangeNotifier {
 
     final progressList = await _fetchProgressList();
     final progressExists = progressList.any((progress) =>
-        progress["material_id"] == materialId &&
+    progress["material_id"] == materialId &&
         progress["activity_type"] == "reading");
 
     if (progressExists) return;
@@ -415,8 +416,12 @@ class FlashCardController with ChangeNotifier {
     };
 
     try {
+      final url = language != null
+          ? ApiEndpoints.progress(language)
+          : ApiEndpoints.progressNoLang;
+
       final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -437,8 +442,12 @@ class FlashCardController with ChangeNotifier {
     if (token == null) return [];
 
     try {
+      final url = language != null
+          ? ApiEndpoints.progress(language)
+          : ApiEndpoints.progressNoLang;
+
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -457,39 +466,54 @@ class FlashCardController with ChangeNotifier {
     return [];
   }
 
+
   Future<void> nextMaterialOrQuiz() async {
     final totalItems = materials.length + quizzes.length;
     final hasNextPage = _currentPage < totalItems - 1;
 
     if (hasNextPage) {
-      _showCelebration = true;
-      notifyListeners();
-
-      await Future.delayed(const Duration(milliseconds: 1200));
-
-      final nextPage = _currentPage + 1;
-      _currentPage = nextPage;
       _isTransitioning = true;
       notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 300));
+      // Play celebration animation if available
+      if (animationsInitialized) {
+        _showCelebration = true;
+        notifyListeners();
+        await _celebrationController!.forward();
+        _showCelebration = false;
+        notifyListeners();
+      }
+
+      final nextPage = _currentPage + 1;
+      _currentPage = nextPage;
+
+      // Skip material setup if next page is a quiz
+      if (nextPage >= materials.length) {
+        // Directly navigate to next quiz without material setup
+        swiperController.move(_currentPage, animation: false);
+        _isTransitioning = false;
+        notifyListeners();
+        return;
+      }
+
+      // Existing material setup
+      swiperController.move(_currentPage, animation: false);
+      await _setupVideoController();
+      _preloadAdjacentMaterials();
 
       _isTransitioning = false;
-      _setupVideoController();
-      _preloadAdjacentMaterials();
+      notifyListeners();
 
       if (_currentPage < materials.length) {
         unawaited(_sendProgressToBackend());
       }
-
-      _showCelebration = false;
-      notifyListeners();
     } else {
       if (onQuizComplete != null) {
         onQuizComplete!();
       }
     }
   }
+
 
   void updateCurrentPage(int index) {
     _handleSwipe();
@@ -513,7 +537,7 @@ class FlashCardController with ChangeNotifier {
     _chewieController?.dispose();
     _audioPlayer.dispose();
     _preloadTimer?.cancel();
-    _celebrationController.dispose();
+    _celebrationController?.dispose();
     _swiperController.dispose();
 
     for (final controller in _preloadedControllers.values) {

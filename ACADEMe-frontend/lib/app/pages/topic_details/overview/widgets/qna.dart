@@ -13,31 +13,112 @@ class QSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.all(16),
+          // Original content with reduced opacity
+          Opacity(
+            opacity: 0.3,
+            child: Column(
               children: [
-                buildQAItem(
-                  "Thomas",
-                  L10n.getTranslatedText(context, 'A day ago'),
-                  AImages.qnaUser,
-                  23,
-                  5,
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.all(16),
+                    children: [
+                      buildQAItem(
+                        "Thomas",
+                        L10n.getTranslatedText(context, 'A day ago'),
+                        AImages.qnaUser,
+                        23,
+                        5,
+                      ),
+                      buildQAItem(
+                        "Jenny Barry",
+                        L10n.getTranslatedText(context, 'A day ago'),
+                        "AImages.QnA_user",
+                        23,
+                        5,
+                      ),
+                    ],
+                  ),
                 ),
-                buildQAItem(
-                  "Jenny Barry",
-                  L10n.getTranslatedText(context, 'A day ago'),
-                  "AImages.QnA_user",
-                  23,
-                  5,
-                ),
+                buildInputField(context),
+                SizedBox(height: 12),
               ],
             ),
           ),
-          buildInputField(context),
-          SizedBox(height: 12),
+          // Premium lock overlay
+          Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 50,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    L10n.getTranslatedText(context, 'Premium Feature'),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    L10n.getTranslatedText(context, 'Upgrade to Premium to access Q&A section'),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 25),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Handle upgrade to premium
+                        // You can add your premium upgrade logic here
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AcademeTheme.appColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        elevation: 3,
+                      ),
+                      child: Text(
+                        L10n.getTranslatedText(context, 'Upgrade to Premium'),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -49,7 +130,7 @@ class QSection extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side:
-              BorderSide(color: Colors.grey[300]!), // Outline border color grey
+          BorderSide(color: Colors.grey[300]!), // Outline border color grey
         ),
         // elevation: 2,
         margin: EdgeInsets.only(bottom: 12),

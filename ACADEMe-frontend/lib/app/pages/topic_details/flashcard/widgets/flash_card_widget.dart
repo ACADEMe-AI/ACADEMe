@@ -89,96 +89,115 @@ class FlashCardContentWidget extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return GestureDetector(
-            onTapDown: (_) {
-              if (controller.showSwipeHint) {
-                controller.hideSwipeHint();
-              }
-            },
-            onPanStart: (_) {
-              if (controller.showSwipeHint) {
-                controller.hideSwipeHint();
-              }
-            },
-            behavior: HitTestBehavior.translucent, // Add this line to ensure touches are captured
-            child: Swiper(
-              controller: controller.swiperController,
-              itemWidth: constraints.maxWidth,
-              itemHeight: constraints.maxHeight,
-              loop: false,
-              duration: 300,
-              layout: SwiperLayout.STACK,
-              axisDirection: AxisDirection.right,
-              index: controller.currentPage,
-              curve: Curves.easeOutCubic,
-              viewportFraction: 1.0,
-              scale: 0.9,
-              onIndexChanged: (index) {
-                controller.updateCurrentPage(index);
+              onTapDown: (_) {
                 if (controller.showSwipeHint) {
                   controller.hideSwipeHint();
                 }
               },
-              itemBuilder: (context, index) {
-                return Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                      child: _buildMaterial(index, controller),
-                    ),
-                    if (controller.currentPage != index)
-                      IgnorePointer(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              topRight: Radius.circular(20),
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (controller.showSwipeHint && index == 0)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Center(
-                            child: Image.asset(
-                              'assets/images/swipe_left_no_bg.gif',
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
+              onPanStart: (_) {
+                if (controller.showSwipeHint) {
+                  controller.hideSwipeHint();
+                }
               },
-              itemCount:
-                  controller.materials.length + controller.quizzes.length,
-            ),
-          );
+              behavior: HitTestBehavior
+                  .translucent, // Add this line to ensure touches are captured
+              child: Swiper(
+                controller: controller.swiperController,
+                itemWidth: constraints.maxWidth,
+                itemHeight: constraints.maxHeight,
+                loop: false,
+                duration: 0, // Set duration to 0 to disable built-in animation
+                layout: SwiperLayout.STACK,
+                axisDirection: AxisDirection.right,
+                index: controller.currentPage,
+                curve: Curves.easeOutCubic,
+                viewportFraction: 1.0,
+                scale: 0.9,
+                onIndexChanged: (index) {
+                  controller.updateCurrentPage(index);
+                  if (controller.showSwipeHint) {
+                    controller.hideSwipeHint();
+                  }
+                },
+                itemBuilder: (context, index) {
+                  return Stack(
+                    children: [
+                      // Only show content if it's the current page or we're not transitioning
+                      if (!controller.isTransitioning ||
+                          index == controller.currentPage)
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                          child: _buildMaterial(index, controller),
+                        ),
+
+                      // Show overlay for non-current pages
+                      if (controller.currentPage != index &&
+                          !controller.isTransitioning)
+                        IgnorePointer(
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(20),
+                                topRight: Radius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // Other overlays (swipe hint, celebration)
+                      if (controller.showSwipeHint && index == 0)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/swipe_left_no_bg.gif',
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // if (controller.showCelebration)
+                      //   CelebrationWidget(controller: controller),
+                    ],
+                  );
+                },
+                itemCount:
+                controller.materials.length + controller.quizzes.length,
+              ));
         },
       ),
     );
   }
 
   Widget _buildMaterial(int index, FlashCardController controller) {
+    // Only build the material if it's the current page or we're not transitioning
+    if (controller.isTransitioning && index != controller.currentPage) {
+      return Container(); // Return empty container during transitions
+    }
+
     final material = index < controller.materials.length
         ? controller.materials[index]
         : {
-            "type": "quiz",
-            "quiz": controller.quizzes[index - controller.materials.length],
-          };
+      "type": "quiz",
+      "quiz": controller.quizzes[index - controller.materials.length],
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _getMaterialWidget(material, index, controller),
+          child: AnimatedOpacity(
+            opacity: controller.isTransitioning && index == controller.currentPage ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 100),
+            child: _getMaterialWidget(material, index, controller),
+          ),
         ),
       ],
     );
@@ -208,6 +227,186 @@ class FlashCardContentWidget extends StatelessWidget {
   }
 }
 
+// Celebration Widget
+// class CelebrationWidget extends StatelessWidget {
+//   final FlashCardController controller;
+//
+//   const CelebrationWidget({super.key, required this.controller});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final listenable =
+//         controller.celebrationController ?? AlwaysStoppedAnimation(0);
+//
+//     return Positioned.fill(
+//       child: Container(
+//         color: Colors.black54,
+//         child: Center(
+//           child: AnimatedBuilder(
+//             animation: listenable,
+//             builder: (context, child) {
+//               // Safely get all animation values with null checks
+//               final bounceValue = controller.bounceAnimation?.value ?? 0;
+//               final scaleValue = controller.scaleAnimation?.value ?? 1;
+//               // Use the animation itself, not its value for SlideTransition
+//               final slideAnimation = controller.slideAnimation ??
+//                   AlwaysStoppedAnimation(Offset.zero);
+//               final pulseValue = controller.pulseAnimation?.value ?? 1;
+//               final rotateValue = controller.rotateAnimation?.value ?? 0;
+//               final controllerValue =
+//                   controller.celebrationController?.value ?? 0;
+//
+//               return Column(
+//                 mainAxisAlignment: MainAxisAlignment.center,
+//                 children: [
+//                   Transform.scale(
+//                     scale: bounceValue,
+//                     child: Container(
+//                       width: 100,
+//                       height: 100,
+//                       decoration: BoxDecoration(
+//                         color: Colors.yellow[600],
+//                         shape: BoxShape.circle,
+//                         boxShadow: [
+//                           BoxShadow(
+//                             color: Colors.yellow.withOpacity(0.5),
+//                             blurRadius: 20,
+//                             spreadRadius: 5,
+//                           ),
+//                         ],
+//                       ),
+//                       child: const Icon(
+//                         Icons.star,
+//                         color: Colors.white,
+//                         size: 50,
+//                       ),
+//                     ),
+//                   ),
+//                   const SizedBox(height: 30),
+//                   SlideTransition(
+//                     position: slideAnimation,
+//                     child: Transform.scale(
+//                       scale: scaleValue *
+//                           (1.0 +
+//                               0.1 *
+//                                   (1.0 +
+//                                       (pulseValue - 1.0) *
+//                                           (1.0 +
+//                                               0.5 *
+//                                                   (controllerValue * 10) %
+//                                                   1.0))),
+//                       child: Transform.rotate(
+//                         angle: rotateValue *
+//                             (1.0 + 0.3 * ((controllerValue * 8) % 1.0 - 0.5)),
+//                         child: Container(
+//                           padding: const EdgeInsets.symmetric(
+//                               horizontal: 30, vertical: 15),
+//                           decoration: BoxDecoration(
+//                             gradient: LinearGradient(
+//                               colors: [
+//                                 Colors.green[400]!,
+//                                 Colors.green[600]!,
+//                                 Colors.green[400]!,
+//                               ],
+//                               begin: Alignment.topLeft,
+//                               end: Alignment.bottomRight,
+//                               stops: [
+//                                 0.0,
+//                                 0.5 + 0.3 * ((controllerValue * 5) % 1.0),
+//                                 1.0,
+//                               ],
+//                             ),
+//                             borderRadius: BorderRadius.circular(25),
+//                             boxShadow: [
+//                               BoxShadow(
+//                                 color: Colors.green.withOpacity(0.4),
+//                                 blurRadius:
+//                                 15 + 5 * ((controllerValue * 6) % 1.0),
+//                                 spreadRadius: 2,
+//                               ),
+//                             ],
+//                           ),
+//                           child: const Row(
+//                             mainAxisSize: MainAxisSize.min,
+//                             children: [
+//                               Icon(
+//                                 Icons.check_circle,
+//                                 color: Colors.white,
+//                                 size: 24,
+//                               ),
+//                               SizedBox(width: 10),
+//                               Text(
+//                                 'Great Job! 🌟',
+//                                 style: TextStyle(
+//                                   color: Colors.white,
+//                                   fontSize: 22,
+//                                   fontWeight: FontWeight.bold,
+//                                 ),
+//                               ),
+//                             ],
+//                           ),
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                   const SizedBox(height: 20),
+//                   ...List.generate(8, (index) {
+//                     final delay = index * 0.1;
+//                     final animationValue =
+//                     (controllerValue - delay).clamp(0.0, 1.0);
+//                     final continuousMotion =
+//                         (controllerValue * 4 + index) % 1.0;
+//                     return Transform.translate(
+//                       offset: Offset(
+//                         (index - 4) * 40.0 * animationValue +
+//                             20 * continuousMotion * (index % 2 == 0 ? 1 : -1),
+//                         -30 * animationValue +
+//                             10 * continuousMotion * (index % 3 == 0 ? 1 : -1),
+//                       ),
+//                       child: Transform.scale(
+//                         scale: animationValue * (0.8 + 0.4 * continuousMotion),
+//                         child: Transform.rotate(
+//                           angle: continuousMotion * 6.28,
+//                           child: Container(
+//                             width: 18,
+//                             height: 18,
+//                             decoration: BoxDecoration(
+//                               color: [
+//                                 Colors.red,
+//                                 Colors.blue,
+//                                 Colors.green,
+//                                 Colors.orange,
+//                                 Colors.purple,
+//                                 Colors.pink,
+//                                 Colors.teal,
+//                                 Colors.amber
+//                               ][index],
+//                               shape: BoxShape.circle,
+//                               boxShadow: const [
+//                                 BoxShadow(
+//                                   color: Colors.black26,
+//                                   blurRadius: 3,
+//                                   spreadRadius: 1,
+//                                 ),
+//                               ],
+//                             ),
+//                           ),
+//                         ),
+//                       ),
+//                     );
+//                   }),
+//                 ],
+//               );
+//             },
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+
+
+
 // Content Widgets
 class TextContentWidget extends StatelessWidget {
   final String content;
@@ -219,7 +418,7 @@ class TextContentWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String processedContent =
-        content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
+    content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
 
     return buildStyledContainer(
       context,
@@ -546,27 +745,27 @@ class VideoContentWidget extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(0),
               child: controller.chewieController == null ||
-                      controller.videoController == null ||
-                      !controller.videoController!.value.isInitialized
+                  controller.videoController == null ||
+                  !controller.videoController!.value.isInitialized
                   ? SizedBox.expand(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Loading video...",
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Loading video...",
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontSize: 16,
                       ),
-                    )
-                  : SizedBox.expand(
-                      child: Chewie(controller: controller.chewieController!),
                     ),
+                  ],
+                ),
+              )
+                  : SizedBox.expand(
+                child: Chewie(controller: controller.chewieController!),
+              ),
             ),
           ),
           if (controller.quizzes.isEmpty &&
@@ -625,9 +824,9 @@ class ImageContentWidget extends StatelessWidget {
                   return CachedNetworkImage(
                     imageUrl: imageUrl,
                     placeholder: (context, url) =>
-                        const Center(child: CircularProgressIndicator()),
+                    const Center(child: CircularProgressIndicator()),
                     errorWidget: (context, url, error) =>
-                        const Icon(Icons.error),
+                    const Icon(Icons.error),
                     fit: fit,
                     alignment: Alignment.center,
                   );
@@ -670,7 +869,7 @@ class ImageContentWidget extends StatelessWidget {
   Future<BoxFit> _getImageFit(String imageUrl) async {
     final Completer<ImageInfo> completer = Completer();
     final ImageStream stream =
-        NetworkImage(imageUrl).resolve(const ImageConfiguration());
+    NetworkImage(imageUrl).resolve(const ImageConfiguration());
 
     final listener = ImageStreamListener((ImageInfo info, bool _) {
       completer.complete(info);
@@ -746,11 +945,12 @@ class QuizContentWidget extends StatelessWidget {
   final int index;
   final FlashCardController controller;
 
-  const QuizContentWidget(
-      {super.key,
-      required this.quiz,
-      required this.index,
-      required this.controller});
+  const QuizContentWidget({
+    super.key,
+    required this.quiz,
+    required this.index,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -759,10 +959,10 @@ class QuizContentWidget extends StatelessWidget {
       QuizPage(
         quizzes: [quiz],
         onQuizComplete: () {
-          controller.nextMaterialOrQuiz();
-        },
-        onSwipeToNext: () {
-          controller.nextMaterialOrQuiz();
+          // Use post-frame callback to ensure smooth transition
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            controller.nextMaterialOrQuiz();
+          });
         },
         courseId: controller.courseId,
         topicId: controller.topicId,
