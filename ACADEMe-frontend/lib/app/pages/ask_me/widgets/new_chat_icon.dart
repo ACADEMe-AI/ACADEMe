@@ -13,14 +13,14 @@ class NewChatIcon extends StatelessWidget {
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
               color: AcademeTheme.appColor, shape: BoxShape.circle),
-          child: const Icon(Icons.chat_bubble_outline, size: 26, color: Colors.white),
+          child: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
         ),
         Positioned(
           right: -2,
           top: -2,
           child: Container(
-            width: 19,
-            height: 19,
+            width: 15,
+            height: 15,
             decoration: BoxDecoration(
                 color: AcademeTheme.appColor,
                 shape: BoxShape.circle,

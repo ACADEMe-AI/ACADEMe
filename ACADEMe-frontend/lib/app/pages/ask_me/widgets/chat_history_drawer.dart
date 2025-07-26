@@ -156,7 +156,7 @@ class ChatHistoryDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Chat History',
+              L10n.getTranslatedText(context, 'Chat History'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -164,8 +164,8 @@ class ChatHistoryDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'In Development',
+            Text(
+              L10n.getTranslatedText(context, 'In Development'),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.orange,
@@ -173,8 +173,8 @@ class ChatHistoryDrawer extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
-            const Text(
-              'We\'re building something amazing\nfor your chat experience',
+            Text(
+              L10n.getTranslatedText(context, 'We\'re building something amazing\nfor your chat experience'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,

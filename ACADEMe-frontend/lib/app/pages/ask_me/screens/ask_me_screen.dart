@@ -100,7 +100,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: IconButton(
-                icon: const Icon(Icons.menu, size: 28, color: Colors.white),
+                icon: const Icon(Icons.menu, size: 24, color: Colors.white),
                 onPressed: () {
                   _scaffoldKey.currentState?.openDrawer();
                 },
@@ -126,7 +126,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     onPressed: controller.startNewChat,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.translate, size: 28, color: Colors.white),
+                    icon: const Icon(Icons.translate, size: 24, color: Colors.white),
                     onPressed: () {
                       _showLanguageSelection(context, controller);
                     },
@@ -299,28 +299,50 @@ class _AskMeScreenState extends State<AskMeScreen> {
                 isUser: isUser,
               ),
             if (!isUser && message.isTyping != true)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.flag, color: Colors.grey[600], size: 18),
-                    onPressed: () {
-                      _showReportDialog(context, message);
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.content_copy, size: 18),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: message.text!));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(L10n.getTranslatedText(context, 'Copied to clipboard')),
-                          duration: const Duration(seconds: 2),
+              Transform.translate(
+                offset: const Offset(0, -3), // Move up by 8 pixels
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 32, // Reduce button width to bring icons closer
+                      height: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero, // Remove default padding
+                        icon: Image.asset(
+                          'assets/icons/duplicate.png',
+                          width: 18,
+                          height: 18,
+                          color: Colors.grey[600],
                         ),
-                      );
-                    },
-                  ),
-                ],
+                        onPressed: () {
+                          _showReportDialog(context, message);
+                        },
+                      ),
+                    ),
+                    SizedBox(
+                      width: 32, // Reduce button width to bring icons closer
+                      height: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero, // Remove default padding
+                        icon: Image.asset(
+                          'assets/icons/red-flag.png',
+                          width: 18,
+                          height: 18,
+                        ),
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: message.text!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(L10n.getTranslatedText(context, 'Copied to clipboard')),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             if (message.isTyping == true) const TypingIndicator(),
           ],
@@ -328,6 +350,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
       },
     );
   }
+
 
   Widget _buildFilePreview(BuildContext context, ChatMessage message) {
     switch (message.fileType) {
