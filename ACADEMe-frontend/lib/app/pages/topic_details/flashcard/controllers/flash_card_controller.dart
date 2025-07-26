@@ -416,9 +416,7 @@ class FlashCardController with ChangeNotifier {
     };
 
     try {
-      final url = language != null
-          ? ApiEndpoints.progress(language)
-          : ApiEndpoints.progressNoLang;
+      final url = ApiEndpoints.progressNoLang;
 
       final response = await http.post(
         Uri.parse(url),
@@ -442,9 +440,7 @@ class FlashCardController with ChangeNotifier {
     if (token == null) return [];
 
     try {
-      final url = language != null
-          ? ApiEndpoints.progress(language)
-          : ApiEndpoints.progressNoLang;
+      final url = ApiEndpoints.progressNoLang;
 
       final response = await http.get(
         Uri.parse(url),

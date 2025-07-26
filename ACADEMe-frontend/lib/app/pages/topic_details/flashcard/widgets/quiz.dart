@@ -128,7 +128,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     }
 
     final response = await http.get(
-      ApiEndpoints.getUri(ApiEndpoints.progress('en')), // Hardcoded "en" for English
+      ApiEndpoints.getUri(ApiEndpoints.progressNoLang), // Hardcoded "en" for English
       headers: {
         'Authorization':
         'Bearer $token', // Include the access token in the headers
@@ -200,7 +200,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     if (existingProgress == null) {
       // Create new progress
       final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.progress(null)),
+        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
