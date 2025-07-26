@@ -24,37 +24,43 @@ class HomeAppBar extends StatelessWidget {
         children: <Widget>[
           GestureDetector(
             onTap: onProfileTap,
-            child: CircleAvatar(
-              radius: 30,
-              backgroundImage: photoUrl.startsWith('http')
-                  ? NetworkImage(photoUrl) as ImageProvider
-                  : AssetImage(photoUrl),
+            child: Hero(
+              tag: 'profile_avatar',
+              child: CircleAvatar(
+                radius: 30,
+                backgroundImage: photoUrl.startsWith('http')
+                    ? NetworkImage(photoUrl) as ImageProvider
+                    : AssetImage(photoUrl),
+              ),
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                L10n.getTranslatedText(context, 'Hello'),
-                style: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 16,
-                  color: Colors.white,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  L10n.getTranslatedText(context, 'Hello'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w400,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                  color: Colors.white,
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const Spacer(),
           Container(
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
