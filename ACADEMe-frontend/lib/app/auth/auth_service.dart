@@ -4,8 +4,10 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_endpoints.dart';
+import '../pages/homepage/controllers/home_controller.dart';
 import '../pages/topics/controllers/topic_cache_controller.dart' as topic;
 import '../pages/courses/models/course_model.dart';
 
@@ -350,24 +352,125 @@ class AuthService {
   /// ✅ Logout user and clear stored access token
   Future<void> signOut() async {
     try {
+      debugPrint("🔄 Starting complete logout process...");
+
       // 1. Sign out from Firebase & Google
-      await _auth.signOut();
-      await _googleSignIn.signOut();
+      try {
+        await _auth.signOut();
+        debugPrint("✅ Firebase Auth signed out");
+      } catch (e) {
+        debugPrint("⚠️ Firebase signout error: $e");
+      }
 
-      // 2. Clear all Secure Storage keys
-      await _secureStorage.deleteAll();
+      try {
+        await _googleSignIn.signOut();
+        debugPrint("✅ Google Sign-In signed out");
+      } catch (e) {
+        debugPrint("⚠️ Google signout error: $e");
+      }
 
-      // 3. Clear SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      // 2. Clear home controller cache first
+      // try {
+      //   final homeController = HomeCourseDataCache();
+      //   homeController.clearCache();
+      //   final homeControllerInstance = HomeController();
+      //   homeControllerInstance.clearUserCache();
+      //   debugPrint("✅ HomeController cache cleared");
+      // } catch (e) {
+      //   debugPrint("⚠️ HomeController clear error: $e");
+      // }
 
-      // 4. Clear cache
-      CourseDataCache().clearCache();
-      topic.TopicCacheController().clearCache();
+      // 3. Clear ALL FlutterSecureStorage data
+      try {
+        await _secureStorage.deleteAll();
+        debugPrint("✅ FlutterSecureStorage cleared");
+      } catch (e) {
+        debugPrint("⚠️ SecureStorage clear error: $e");
+        // Try to clear individual known keys if deleteAll fails
+        try {
+          final allKeys = await _secureStorage.readAll();
+          for (String key in allKeys.keys) {
+            await _secureStorage.delete(key: key);
+          }
+          debugPrint("✅ FlutterSecureStorage cleared individually");
+        } catch (e2) {
+          debugPrint("❌ Failed to clear SecureStorage: $e2");
+        }
+      }
 
-      debugPrint("✅ Full logout completed successfully");
+      // 4. Clear ALL SharedPreferences data
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+        debugPrint("✅ SharedPreferences cleared");
+      } catch (e) {
+        debugPrint("⚠️ SharedPreferences clear error: $e");
+      }
+
+      // 5. Clear all application caches
+      try {
+        CourseDataCache().clearCache();
+        debugPrint("✅ CourseDataCache cleared");
+      } catch (e) {
+        debugPrint("⚠️ CourseDataCache clear error: $e");
+      }
+
+      try {
+        topic.TopicCacheController().clearCache();
+        debugPrint("✅ TopicCacheController cleared");
+      } catch (e) {
+        debugPrint("⚠️ TopicCacheController clear error: $e");
+      }
+
+      // 6. Clear additional Flutter caches (if needed)
+      try {
+        // Clear image cache
+        PaintingBinding.instance.imageCache.clear();
+        PaintingBinding.instance.imageCache.clearLiveImages();
+        debugPrint("✅ Image cache cleared");
+      } catch (e) {
+        debugPrint("⚠️ Image cache clear error: $e");
+      }
+
+      // 7. Clear any Provider/State Management data
+      try {
+        // If you're using Provider, clear any cached providers here
+        // Example: Provider.of<UserProvider>(context, listen: false).clearData();
+        // Add your specific provider clear methods here
+        debugPrint("✅ Provider data cleared");
+      } catch (e) {
+        debugPrint("⚠️ Provider clear error: $e");
+      }
+
+      // 8. Clear temporary directory cache (optional)
+      try {
+        final tempDir = await getTemporaryDirectory();
+        if (tempDir.existsSync()) {
+          await tempDir.delete(recursive: true);
+          debugPrint("✅ Temporary directory cleared");
+        }
+      } catch (e) {
+        debugPrint("⚠️ Temp directory clear error: $e");
+      }
+
+      // 9. Clear application documents directory cache (use with caution)
+      try {
+        final appDocDir = await getApplicationDocumentsDirectory();
+        final cacheFiles = appDocDir.listSync();
+        for (var file in cacheFiles) {
+          if (file.path.contains('cache') || file.path.contains('temp')) {
+            await file.delete(recursive: true);
+          }
+        }
+        debugPrint("✅ App documents cache cleared");
+      } catch (e) {
+        debugPrint("⚠️ App documents clear error: $e");
+      }
+
+      debugPrint("🎉 Complete logout process finished successfully");
+
     } catch (e) {
-      debugPrint("❌ Logout error: $e");
+      debugPrint("❌ Critical logout error: $e");
       throw Exception("Logout failed: $e");
     }
   }
