@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_swiper_view/flutter_swiper_view.dart';
 import 'package:flutter/animation.dart';
 import '../../../../../api_endpoints.dart';
+import '../../../../../providers/progress_provider.dart';
 
 class FlashCardController with ChangeNotifier {
   final List<Map<String, String>> materials;
@@ -388,18 +389,19 @@ class FlashCardController with ChangeNotifier {
   }
 
   Future<void> _sendProgressToBackend() async {
-    String? token = await _storage.read(key: 'access_token');
-    if (token == null) return;
-
     final material = getCurrentMaterial();
     final materialId = material["id"] ?? "material_$_currentPage";
 
-    final progressList = await _fetchProgressList();
-    final progressExists = progressList.any((progress) =>
-    progress["material_id"] == materialId &&
-        progress["activity_type"] == "reading");
+    // Check if already completed using cached data
+    final progressProvider = ProgressProvider();
+    final isCompleted = progressProvider.isActivityCompleted(
+      courseId: courseId,
+      topicId: topicId,
+      activityId: materialId,
+      activityType: 'reading',
+    );
 
-    if (progressExists) return;
+    if (isCompleted) return;
 
     final progressData = {
       "course_id": courseId,
@@ -415,53 +417,9 @@ class FlashCardController with ChangeNotifier {
       "timestamp": DateTime.now().toIso8601String(),
     };
 
-    try {
-      final url = ApiEndpoints.progressNoLang;
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(progressData),
-      );
-
-      if (response.statusCode != 200) {
-        debugPrint("❌ Failed to update progress: ${response.statusCode}");
-      }
-    } catch (e) {
-      debugPrint("❌ Error updating progress: $e");
-    }
+    // Queue for batched processing
+    progressProvider.queueProgressUpdate(progressData);
   }
-
-  Future<List<dynamic>> _fetchProgressList() async {
-    String? token = await _storage.read(key: 'access_token');
-    if (token == null) return [];
-
-    try {
-      final url = ApiEndpoints.progressNoLang;
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
-        if (responseBody is Map<String, dynamic> && responseBody.containsKey("progress")) {
-          return responseBody["progress"];
-        }
-      }
-    } catch (e) {
-      debugPrint("❌ Error fetching progress: $e");
-    }
-    return [];
-  }
-
 
   Future<void> nextMaterialOrQuiz() async {
     final totalItems = materials.length + quizzes.length;
