@@ -14,7 +14,7 @@ import '../../homepage/controllers/home_controller.dart';
 
 // Import all the split widget files
 import '../widgets/app_bar.dart';
-import '../widgets/search_ui.dart';
+import '../widgets/search_ui.dart' hide CourseCard;
 import '../widgets/ask_me_card.dart';
 import '../widgets/progress_card.dart';
 import '../widgets/continue_learning.dart';
@@ -164,7 +164,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   valueListenable: _showSearchUI,
                   builder: (context, showSearch, _) {
                     return showSearch
-                        ? SearchUI(showSearchUI: _showSearchUI)
+                        ? Consumer<HomeController>(
+                      builder: (context, controller, child) {
+                        return SearchUI(
+                          showSearchUI: _showSearchUI,
+                          allCourses: controller.courses,
+                        );
+                      },
+                    )
                         : _buildMainContent();
                   },
                 ),
