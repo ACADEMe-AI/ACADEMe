@@ -1,4 +1,4 @@
-// Modified SearchUI to work directly with Map data from HomeController
+// Modified SearchUI with fixed search logic
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -33,21 +33,32 @@ class _SearchUIState extends State<SearchUI> {
     'hindi'
   ];
 
+
+
   List<Map<String, dynamic>> get _filteredCourses {
     if (_searchQuery.isEmpty) {
-      return []; // Show no courses by default
+      return [];
     }
+
+    final normalizedQuery = _searchQuery.toLowerCase().trim();
 
     return widget.allCourses.where((course) {
       final courseTitle = (course['title'] ?? '').toString().toLowerCase();
-      final searchQuery = _searchQuery.toLowerCase();
 
-      // Check if the course title contains any of the allowed subjects
-      return _allowedSubjects.any((subject) =>
-      courseTitle.contains(subject) && courseTitle.contains(searchQuery)
-      ) || _allowedSubjects.contains(searchQuery);
+      // First check for exact subject matches
+      if (_allowedSubjects.contains(normalizedQuery)) {
+        // For exact subject match, return only courses that contain that exact subject
+        return courseTitle.contains(normalizedQuery);
+      }
+
+      // For partial matches, require that:
+      // 1. The course title contains the search query
+      // 2. The course belongs to an allowed subject
+      return courseTitle.contains(normalizedQuery) &&
+          _allowedSubjects.any((subject) => courseTitle.contains(subject));
     }).toList();
   }
+
 
   // Function for module progress text using Map data
   Future<String> getModuleProgressText(String courseId, BuildContext context) async {
@@ -221,7 +232,7 @@ class _SearchUIState extends State<SearchUI> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Try searching: Mathematics, English, Environmental Science, or Hindi',
+                                    'Try searching with different keywords',
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: Colors.grey[500],
