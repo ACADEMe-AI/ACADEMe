@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import '../../../../../providers/progress_provider.dart';
 import '../models/lessons_model.dart';
 
 class LessonsController {
@@ -131,81 +132,41 @@ class LessonsController {
     }
   }
 
-  Map<String, dynamic>? determineResumePoint(List<Map<String, dynamic>> userProgress, String courseId, String topicId) {
-    // Find last in-progress activity
-    Map<String, dynamic>? lastProgress = userProgress.firstWhere(
-      (progress) => progress['course_id'] == courseId && 
-                   progress['topic_id'] == topicId && 
-                   progress['status'] == 'in-progress',
-      orElse: () => {},
-    );
-
-    // If no in-progress, find last completed activity
-    if (lastProgress.isEmpty) {
-      lastProgress = userProgress.lastWhere(
-        (progress) => progress['course_id'] == courseId && 
-                     progress['topic_id'] == topicId && 
-                     progress['status'] == 'completed',
-        orElse: () => {},
-      );
-    }
-
-    return lastProgress.isEmpty ? null : lastProgress;
+  // Updated methods to use ProgressProvider instead of direct API calls
+  Map<String, dynamic>? determineResumePoint(String courseId, String topicId) {
+    final progressProvider = ProgressProvider();
+    return progressProvider.determineResumePoint(courseId, topicId);
   }
 
   bool isActivityCompleted({
-    required List<Map<String, dynamic>> userProgress,
     required String courseId,
     required String topicId,
     required String activityId,
     required String activityType,
     String? questionId,
   }) {
-    if (activityType == 'quiz' && questionId != null) {
-      return userProgress.any((progress) =>
-          progress['course_id'] == courseId &&
-          progress['topic_id'] == topicId &&
-          progress['quiz_id']?.toString() == activityId &&
-          progress['question_id']?.toString() == questionId &&
-          progress['status'] == 'completed');
-    } else if (activityType == 'quiz') {
-      // Check if all questions are completed
-      return false; // Implementation depends on having access to quiz questions
-    } else {
-      return userProgress.any((progress) =>
-          progress['course_id'] == courseId &&
-          progress['topic_id'] == topicId &&
-          progress['material_id'] == activityId &&
-          progress['status'] == 'completed');
-    }
+    final progressProvider = ProgressProvider();
+    return progressProvider.isActivityCompleted(
+      courseId: courseId,
+      topicId: topicId,
+      activityId: activityId,
+      activityType: activityType,
+      questionId: questionId,
+    );
   }
 
   bool isSubtopicCompleted({
     required List<Map<String, dynamic>> materials,
     required List<Map<String, dynamic>> quizzes,
-    required List<Map<String, dynamic>> userProgress,
     required String courseId,
     required String topicId,
   }) {
-    final hasIncompleteMaterial = materials.any((material) => 
-        !isActivityCompleted(
-          userProgress: userProgress,
-          courseId: courseId,
-          topicId: topicId,
-          activityId: material['id'],
-          activityType: 'material',
-        ));
-
-    final hasIncompleteQuiz = quizzes.any((quiz) => 
-        !isActivityCompleted(
-          userProgress: userProgress,
-          courseId: courseId,
-          topicId: topicId,
-          activityId: quiz['id'],
-          activityType: 'quiz',
-          questionId: quiz['question_id'],
-        ));
-
-    return !hasIncompleteMaterial && !hasIncompleteQuiz;
+    final progressProvider = ProgressProvider();
+    return progressProvider.isSubtopicCompleted(
+      materials: materials,
+      quizzes: quizzes,
+      courseId: courseId,
+      topicId: topicId,
+    );
   }
 }

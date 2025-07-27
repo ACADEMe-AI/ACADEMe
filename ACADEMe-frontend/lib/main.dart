@@ -1,3 +1,4 @@
+import 'package:ACADEMe/providers/progress_provider.dart';
 import 'package:ACADEMe/started/pages/animated_splash.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
@@ -84,6 +85,9 @@ void main() async {
         ChangeNotifierProvider(
             create: (context) => CourseController()), // Course controller provider
         ChangeNotifierProvider(create: (_) => HomeController()),
+        ChangeNotifierProvider(
+          create: (_) => ProgressProvider()
+        )
       ],
       child: const MyApp(),
     ),

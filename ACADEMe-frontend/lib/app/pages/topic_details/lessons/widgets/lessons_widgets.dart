@@ -8,7 +8,6 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   final List<Map<String, dynamic>> materials;
   final List<Map<String, dynamic>> quizzes;
   final bool isLoading;
-  final List<Map<String, dynamic>> userProgress;
   final String courseId;
   final String topicId;
   final Function(int) onTap;
@@ -19,7 +18,6 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
     required this.materials,
     required this.quizzes,
     required this.isLoading,
-    required this.userProgress,
     required this.courseId,
     required this.topicId,
     required this.onTap,
@@ -31,7 +29,6 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
     final isSubtopicComplete = controller.isSubtopicCompleted(
       materials: materials,
       quizzes: quizzes,
-      userProgress: userProgress,
       courseId: courseId,
       topicId: topicId,
     );
@@ -54,7 +51,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...materials.map(
-                  (m) => _buildMaterialTile(
+                      (m) => _buildMaterialTile(
                     m,
                     subtopicId,
                     isSubtopicComplete,
@@ -68,11 +65,11 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...quizzes.map((q) => _buildQuizTile(
-                      q,
-                      subtopicId,
-                      isSubtopicComplete,
-                      context,
-                    )),
+                  q,
+                  subtopicId,
+                  isSubtopicComplete,
+                  context,
+                )),
               ],
             ),
         ],
@@ -81,17 +78,16 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildMaterialTile(
-    Map<String, dynamic> material,
-    String subtopicId,
-    bool isSubtopicComplete,
-    BuildContext context,
-  ) {
+      Map<String, dynamic> material,
+      String subtopicId,
+      bool isSubtopicComplete,
+      BuildContext context,
+      ) {
     final controller = LessonsController();
     final isCompleted = controller.isActivityCompleted(
-      userProgress: userProgress,
       courseId: courseId,
       topicId: topicId,
-      activityId: material['id'],
+      activityId: material['id'].toString(),
       activityType: 'material',
     );
 
@@ -99,7 +95,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
       material["type"],
       material["category"],
       _getIconForContentType(material["type"]),
-      () => onTap(materials.indexOf(material)),
+          () => onTap(materials.indexOf(material)),
       isCompleted,
       isSubtopicComplete,
       context,
@@ -107,26 +103,25 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildQuizTile(
-    Map<String, dynamic> quiz,
-    String subtopicId,
-    bool isSubtopicComplete,
-    BuildContext context,
-  ) {
+      Map<String, dynamic> quiz,
+      String subtopicId,
+      bool isSubtopicComplete,
+      BuildContext context,
+      ) {
     final controller = LessonsController();
     final isCompleted = controller.isActivityCompleted(
-      userProgress: userProgress,
       courseId: courseId,
       topicId: topicId,
-      activityId: quiz['id'],
+      activityId: quiz['id'].toString(),
       activityType: 'quiz',
-      questionId: quiz['question_id'],
+      questionId: quiz['question_id']?.toString(),
     );
 
     return _buildTile(
       quiz["title"],
       "${quiz["difficulty"]} • ${quiz["question_count"]} Questions",
       Icons.quiz,
-      () => onTap(materials.length + quizzes.indexOf(quiz)),
+          () => onTap(materials.length + quizzes.indexOf(quiz)),
       isCompleted,
       isSubtopicComplete,
       context,
@@ -134,14 +129,14 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildTile(
-    String title,
-    String subtitle,
-    IconData icon,
-    VoidCallback onTap,
-    bool isCompleted,
-    bool isSubtopicComplete,
-    BuildContext context,
-  ) {
+      String title,
+      String subtitle,
+      IconData icon,
+      VoidCallback onTap,
+      bool isCompleted,
+      bool isSubtopicComplete,
+      BuildContext context,
+      ) {
     String localizedTitle = title;
     if (title.toLowerCase() == 'video') {
       localizedTitle = L10n.getTranslatedText(context, 'Video');

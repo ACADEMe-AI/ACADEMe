@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../../../providers/progress_provider.dart';
+
 class QuizPage extends StatefulWidget {
   final List<Map<String, dynamic>> quizzes;
   final Function()? onQuizComplete;
@@ -113,165 +115,46 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   }
 
   Future<void> _fetchProgress() async {
-    String? token =
-    await _storage.read(key: 'access_token'); // Retrieve the access token
-    if (!mounted) {
-      return; // Ensure widget is still active before using context
-    }
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                L10n.getTranslatedText(context, 'Access token not found'))),
+    final progressProvider = ProgressProvider();
+    setState(() {
+      _progressList = progressProvider.getCourseProgress(widget.courseId, widget.topicId);
+    });
+
+    // Fetch fresh data only if cache is empty or expired
+    if (_progressList.isEmpty) {
+      final freshProgress = await progressProvider.fetchProgress(
+        courseId: widget.courseId,
+        topicId: widget.topicId,
       );
-      return;
-    }
-
-    final response = await http.get(
-      ApiEndpoints.getUri(ApiEndpoints.progressNoLang), // Hardcoded "en" for English
-      headers: {
-        'Authorization':
-        'Bearer $token', // Include the access token in the headers
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
       setState(() {
-        _progressList = data["progress"];
+        _progressList = freshProgress;
       });
-    } else if (response.statusCode == 404) {
-      // Handle 404 Not Found error (no progress records)
-      final responseBody = json.decode(response.body);
-      if (responseBody["detail"] == "No progress records found") {
-        setState(() {
-          _progressList = []; // Treat as an empty progress list
-        });
-      } else {
-        if (!mounted) {
-          return; // Ensure widget is still active before using context
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(L10n.getTranslatedText(
-                  context, 'No progress records found'))),
-        );
-      }
-    } else {
-      if (!mounted) {
-        return; // Ensure widget is still active before using context
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                L10n.getTranslatedText(context, 'Failed to fetch progress'))),
-      );
     }
   }
 
-  Future<void> _sendProgress(
-      bool isCorrect, String quizId, String questionId) async {
-    String? token = await _storage.read(key: 'access_token');
-    if (!mounted) {
-      return;
-    }
-    if (token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                L10n.getTranslatedText(context, 'Access token not found'))),
-      );
-      return;
-    }
-
+  Future<void> _sendProgress(bool isCorrect, String quizId, String questionId) async {
     // Calculate score per question
     final totalQuestions = widget.quizzes.length;
     final scorePerQuestion = totalQuestions > 0 ? (100 / totalQuestions) : 0;
     final score = isCorrect ? scorePerQuestion : 0;
 
-    final existingProgress = _progressList.firstWhere(
-          (progress) =>
-      progress["quiz_id"] == quizId &&
-          progress["question_id"] == questionId,
-      orElse: () => null,
-    );
+    final progressData = {
+      "course_id": widget.courseId,
+      "topic_id": widget.topicId,
+      "subtopic_id": widget.subtopicId,
+      "material_id": null,
+      "quiz_id": quizId,
+      "question_id": questionId,
+      "score": score,
+      "status": "completed",
+      "activity_type": "quiz",
+      "metadata": {"time_spent": "5 minutes"},
+      "timestamp": DateTime.now().toIso8601String(),
+    };
 
-    if (existingProgress == null) {
-      // Create new progress
-      final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: json.encode({
-          "course_id": widget.courseId,
-          "topic_id": widget.topicId,
-          "subtopic_id": widget.subtopicId,
-          "material_id": null,
-          "quiz_id": quizId,
-          "question_id": questionId, // Add question_id
-          "score": score,
-          "status": "completed",
-          "activity_type": "quiz",
-          "metadata": {
-            "time_spent": "5 minutes",
-          },
-          "timestamp": DateTime.now().toIso8601String(),
-        }),
-      );
-      if (!mounted) {
-        return;
-      }
-      // if (response.statusCode == 201) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //         content: Text(L10n.getTranslatedText(
-      //             context, 'Progress saved successfully'))),
-      //   );
-      // } else {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //         content: Text(
-      //             L10n.getTranslatedText(context, 'Failed to save progress'))),
-      //   );
-      // }
-    } else {
-      // Update existing progress
-      final progressId = existingProgress["progress_id"];
-      final response = await http.put(
-        ApiEndpoints.getUri(ApiEndpoints.progressRecord(progressId)),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: json.encode({
-          "status": "completed",
-          "score": score,
-          "metadata": {
-            "time_spent": "5 minutes",
-          },
-        }),
-      );
-      if (!mounted) {
-        return;
-      }
-
-      // if (response.statusCode == 200) {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //         content: Text(L10n.getTranslatedText(
-      //             context, 'Progress updated successfully'))),
-      //   );
-      // } else {
-      //   ScaffoldMessenger.of(context).showSnackBar(
-      //     SnackBar(
-      //         content: Text(L10n.getTranslatedText(
-      //             context, 'Failed to update progress'))),
-      //   );
-      // }
-    }
+    // Queue for batched processing
+    final progressProvider = ProgressProvider();
+    progressProvider.queueProgressUpdate(progressData);
   }
 
   // Store result in Shared Preferences

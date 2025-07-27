@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/academe_theme.dart';
+import '../../../../../providers/progress_provider.dart';
 import '../../flashcard/screens/flash_card_screen.dart';
 import '../../reports/screens/test_report_screen.dart';
 import '../controllers/lessons_controller.dart';
@@ -37,7 +38,19 @@ class LessonsSectionState extends State<LessonsSection> {
   @override
   void initState() {
     super.initState();
+    _initializeProgress();
     _fetchSubtopics();
+  }
+
+  Future<void> _initializeProgress() async {
+    final progressProvider = ProgressProvider();
+
+    // Fetch progress data once at initialization
+    await progressProvider.fetchProgress(
+      courseId: widget.courseId,
+      topicId: widget.topicId,
+    );
+
     _determineResumePoint();
   }
 
@@ -72,7 +85,6 @@ class LessonsSectionState extends State<LessonsSection> {
 
   void _determineResumePoint() {
     final resumePoint = _controller.determineResumePoint(
-      widget.userProgress,
       widget.courseId,
       widget.topicId,
     );
@@ -159,7 +171,6 @@ class LessonsSectionState extends State<LessonsSection> {
 
       for (int j = 0; j < materials.length; j++) {
         if (!_controller.isActivityCompleted(
-          userProgress: widget.userProgress,
           courseId: widget.courseId,
           topicId: widget.topicId,
           activityId: materials[j]['id'],
@@ -177,7 +188,6 @@ class LessonsSectionState extends State<LessonsSection> {
 
       for (int j = 0; j < quizzes.length; j++) {
         if (!_controller.isActivityCompleted(
-          userProgress: widget.userProgress,
           courseId: widget.courseId,
           topicId: widget.topicId,
           activityId: quizzes[j]['id'],
@@ -255,7 +265,7 @@ class LessonsSectionState extends State<LessonsSection> {
                             materials: _state.subtopicMaterials[_state.subtopicIds[section]!] ?? [],
                             quizzes: _state.subtopicQuizzes[_state.subtopicIds[section]!] ?? [],
                             isLoading: _state.subtopicLoading[_state.subtopicIds[section]!] ?? false,
-                            userProgress: widget.userProgress,
+                            // userProgress: widget.userProgress,
                             courseId: widget.courseId,
                             topicId: widget.topicId,
                             onTap: (index) => _navigateToFlashcard(
