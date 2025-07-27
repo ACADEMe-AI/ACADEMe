@@ -36,19 +36,48 @@ class PdfReportService {
 
   Future<void> generateAndDownloadReport() async {
     try {
-      await controller.initialize();
-      final pdf = pw.Document(
-        title: 'Quiz Report - ${controller.courseTitle}',
-        author: 'ACADEMe App',
-      );
-
-      pdf.addPage(await _buildComprehensivePage());
+      final pdf = await _generateReportDocument();
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
       );
     } catch (e) {
       throw Exception('Failed to generate report: $e');
     }
+  }
+
+  Future<void> shareScore({required Function(String) getTranslatedText}) async {
+    try {
+      final pdf = await _generateReportDocument();
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/quiz_report_share.pdf');
+      await file.writeAsBytes(await pdf.save());
+
+      final topicScore = controller.topicScore;
+      final metrics = controller.getPerformanceMetrics();
+      final correct = metrics['correct'] ?? 0;
+      final total = metrics['total'] ?? 1;
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text:
+            '${getTranslatedText('Here is my quiz report for')} ${controller.topicTitle} '
+            '${getTranslatedText('in')} ${controller.courseTitle}. '
+            '${getTranslatedText('I scored')} ${topicScore.toStringAsFixed(1)}% '
+            '($correct/$total ${getTranslatedText('correct answers')})',
+      );
+    } catch (e) {
+      throw Exception('${getTranslatedText('Failed to share score')}: $e');
+    }
+  }
+
+  Future<pw.Document> _generateReportDocument() async {
+    await controller.initialize();
+    final pdf = pw.Document(
+      title: 'Quiz Report - ${controller.courseTitle}',
+      author: 'ACADEMe App',
+    );
+    pdf.addPage(await _buildComprehensivePage());
+    return pdf;
   }
 
   Future<pw.Page> _buildComprehensivePage() async {
@@ -58,7 +87,6 @@ class PdfReportService {
     final incorrect = metrics['incorrect'] ?? 0;
     final skipped = metrics['skipped'] ?? 0;
     final total = metrics['total'] ?? 1;
-    final allQuizAttempts = await _getAllQuizAttempts();
     final logoImage = pw.MemoryImage(logoImageBytes);
 
     return pw.Page(
@@ -72,8 +100,6 @@ class PdfReportService {
             pw.SizedBox(height: 30),
             _buildPerformanceMetricsSection(
                 topicScore, correct, incorrect, skipped, total),
-            pw.SizedBox(height: 30),
-            _buildQuizAttemptsSection(allQuizAttempts),
             pw.SizedBox(height: 20),
             pw.Divider(),
             _buildFooter(),
@@ -90,8 +116,8 @@ class PdfReportService {
       children: [
         pw.Image(
           logoImage,
-          width: 500, // Increased width
-          height: 120, // Increased height
+          width: 500,
+          height: 120,
           fit: pw.BoxFit.contain,
         ),
         pw.SizedBox(height: 15),
@@ -246,74 +272,6 @@ class PdfReportService {
     );
   }
 
-  pw.Widget _buildQuizAttemptsSection(
-      List<Map<String, dynamic>> allQuizAttempts) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'Quiz Attempts',
-          style: pw.TextStyle(
-            fontSize: 18,
-            fontWeight: pw.FontWeight.bold,
-            color: PdfColors.blue800,
-          ),
-        ),
-        pw.SizedBox(height: 10),
-        allQuizAttempts.isNotEmpty
-            ? _buildQuizAttemptsTable(allQuizAttempts)
-            : _buildNoAttemptsMessage(),
-      ],
-    );
-  }
-
-  pw.Widget _buildQuizAttemptsTable(List<Map<String, dynamic>> attempts) {
-    return pw.Table(
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1.5),
-        1: const pw.FlexColumnWidth(1.5),
-        2: const pw.FlexColumnWidth(1),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(1.5),
-      },
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 1),
-      children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: PdfColors.grey200),
-          children: [
-            _buildTableHeaderCell('Subtopic'),
-            _buildTableHeaderCell('Quiz'),
-            _buildTableHeaderCell('Score'),
-            _buildTableHeaderCell('Correct'),
-            _buildTableHeaderCell('Date'),
-          ],
-        ),
-        ...attempts
-            .map((attempt) => pw.TableRow(
-                  children: [
-                    _buildTableCell(attempt['subtopic']),
-                    _buildTableCell(attempt['quiz']),
-                    _buildScoreCell(attempt['score']),
-                    _buildTableCell(
-                        '${attempt['correct']}/${attempt['total']}'),
-                    _buildTableCell(attempt['date']),
-                  ],
-                ))
-            .toList(),
-      ],
-    );
-  }
-
-  pw.Widget _buildNoAttemptsMessage() {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(10),
-      child: pw.Text(
-        'No quiz attempts available',
-        style: const pw.TextStyle(fontSize: 12),
-      ),
-    );
-  }
-
   pw.Widget _buildFooter() {
     return pw.Center(
       child: pw.Text(
@@ -431,59 +389,6 @@ class PdfReportService {
     );
   }
 
-  Future<List<Map<String, dynamic>>> _getAllQuizAttempts() async {
-    final subtopics = controller.subtopicsWithQuizzes;
-    final List<Map<String, dynamic>> allQuizAttempts = [];
-
-    for (var subtopic in subtopics) {
-      final quizzes = subtopic['quizzes'] as List<dynamic>? ?? [];
-
-      for (var quiz in quizzes) {
-        final quizId = quiz['id'].toString();
-        final results = await controller.getLocalQuizResults(quizId);
-
-        if (results != null && results['attempts'] != null) {
-          for (var attempt in results['attempts']) {
-            allQuizAttempts
-                .add(_createAttemptRecord(subtopic, quiz, attempt, quizId));
-          }
-        } else if (results != null) {
-          allQuizAttempts
-              .add(_createAttemptRecord(subtopic, quiz, results, quizId));
-        }
-      }
-    }
-    return allQuizAttempts;
-  }
-
-  Map<String, dynamic> _createAttemptRecord(
-      dynamic subtopic, dynamic quiz, dynamic results, String quizId) {
-    final correct = results['correctAnswers'] ?? 0;
-    final total = results['totalQuestions'] ?? 1;
-    final score = (correct / total) * 100;
-
-    return {
-      'subtopic': subtopic['title'] ?? 'Untitled Subtopic',
-      'quiz': quiz['title'] ?? 'Untitled Quiz',
-      'score': score,
-      'correct': correct,
-      'total': total,
-      'date': _formatDate(results['completedAt']),
-      'quizId': quizId,
-    };
-  }
-
-  String _formatDate(dynamic date) {
-    try {
-      if (date is String) {
-        return DateFormat('MMM dd, yyyy').format(DateTime.parse(date));
-      }
-      return 'N/A';
-    } catch (e) {
-      return 'N/A';
-    }
-  }
-
   PdfColor _getScoreColor(double score) {
     if (score >= 80) return PdfColors.green;
     if (score >= 60) return PdfColors.orange;
@@ -494,79 +399,5 @@ class PdfReportService {
     if (score >= 80) return 'Excellent performance!';
     if (score >= 60) return 'Good performance';
     return 'Needs improvement';
-  }
-
-  Future<void> shareScore({required Function(String) getTranslatedText}) async {
-    try {
-      final metrics = controller.getPerformanceMetrics();
-      final topicScore = controller.topicScore;
-      final correct = metrics['correct'] ?? 0;
-      final total = metrics['total'] ?? 1;
-      final logoImage = pw.MemoryImage(logoImageBytes);
-
-      final pdf = pw.Document();
-      pdf.addPage(
-        pw.Page(
-          build: (pw.Context context) {
-            return pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.center,
-              children: [
-                pw.Center(
-                  child: pw.Image(
-                    logoImage,
-                    width: 150,
-                    height: 50,
-                    fit: pw.BoxFit.contain,
-                  ),
-                ),
-                pw.SizedBox(height: 15),
-                pw.Text(
-                  'Quiz Results',
-                  style: pw.TextStyle(
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  controller.courseTitle,
-                  style: const pw.TextStyle(fontSize: 16),
-                ),
-                pw.Text(
-                  controller.topicTitle,
-                  style: const pw.TextStyle(fontSize: 14),
-                ),
-                pw.SizedBox(height: 30),
-                _buildScoreCircle(topicScore),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  '$correct/$total ${getTranslatedText('correct answers')}',
-                  style: const pw.TextStyle(fontSize: 14),
-                ),
-                pw.SizedBox(height: 20),
-                pw.Text(
-                  DateFormat('MMMM dd, yyyy').format(DateTime.now()),
-                  style: const pw.TextStyle(fontSize: 12),
-                ),
-              ],
-            );
-          },
-        ),
-      );
-
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/quiz_results_share.pdf');
-      await file.writeAsBytes(await pdf.save());
-
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text:
-            '${getTranslatedText('I scored')} ${topicScore.toStringAsFixed(1)}% '
-            '${getTranslatedText('on')} ${controller.topicTitle} ${getTranslatedText('in')} ${controller.courseTitle} '
-            '($correct/$total ${getTranslatedText('correct answers')})',
-      );
-    } catch (e) {
-      throw Exception('${getTranslatedText('Failed to share score')}: $e');
-    }
   }
 }

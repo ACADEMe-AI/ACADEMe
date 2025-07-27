@@ -224,11 +224,13 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Continue Learning Section - Now uses centralized data
-            if (controller.ongoingCourses.isNotEmpty) ...[
-              ContinueLearningSection(),
-              const SizedBox(height: 20),
-            ],
+            // Continue Learning Section
+            ContinueLearningSection(
+              courses: controller.courses,
+              refreshCourses: _refreshData,
+              onSeeAllTap: widget.onCourseTap,
+            ),
+            const SizedBox(height: 20),
 
             SwipeableBanner(pageController: _pageController),
             const SizedBox(height: 16),
@@ -261,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Course tags - Now uses centralized data
+            // Course tags
             CourseTagsGrid(),
             const SizedBox(height: 16),
 
