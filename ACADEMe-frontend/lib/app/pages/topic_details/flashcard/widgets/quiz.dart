@@ -389,6 +389,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
           widget.onSwipeToNext!(); // Trigger swipe to next material
         } else {
           if (widget.onQuizComplete != null) {
+            
             widget.onQuizComplete!();
           }
         }
