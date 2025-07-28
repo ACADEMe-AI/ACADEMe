@@ -249,7 +249,7 @@ class ProgressProvider with ChangeNotifier {
 
       try {
         if (existingProgress.isEmpty) {
-          // Create new progress
+          // Create new progress (for both materials and quizzes)
           final response = await http.post(
             ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
             headers: {
@@ -263,23 +263,33 @@ class ProgressProvider with ChangeNotifier {
             log("✅ Progress created successfully");
           }
         } else {
-          // Update existing progress
-          final progressId = existingProgress["progress_id"];
-          final response = await http.put(
-            ApiEndpoints.getUri(ApiEndpoints.progressRecord(progressId)),
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Content-Type': 'application/json; charset=UTF-8',
-            },
-            body: json.encode({
-              "status": progressData["status"],
-              "score": progressData["score"],
-              "metadata": progressData["metadata"],
-            }),
-          );
+          // Handle existing progress
+          final bool isMaterial = progressData["material_id"] != null;
+          final bool isQuiz = progressData["quiz_id"] != null;
 
-          if (response.statusCode == 200) {
-            log("✅ Progress updated successfully");
+          if (isMaterial) {
+            // For materials: No PUT needed, already exists and completed
+            log("ℹ️ Material already completed, no update needed");
+            continue; // Skip any updates for materials
+          } else if (isQuiz) {
+            // For quizzes: Always allow updates (retakes, score improvements, etc.)
+            final progressId = existingProgress["progress_id"];
+            final response = await http.put(
+              ApiEndpoints.getUri(ApiEndpoints.progressRecord(progressId)),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json; charset=UTF-8',
+              },
+              body: json.encode({
+                "status": progressData["status"],
+                "score": progressData["score"],
+                "metadata": progressData["metadata"],
+              }),
+            );
+
+            if (response.statusCode == 200) {
+              log("✅ Quiz progress updated successfully");
+            }
           }
         }
       } catch (e) {
