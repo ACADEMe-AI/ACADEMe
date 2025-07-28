@@ -355,6 +355,54 @@ class ProgressProvider with ChangeNotifier {
     return lastProgress;
   }
 
+  // Add this method after the existing fetchProgress method
+  Future<void> preloadProgress({String? courseId, String? topicId}) async {
+    if (_isCacheValid && _progressList.isNotEmpty) {
+      log("✅ Progress already cached and valid");
+      return;
+    }
+
+    await fetchProgress(courseId: courseId, topicId: topicId);
+  }
+
+// Add this method to get progress summary without API call
+  Map<String, dynamic> getProgressSummary(String courseId, String topicId) {
+    final courseProgress = getCourseProgress(courseId, topicId);
+
+    final Set<String> completedSubIds = {};
+    for (final p in courseProgress) {
+      if (p['status'] == 'completed' && p['subtopic_id'] != null) {
+        // Check if subtopic is actually completed (all materials and quizzes)
+        final subtopicProgress = courseProgress.where((progress) =>
+        progress['subtopic_id'] == p['subtopic_id']).toList();
+
+        if (_isSubtopicCompletedFromProgress(subtopicProgress, p['subtopic_id'])) {
+          completedSubIds.add(p['subtopic_id']);
+        }
+      }
+    }
+
+    return {
+      'completedSubtopics': completedSubIds.length,
+      'userProgress': courseProgress,
+    };
+  }
+
+// Helper method to check subtopic completion from progress data
+  bool _isSubtopicCompletedFromProgress(List<Map<String, dynamic>> progress, String subtopicId) {
+    final subtopicMaterials = progress.where((p) =>
+    p['subtopic_id'] == subtopicId && p['activity_type'] == 'reading');
+    final subtopicQuizzes = progress.where((p) =>
+    p['subtopic_id'] == subtopicId && p['activity_type'] == 'quiz');
+
+    final hasIncompleteMaterial = subtopicMaterials.any(
+            (material) => material['status'] != 'completed');
+    final hasIncompleteQuiz = subtopicQuizzes.any(
+            (quiz) => quiz['status'] != 'completed');
+
+    return !hasIncompleteMaterial && !hasIncompleteQuiz;
+  }
+
   // Force refresh progress data
   Future<void> refreshProgress({String? courseId, String? topicId}) async {
     await fetchProgress(courseId: courseId, topicId: topicId, forceRefresh: true);

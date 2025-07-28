@@ -45,8 +45,8 @@ class LessonsSectionState extends State<LessonsSection> {
   Future<void> _initializeProgress() async {
     final progressProvider = ProgressProvider();
 
-    // Fetch progress data once at initialization
-    await progressProvider.fetchProgress(
+    // Preload progress data once (will use cache if valid)
+    await progressProvider.preloadProgress(
       courseId: widget.courseId,
       topicId: widget.topicId,
     );
