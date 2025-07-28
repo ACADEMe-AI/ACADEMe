@@ -122,7 +122,7 @@ class MotivationPopupState extends State<MotivationPopup> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to open chat: $navigationError'),
+              content: Text('${L10n.getTranslatedText(context, 'Failed to open chat')}: $navigationError'),
               backgroundColor: Colors.red,
             ),
           );

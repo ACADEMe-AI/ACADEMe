@@ -25,18 +25,20 @@ class QSection extends StatelessWidget {
                     padding: EdgeInsets.all(16),
                     children: [
                       buildQAItem(
-                        "Thomas",
-                        L10n.getTranslatedText(context, 'A day ago'),
-                        AImages.qnaUser,
-                        23,
-                        5,
+                          "Thomas",
+                          L10n.getTranslatedText(context, 'A day ago'),
+                          AImages.qnaUser,
+                          23,
+                          5,
+                          context
                       ),
                       buildQAItem(
-                        "Jenny Barry",
-                        L10n.getTranslatedText(context, 'A day ago'),
-                        "AImages.QnA_user",
-                        23,
-                        5,
+                          "Jenny Barry",
+                          L10n.getTranslatedText(context, 'A day ago'),
+                          "AImages.QnA_user",
+                          23,
+                          5,
+                          context
                       ),
                     ],
                   ),
@@ -125,7 +127,7 @@ class QSection extends StatelessWidget {
   }
 
   Widget buildQAItem(
-      String name, String time, String imageUrl, int likes, int comments) {
+      String name, String time, String imageUrl, int likes, int comments, BuildContext context) {
     return Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -162,7 +164,7 @@ class QSection extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  "Deserunt minim incididunt cillum nostrud do voluptate excepteur excepteur minim ex minim est.",
+                  L10n.getTranslatedText(context, 'They deserve little; even our minimal effort brings pleasure — an exception among exceptions, small from small'),
                   style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 SizedBox(height: 10),
