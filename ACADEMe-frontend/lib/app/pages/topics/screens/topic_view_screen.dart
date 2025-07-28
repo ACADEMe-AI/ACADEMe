@@ -54,6 +54,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     super.dispose();
   }
 
+  // Replace the _initializeTopics method with:
   Future<void> _initializeTopics() async {
     if (!mounted) return;
 
@@ -67,22 +68,29 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     // Try to get cached data first
     final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
 
-    if (cachedTopics != null && !_lifecycleController.isAppJustOpened) {
-      setState(() {
-        _updateTopicsData(cachedTopics);
-        isLoading = false;
-      });
-      return;
-    }
-
     if (cachedTopics != null) {
+      // Always show cached data first for instant loading
       setState(() {
         _updateTopicsData(cachedTopics);
         isLoading = false;
       });
+
+      // Only fetch from backend if:
+      // 1. App just opened (cold start)
+      // 2. Cache is older than 15 minutes
+      // 3. User explicitly refreshes
+      if (_lifecycleController.isAppJustOpened ||
+          !_cacheController.hasCachedTopics(widget.courseId, targetLanguage)) {
+        await _fetchTopicsFromBackend(showRefreshIndicator: true);
+      } else {
+        // Just refresh progress from SharedPreferences
+        await _refreshTopicsProgressOnly();
+      }
+    } else {
+      // No cache available, must fetch from backend
+      await _fetchTopicsFromBackend(showRefreshIndicator: false);
     }
 
-    await _fetchTopicsFromBackend(showRefreshIndicator: cachedTopics != null);
     _lifecycleController.markAsUsed();
   }
 
@@ -143,6 +151,34 @@ class _TopicViewScreenState extends State<TopicViewScreen>
         setState(() {
           isLoading = false;
           isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  // Add this method to _TopicViewScreenState class
+  Future<void> _refreshTopicsProgressOnly() async {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final targetLanguage = languageProvider.locale.languageCode;
+
+    // Check if we should refresh progress (based on time elapsed)
+    if (_cacheController.shouldRefreshProgress(widget.courseId, targetLanguage)) {
+      // Refresh cached progress without API call
+      await _cacheController.refreshCachedTopicsProgress(widget.courseId, targetLanguage);
+
+      // Update UI with refreshed cached data
+      final updatedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
+      if (updatedTopics != null && mounted) {
+        setState(() {
+          _updateTopicsData(updatedTopics);
+        });
+      }
+    } else {
+      // Data is fresh enough, just update UI with existing cache
+      final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
+      if (cachedTopics != null && mounted) {
+        setState(() {
+          _updateTopicsData(cachedTopics);
         });
       }
     }
@@ -298,15 +334,9 @@ class _TopicViewScreenState extends State<TopicViewScreen>
                   language: language,
                 ),
               ),
-            ).then((_) {
-              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-              final cachedTopics = _cacheController.getCachedTopics(
-                widget.courseId, 
-                languageProvider.locale.languageCode
-              );
-              if (cachedTopics != null) {
-                _fetchTopicsFromBackend(showRefreshIndicator: true);
-              }
+            ).then((_) async {
+              // Instead of force refreshing, intelligently update cached data
+              await _refreshTopicsProgressOnly();
             });
           },
         );
