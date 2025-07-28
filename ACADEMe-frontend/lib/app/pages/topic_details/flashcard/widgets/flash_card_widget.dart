@@ -176,12 +176,8 @@ class FlashCardContentWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildMaterial(int index, FlashCardController controller) {
-    // Only build the material if it's the current page or we're not transitioning
-    if (controller.isTransitioning && index != controller.currentPage) {
-      return Container(); // Return empty container during transitions
-    }
 
+  Widget _buildMaterial(int index, FlashCardController controller) {
     final material = index < controller.materials.length
         ? controller.materials[index]
         : {
@@ -194,14 +190,28 @@ class FlashCardContentWidget extends StatelessWidget {
       children: [
         Expanded(
           child: AnimatedOpacity(
-            opacity: controller.isTransitioning && index == controller.currentPage ? 0.0 : 1.0,
+            opacity: controller.isTransitioning && index != controller.currentPage ? 0.0 : 1.0,
             duration: const Duration(milliseconds: 100),
-            child: _getMaterialWidget(material, index, controller),
+            child: Container(
+              // Add explicit white background to prevent blue background showing
+              color: Colors.white,
+              width: double.infinity,
+              height: double.infinity,
+              child: controller.isTransitioning && index != controller.currentPage
+                  ? Container(
+                // Ensure the placeholder also has white background
+                color: Colors.white,
+                width: double.infinity,
+                height: double.infinity,
+              )
+                  : _getMaterialWidget(material, index, controller),
+            ),
           ),
         ),
       ],
     );
   }
+
 
   Widget _getMaterialWidget(Map<String, dynamic> material, int index,
       FlashCardController controller) {
