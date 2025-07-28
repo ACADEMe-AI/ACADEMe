@@ -5,6 +5,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
+import '../../../../providers/progress_provider.dart';
 import '../../topic_details/overview/screens/overview_screen.dart';
 import '../controllers/topic_cache_controller.dart';
 import '../controllers/app_lifecycle_controller.dart';
@@ -58,6 +59,10 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
     final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
+
+    // Preload progress data once at the beginning
+    final progressProvider = ProgressProvider();
+    await progressProvider.preloadProgress(courseId: widget.courseId);
 
     // Try to get cached data first
     final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);

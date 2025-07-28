@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import '../../../../../providers/progress_provider.dart';
+import '../../../topics/controllers/topic_cache_controller.dart';
 import '../models/lessons_model.dart';
 
 class LessonsController {
@@ -17,15 +18,24 @@ class LessonsController {
     required String courseId,
     required String topicId,
   }) async {
+    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+        .locale
+        .languageCode;
+
+    // Try cache first
+    final cacheController = TopicCacheController();
+    final cached = cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
+
+    if (cached != null) {
+      log("✅ Using cached subtopics");
+      return cached;
+    }
+
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
       log("❌ Missing access token");
       return [];
     }
-
-    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-        .locale
-        .languageCode;
 
     try {
       final response = await http.get(
@@ -38,7 +48,12 @@ class LessonsController {
 
       if (response.statusCode == 200) {
         final String responseBody = utf8.decode(response.bodyBytes);
-        return List<Map<String, dynamic>>.from(jsonDecode(responseBody));
+        final List<Map<String, dynamic>> subtopics = List<Map<String, dynamic>>.from(jsonDecode(responseBody));
+
+        // Cache for future use
+        cacheController.cacheSubtopics(courseId, topicId, targetLanguage, subtopics);
+
+        return subtopics;
       } else {
         log("❌ Failed to fetch subtopics: ${response.statusCode}");
         return [];

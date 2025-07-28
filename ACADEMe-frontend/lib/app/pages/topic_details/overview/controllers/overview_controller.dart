@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 
+import '../../../../../providers/progress_provider.dart';
+import '../../../topics/controllers/topic_cache_controller.dart';
+
 class OverviewController {
   final String courseId;
   final String topicId;
@@ -22,15 +25,25 @@ class OverviewController {
   });
 
   Future<Map<String, dynamic>> fetchTopicDetails() async {
+    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+        .locale
+        .languageCode;
+
+    // Try to get from cache first
+    final cacheController = TopicCacheController();
+    final cached = cacheController.getCachedTopicDetails(courseId, topicId, targetLanguage);
+
+    if (cached != null) {
+      log("✅ Using cached topic details");
+      return cached;
+    }
+
+    // If not cached, fall back to API call
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
       log("❌ Missing access token");
       return {'error': 'Missing access token'};
     }
-
-    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-        .locale
-        .languageCode;
 
     try {
       final response = await http.get(
@@ -49,14 +62,18 @@ class OverviewController {
 
         if (jsonData is List) {
           final topic = jsonData.firstWhere(
-            (topic) => topic['id'] == topicId,
+                (topic) => topic['id'] == topicId,
             orElse: () => null,
           );
           if (topic != null) {
-            return {
+            final details = {
               'title': topic["title"]?.toString() ?? "Untitled Topic",
               'description': topic["description"]?.toString() ?? "No description available.",
             };
+
+            // Cache for future use
+            cacheController.cacheTopicDetails(courseId, topicId, targetLanguage, details);
+            return details;
           }
         }
       }
@@ -68,15 +85,28 @@ class OverviewController {
   }
 
   Future<Map<String, dynamic>> fetchSubtopicData() async {
+    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+        .locale
+        .languageCode;
+
+    // Try cache first
+    final cacheController = TopicCacheController();
+    final cached = cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
+
+    if (cached != null) {
+      log("✅ Using cached subtopics data");
+      await _storeTopicTotalSubtopics(courseId, topicId, cached.length);
+      return {
+        'hasSubtopicData': true,
+        'totalSubtopics': cached.length,
+      };
+    }
+
     String? token = await storage.read(key: 'access_token');
     if (token == null) {
       log("❌ Missing access token");
       return {'error': 'Missing access token'};
     }
-
-    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-        .locale
-        .languageCode;
 
     try {
       final response = await http.get(
@@ -91,7 +121,10 @@ class OverviewController {
         final String responseBody = utf8.decode(response.bodyBytes);
         final List<dynamic> subtopics = jsonDecode(responseBody);
 
-        // Store total subtopics for progress calculation
+        // Cache subtopics
+        cacheController.cacheSubtopics(courseId, topicId, targetLanguage,
+            subtopics.map((s) => Map<String, dynamic>.from(s)).toList());
+
         await _storeTopicTotalSubtopics(courseId, topicId, subtopics.length);
 
         return {
@@ -107,70 +140,36 @@ class OverviewController {
   }
 
   Future<Map<String, dynamic>> fetchUserProgress() async {
-    String? token = await storage.read(key: 'access_token');
-    if (token == null) return {'error': 'Missing access token'};
+    // Use ProgressProvider instead of direct API call
+    final progressProvider = ProgressProvider();
 
-    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-        .locale
-        .languageCode;
+    // Preload progress data (will use cache if valid)
+    await progressProvider.preloadProgress(courseId: courseId, topicId: topicId);
 
-    try {
-      final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.progressNoLang),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      );
+    // Get progress summary from cached data
+    final summary = progressProvider.getProgressSummary(courseId, topicId);
 
-      if (response.statusCode == 200) {
-        final String responseBody = utf8.decode(response.bodyBytes);
-        final Map<String, dynamic> data = jsonDecode(responseBody);
+    // Get total subtopics from shared preferences
+    final prefs = await SharedPreferences.getInstance();
+    final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_${topicId}') ?? 0;
+    final completedCount = summary['completedSubtopics'] as int;
+    final progressPercentage = totalSubtopics > 0
+        ? completedCount / totalSubtopics
+        : 0.0;
 
-        // Filter progress for current course and topic
-        final progress = List<Map<String, dynamic>>.from(data['progress'])
-            .where((progress) =>
-                progress['course_id'] == courseId &&
-                progress['topic_id'] == topicId)
-            .toList();
+    // Save topic progress
+    await _saveTopicProgress(courseId, topicId, progressPercentage);
 
-        // Calculate completed subtopics
-        final Set<String> completedSubIds = {};
-        for (final p in progress) {
-          if (p['status'] == 'completed' &&
-              p['subtopic_id'] != null &&
-              _isSubtopicCompleted(progress, p['subtopic_id'])) {
-            completedSubIds.add(p['subtopic_id']);
-            await _markSubtopicCompleted(courseId, topicId, p['subtopic_id']);
-          }
-        }
-
-        // Get total subtopics from shared preferences
-        final prefs = await SharedPreferences.getInstance();
-        final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_${topicId}') ?? 0;
-        final progressPercentage = totalSubtopics > 0
-            ? completedSubIds.length / totalSubtopics
-            : 0.0;
-
-        // Save topic progress
-        await _saveTopicProgress(courseId, topicId, progressPercentage);
-
-        // Save course progress if topic is completed
-        if (progressPercentage == 1.0) {
-          await _saveCourseProgress(courseId);
-        }
-
-        return {
-          'userProgress': progress,
-          'completedSubtopics': completedSubIds.length,
-          'progressPercentage': progressPercentage,
-        };
-      }
-      return {'error': 'Failed to load user progress'};
-    } catch (e) {
-      log("❌ Error fetching progress: $e");
-      return {'error': 'Error fetching progress'};
+    // Save course progress if topic is completed
+    if (progressPercentage == 1.0) {
+      await _saveCourseProgress(courseId);
     }
+
+    return {
+      'userProgress': summary['userProgress'],
+      'completedSubtopics': completedCount,
+      'progressPercentage': progressPercentage,
+    };
   }
 
   bool _isSubtopicCompleted(List<Map<String, dynamic>> progress, String subtopicId) {
