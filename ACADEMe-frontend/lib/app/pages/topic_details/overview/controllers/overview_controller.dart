@@ -172,6 +172,23 @@ class OverviewController {
     };
   }
 
+  // Add this method to OverviewController class
+  Future<void> updateTopicCacheProgress() async {
+    final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
+        .locale
+        .languageCode;
+
+    // Get current progress from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final progress = prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
+
+    // Update cached topic data
+    final cacheController = TopicCacheController();
+    cacheController.updateCachedTopicProgress(courseId, topicId, targetLanguage, progress);
+
+    log("✅ Updated topic cache progress: $progress");
+  }
+
   bool _isSubtopicCompleted(List<Map<String, dynamic>> progress, String subtopicId) {
     final subtopicMaterials = progress.where((p) =>
         p['subtopic_id'] == subtopicId && p['activity_type'] == 'reading');
@@ -226,5 +243,8 @@ class OverviewController {
         log("✅ Saved topic progress: $topicKey");
       }
     }
+
+    // Update topic cache with new progress
+    await updateTopicCacheProgress();
   }
 }

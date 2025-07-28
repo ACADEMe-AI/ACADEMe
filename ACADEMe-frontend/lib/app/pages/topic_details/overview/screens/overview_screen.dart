@@ -77,6 +77,9 @@ class OverviewScreenState extends State<OverviewScreen>
     if (_lessonsSectionKey.currentState != null) {
       await _lessonsSectionKey.currentState!.refreshData();
     }
+
+    // Update topic cache with latest progress
+    await _controller.updateTopicCacheProgress();
   }
 
   @override
