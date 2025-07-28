@@ -55,7 +55,7 @@ class TestReportScreenState extends State<TestReportScreen> {
   Future<void> _initializePdfService() async {
     _pdfService = await PdfReportService.create(
       controller: _controller,
-      logoAssetPath: 'assets/academe/academe_logo.png',
+      logoAssetPath: 'assets/academe/academe_logo-modified.png',
     );
   }
 
