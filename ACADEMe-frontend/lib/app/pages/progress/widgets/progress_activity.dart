@@ -44,10 +44,10 @@ class ActivitySection extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                    Icons.lock_outline,
-                    size: 50,
-                    color: Colors.grey[300],
-                  ),
+                  Icons.lock_outline,
+                  size: 50,
+                  color: Colors.grey[300],
+                ),
                 const SizedBox(height: 20),
                 Text(
                   L10n.getTranslatedText(context, 'Premium Feature'),
