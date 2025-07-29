@@ -7,6 +7,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   final String subtopicId;
   final List<Map<String, dynamic>> materials;
   final List<Map<String, dynamic>> quizzes;
+  final bool isLoading;
   final String courseId;
   final String topicId;
   final Function(int) onTap;
@@ -16,6 +17,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
     required this.subtopicId,
     required this.materials,
     required this.quizzes,
+    required this.isLoading,
     required this.courseId,
     required this.topicId,
     required this.onTap,
@@ -30,6 +32,15 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
       courseId: courseId,
       topicId: topicId,
     );
+
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: CircularProgressIndicator(color: AcademeTheme.appColor),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 26),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import '../../../../../providers/progress_provider.dart';
-import '../../../courses/widgets/course_widgets.dart';
 import '../../flashcard/screens/flash_card_screen.dart';
 import '../../reports/screens/test_report_screen.dart';
 import '../controllers/lessons_controller.dart';
@@ -74,7 +73,7 @@ class LessonsSectionState extends State<LessonsSection> {
           subtopicIds: {
             for (var sub in subtopics)
               "${(subtopics.indexOf(sub) + 1).toString().padLeft(2, '0')} - ${sub["title"]}":
-              sub["id"].toString()
+                  sub["id"].toString()
           },
           isLoading: false,
         );
@@ -220,7 +219,10 @@ class LessonsSectionState extends State<LessonsSection> {
             child: Column(
               children: [
                 if (_state.isLoading)
-                  _buildShimmerLoadingList()
+                  const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  )
                 else
                   ..._state.isExpanded.keys.map((section) {
                     return Column(
@@ -258,30 +260,21 @@ class LessonsSectionState extends State<LessonsSection> {
                         ),
                         if (_state.isExpanded[section]! &&
                             _state.subtopicIds.containsKey(section))
-                          Builder(
-                            builder: (context) {
-                              final subtopicId = _state.subtopicIds[section]!;
-                              final isSubtopicLoading = _state.subtopicLoading[subtopicId] ?? false;
-
-                              if (isSubtopicLoading) {
-                                return _buildSubtopicShimmer();
-                              }
-
-                              return LessonsAndQuizzesWidget(
-                                subtopicId: subtopicId,
-                                materials: _state.subtopicMaterials[subtopicId] ?? [],
-                                quizzes: _state.subtopicQuizzes[subtopicId] ?? [],
-                                courseId: widget.courseId,
-                                topicId: widget.topicId,
-                                onTap: (index) => _navigateToFlashcard(
-                                  subtopicId,
-                                  _state.subtopicIds.entries
-                                      .firstWhere((entry) => entry.value == subtopicId)
-                                      .key,
-                                  index,
-                                ),
-                              );
-                            },
+                          LessonsAndQuizzesWidget(
+                            subtopicId: _state.subtopicIds[section]!,
+                            materials: _state.subtopicMaterials[_state.subtopicIds[section]!] ?? [],
+                            quizzes: _state.subtopicQuizzes[_state.subtopicIds[section]!] ?? [],
+                            isLoading: _state.subtopicLoading[_state.subtopicIds[section]!] ?? false,
+                            // userProgress: widget.userProgress,
+                            courseId: widget.courseId,
+                            topicId: widget.topicId,
+                            onTap: (index) => _navigateToFlashcard(
+                              _state.subtopicIds[section]!,
+                              _state.subtopicIds.entries
+                                  .firstWhere((entry) => entry.value == _state.subtopicIds[section]!)
+                                  .key,
+                              index,
+                            ),
                           ),
                       ],
                     );
@@ -309,8 +302,8 @@ class LessonsSectionState extends State<LessonsSection> {
             _state.isNavigating
                 ? L10n.getTranslatedText(context, 'Loading...')
                 : _state.showResume
-                ? L10n.getTranslatedText(context, 'Resume')
-                : L10n.getTranslatedText(context, 'Start Course'),
+                    ? L10n.getTranslatedText(context, 'Resume')
+                    : L10n.getTranslatedText(context, 'Start Course'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -386,170 +379,58 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   void _navigateToNextSubtopic(String currentSubtopicId) {
-    int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
-    if (currentIndex < _state.subtopicIds.length - 1) {
-      String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
-      String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
+  int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
+  if (currentIndex < _state.subtopicIds.length - 1) {
+    String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
+    String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
 
-      _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
-        if (!context.mounted) return;
+    _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
+      if (!context.mounted) return;
 
-        final materials = (_state.subtopicMaterials[nextSubtopicId] ?? [])
-            .map<Map<String, String>>((material) {
-          return {
-            "id": material["id"]?.toString() ?? "",
-            "type": material["type"]?.toString() ?? "",
-            "content": material["content"]?.toString() ?? "",
-          };
-        }).toList();
+      final materials = (_state.subtopicMaterials[nextSubtopicId] ?? [])
+          .map<Map<String, String>>((material) {
+        return {
+          "id": material["id"]?.toString() ?? "",
+          "type": material["type"]?.toString() ?? "",
+          "content": material["content"]?.toString() ?? "",
+        };
+      }).toList();
 
-        final quizzes = _state.subtopicQuizzes[nextSubtopicId] ?? [];
+      final quizzes = _state.subtopicQuizzes[nextSubtopicId] ?? [];
 
-        final controller = FlashCardController(
-          materials: materials,
-          quizzes: quizzes,
-          onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
-          initialIndex: 0,
-          courseId: widget.courseId,
-          topicId: widget.topicId,
-          subtopicId: nextSubtopicId,
-          subtopicTitle: nextSubtopicTitle,
-        );
+      final controller = FlashCardController(
+        materials: materials,
+        quizzes: quizzes,
+        onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
+        initialIndex: 0,
+        courseId: widget.courseId,
+        topicId: widget.topicId,
+        subtopicId: nextSubtopicId,
+        subtopicTitle: nextSubtopicTitle,
+      );
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => FlashCardScreen(controller: controller),
-          ),
-        );
-      });
-    } else {
-      Navigator.push(
+      // Use pushReplacement instead of push to replace current screen
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => TestReportScreen(
-            courseId: widget.courseId,
-            topicId: widget.topicId,
-            courseTitle: widget.courseTitle,
-            topicTitle: widget.topicTitle,
-            language: widget.language,
-          ),
+          builder: (context) => FlashCardScreen(controller: controller),
         ),
       );
-    }
-  }
-
-  Widget _buildShimmerLoadingList() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: 4, // Show 4 shimmer cards for lessons
-      itemBuilder: (context, index) {
-        return ShimmerEffect(
-          child: _buildLessonCardShimmer(),
-        );
-      },
-    );
-  }
-
-  Widget _buildLessonCardShimmer() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 3,
-            spreadRadius: 1,
-          )
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Container(
-          height: 16,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        trailing: Container(
-          height: 24,
-          width: 24,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(12),
-          ),
+    });
+  } else {
+    // Use pushReplacement for final screen too
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TestReportScreen(
+          courseId: widget.courseId,
+          topicId: widget.topicId,
+          courseTitle: widget.courseTitle,
+          topicTitle: widget.topicTitle,
+          language: widget.language,
         ),
       ),
     );
   }
-
-  Widget _buildSubtopicShimmer() {
-    return Column(
-      children: List.generate(3, (index) {
-        return ShimmerEffect(
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
-            height: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade200,
-                  blurRadius: 2,
-                  spreadRadius: 1,
-                )
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          height: 14,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          height: 12,
-                          width: 120,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
+}
 }
