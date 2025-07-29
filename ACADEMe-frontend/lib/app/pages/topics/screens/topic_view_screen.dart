@@ -334,7 +334,18 @@ class _TopicViewScreenState extends State<TopicViewScreen>
                 ),
               ),
             ).then((_) async {
-              // Instead of force refreshing, intelligently update cached data
+              // Update both progress and module completion for the specific topic
+              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+              final targetLanguage = languageProvider.locale.languageCode;
+              
+              // Update module completion for the specific topic
+              await _cacheController.updateTopicModuleCompletion(
+                widget.courseId, 
+                topicList[index]["id"], 
+                targetLanguage
+              );
+              
+              // Then refresh all topics progress
               await _refreshTopicsProgressOnly();
             });
           },

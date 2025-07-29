@@ -93,7 +93,7 @@ class CourseTabBar extends StatelessWidget {
 class CourseCard extends StatelessWidget {
   final Course course;
   final Future<String> Function(String courseId, BuildContext context)
-  getModuleProgressText;
+      getModuleProgressText;
 
   const CourseCard({
     super.key,
@@ -109,21 +109,25 @@ class CourseCard extends StatelessWidget {
 
         try {
           final controller =
-          Provider.of<CourseController>(context, listen: false);
+              Provider.of<CourseController>(context, listen: false);
           await controller.selectCourse(course.id);
 
           if (!context.mounted) return;
 
-          Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => TopicViewScreen(
                 courseId: course.id,
-                courseTitle:
-                course.title, // Add the required courseTitle parameter
+                courseTitle: course.title,
               ),
             ),
           );
+
+          // Refresh course progress after returning
+          if (context.mounted) {
+            await controller.refreshCourseProgress(course.id);
+          }
         } catch (error) {
           log("Error storing course ID: $error");
         }
@@ -430,7 +434,7 @@ class CourseListView extends StatelessWidget {
   final VoidCallback onRefresh;
   final String emptyMessage;
   final Future<String> Function(String courseId, BuildContext context)
-  getModuleProgressText;
+      getModuleProgressText;
 
   const CourseListView({
     super.key,

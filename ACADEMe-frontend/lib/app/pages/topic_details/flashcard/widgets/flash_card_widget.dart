@@ -89,101 +89,97 @@ class FlashCardContentWidget extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           return GestureDetector(
-              onTapDown: (_) {
+            onTapDown: (_) {
+              if (controller.showSwipeHint) {
+                controller.hideSwipeHint();
+              }
+            },
+            onPanStart: (_) {
+              if (controller.showSwipeHint) {
+                controller.hideSwipeHint();
+              }
+            },
+            behavior: HitTestBehavior.translucent,
+            child: Swiper(
+              controller: controller.swiperController,
+              itemWidth: constraints.maxWidth,
+              itemHeight: constraints.maxHeight,
+              loop: false,
+              duration: 250, // Increased from 0 to 400ms for slower animation
+              layout: SwiperLayout.STACK,
+              axisDirection: AxisDirection.right,
+              index: controller.currentPage,
+              curve: Curves.easeInOutCubic, // Changed to smoother curve
+              viewportFraction: 1.0,
+              scale: 0.9,
+              onIndexChanged: (index) {
+                controller.updateCurrentPage(index);
                 if (controller.showSwipeHint) {
                   controller.hideSwipeHint();
                 }
               },
-              onPanStart: (_) {
-                if (controller.showSwipeHint) {
-                  controller.hideSwipeHint();
-                }
+              itemBuilder: (context, index) {
+                return Stack(
+                  children: [
+                    // Only show content if it's the current page or we're not transitioning
+                    if (!controller.isTransitioning ||
+                        index == controller.currentPage)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                        child: _buildMaterial(index, controller),
+                      ),
+
+                    // Show overlay for non-current pages
+                    if (controller.currentPage != index &&
+                        !controller.isTransitioning)
+                      IgnorePointer(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300), // Slightly increased duration
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Swipe hint overlay
+                    if (controller.showSwipeHint && index == 0)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/swipe_left_no_bg.gif',
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
               },
-              behavior: HitTestBehavior
-                  .translucent, // Add this line to ensure touches are captured
-              child: Swiper(
-                controller: controller.swiperController,
-                itemWidth: constraints.maxWidth,
-                itemHeight: constraints.maxHeight,
-                loop: false,
-                duration: 0, // Set duration to 0 to disable built-in animation
-                layout: SwiperLayout.STACK,
-                axisDirection: AxisDirection.right,
-                index: controller.currentPage,
-                curve: Curves.easeOutCubic,
-                viewportFraction: 1.0,
-                scale: 0.9,
-                onIndexChanged: (index) {
-                  controller.updateCurrentPage(index);
-                  if (controller.showSwipeHint) {
-                    controller.hideSwipeHint();
-                  }
-                },
-                itemBuilder: (context, index) {
-                  return Stack(
-                    children: [
-                      // Only show content if it's the current page or we're not transitioning
-                      if (!controller.isTransitioning ||
-                          index == controller.currentPage)
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(20),
-                            topRight: Radius.circular(20),
-                          ),
-                          child: _buildMaterial(index, controller),
-                        ),
-
-                      // Show overlay for non-current pages
-                      if (controller.currentPage != index &&
-                          !controller.isTransitioning)
-                        IgnorePointer(
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(20),
-                                topRight: Radius.circular(20),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                      // Other overlays (swipe hint, celebration)
-                      if (controller.showSwipeHint && index == 0)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Center(
-                              child: Image.asset(
-                                'assets/images/swipe_left_no_bg.gif',
-                                width: 200,
-                                height: 200,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ),
-                      // if (controller.showCelebration)
-                      //   CelebrationWidget(controller: controller),
-                    ],
-                  );
-                },
-                itemCount:
-                controller.materials.length + controller.quizzes.length,
-              ));
+              itemCount: controller.materials.length + controller.quizzes.length,
+            ),
+          );
         },
       ),
     );
   }
 
-
   Widget _buildMaterial(int index, FlashCardController controller) {
     final material = index < controller.materials.length
         ? controller.materials[index]
         : {
-      "type": "quiz",
-      "quiz": controller.quizzes[index - controller.materials.length],
-    };
+            "type": "quiz",
+            "quiz": controller.quizzes[index - controller.materials.length],
+          };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +187,7 @@ class FlashCardContentWidget extends StatelessWidget {
         Expanded(
           child: AnimatedOpacity(
             opacity: controller.isTransitioning && index != controller.currentPage ? 0.0 : 1.0,
-            duration: const Duration(milliseconds: 100),
+            duration: const Duration(milliseconds: 200), // Smooth opacity transition
             child: Container(
               // Add explicit white background to prevent blue background showing
               color: Colors.white,
@@ -199,11 +195,11 @@ class FlashCardContentWidget extends StatelessWidget {
               height: double.infinity,
               child: controller.isTransitioning && index != controller.currentPage
                   ? Container(
-                // Ensure the placeholder also has white background
-                color: Colors.white,
-                width: double.infinity,
-                height: double.infinity,
-              )
+                      // Ensure the placeholder also has white background
+                      color: Colors.white,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
                   : _getMaterialWidget(material, index, controller),
             ),
           ),
@@ -211,7 +207,6 @@ class FlashCardContentWidget extends StatelessWidget {
       ],
     );
   }
-
 
   Widget _getMaterialWidget(Map<String, dynamic> material, int index,
       FlashCardController controller) {
