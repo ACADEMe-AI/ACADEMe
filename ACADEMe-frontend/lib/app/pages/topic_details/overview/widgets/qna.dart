@@ -48,7 +48,7 @@ class QSection extends StatelessWidget {
               ],
             ),
           ),
-          // Premium lock overlay
+          // Coming soon overlay
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -74,7 +74,7 @@ class QSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    L10n.getTranslatedText(context, 'Premium Feature'),
+                    L10n.getTranslatedText(context, 'Coming Soon'),
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -84,7 +84,7 @@ class QSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    L10n.getTranslatedText(context, 'Upgrade to Premium to access Q&A section'),
+                    L10n.getTranslatedText(context, 'Q&A section will be available soon'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -109,7 +109,7 @@ class QSection extends StatelessWidget {
                         elevation: 3,
                       ),
                       child: Text(
-                        L10n.getTranslatedText(context, 'Upgrade to Premium'),
+                        L10n.getTranslatedText(context, 'Stay Tuned'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

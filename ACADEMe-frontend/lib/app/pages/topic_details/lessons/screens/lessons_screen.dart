@@ -73,7 +73,7 @@ class LessonsSectionState extends State<LessonsSection> {
           subtopicIds: {
             for (var sub in subtopics)
               "${(subtopics.indexOf(sub) + 1).toString().padLeft(2, '0')} - ${sub["title"]}":
-                  sub["id"].toString()
+              sub["id"].toString()
           },
           isLoading: false,
         );
@@ -302,8 +302,8 @@ class LessonsSectionState extends State<LessonsSection> {
             _state.isNavigating
                 ? L10n.getTranslatedText(context, 'Loading...')
                 : _state.showResume
-                    ? L10n.getTranslatedText(context, 'Resume')
-                    : L10n.getTranslatedText(context, 'Start Course'),
+                ? L10n.getTranslatedText(context, 'Resume')
+                : L10n.getTranslatedText(context, 'Start Course'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -379,58 +379,58 @@ class LessonsSectionState extends State<LessonsSection> {
   }
 
   void _navigateToNextSubtopic(String currentSubtopicId) {
-  int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
-  if (currentIndex < _state.subtopicIds.length - 1) {
-    String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
-    String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
+    int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
+    if (currentIndex < _state.subtopicIds.length - 1) {
+      String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
+      String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
 
-    _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
-      if (!context.mounted) return;
+      _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
+        if (!context.mounted) return;
 
-      final materials = (_state.subtopicMaterials[nextSubtopicId] ?? [])
-          .map<Map<String, String>>((material) {
-        return {
-          "id": material["id"]?.toString() ?? "",
-          "type": material["type"]?.toString() ?? "",
-          "content": material["content"]?.toString() ?? "",
-        };
-      }).toList();
+        final materials = (_state.subtopicMaterials[nextSubtopicId] ?? [])
+            .map<Map<String, String>>((material) {
+          return {
+            "id": material["id"]?.toString() ?? "",
+            "type": material["type"]?.toString() ?? "",
+            "content": material["content"]?.toString() ?? "",
+          };
+        }).toList();
 
-      final quizzes = _state.subtopicQuizzes[nextSubtopicId] ?? [];
+        final quizzes = _state.subtopicQuizzes[nextSubtopicId] ?? [];
 
-      final controller = FlashCardController(
-        materials: materials,
-        quizzes: quizzes,
-        onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
-        initialIndex: 0,
-        courseId: widget.courseId,
-        topicId: widget.topicId,
-        subtopicId: nextSubtopicId,
-        subtopicTitle: nextSubtopicTitle,
-      );
+        final controller = FlashCardController(
+          materials: materials,
+          quizzes: quizzes,
+          onQuizComplete: () => _navigateToNextSubtopic(nextSubtopicId),
+          initialIndex: 0,
+          courseId: widget.courseId,
+          topicId: widget.topicId,
+          subtopicId: nextSubtopicId,
+          subtopicTitle: nextSubtopicTitle,
+        );
 
-      // Use pushReplacement instead of push to replace current screen
+        // Use pushReplacement instead of push to replace current screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FlashCardScreen(controller: controller),
+          ),
+        );
+      });
+    } else {
+      // Use pushReplacement for final screen too
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => FlashCardScreen(controller: controller),
+          builder: (context) => TestReportScreen(
+            courseId: widget.courseId,
+            topicId: widget.topicId,
+            courseTitle: widget.courseTitle,
+            topicTitle: widget.topicTitle,
+            language: widget.language,
+          ),
         ),
       );
-    });
-  } else {
-    // Use pushReplacement for final screen too
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TestReportScreen(
-          courseId: widget.courseId,
-          topicId: widget.topicId,
-          courseTitle: widget.courseTitle,
-          topicTitle: widget.topicTitle,
-          language: widget.language,
-        ),
-      ),
-    );
+    }
   }
-}
 }
