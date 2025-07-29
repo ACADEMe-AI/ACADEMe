@@ -6,6 +6,7 @@ import 'package:ACADEMe/localization/l10n.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import '../../../../providers/progress_provider.dart';
+import '../../courses/widgets/course_widgets.dart';
 import '../../topic_details/overview/screens/overview_screen.dart';
 import '../controllers/topic_cache_controller.dart';
 import '../controllers/app_lifecycle_controller.dart';
@@ -17,7 +18,7 @@ class TopicViewScreen extends StatefulWidget {
   final String courseTitle;
 
   const TopicViewScreen({
-    super.key, 
+    super.key,
     required this.courseId,
     required this.courseTitle,
   });
@@ -275,9 +276,7 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
   Widget _buildTopicList(List<Map<String, dynamic>> topicList, String language) {
     if (isLoading && topics.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: AcademeTheme.appColor),
-      );
+      return _buildShimmerLoadingList();
     }
 
     if (topicList.isEmpty && !isLoading) {
@@ -343,4 +342,96 @@ class _TopicViewScreenState extends State<TopicViewScreen>
       },
     );
   }
+
+  Widget _buildShimmerLoadingList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      physics: const AlwaysScrollableScrollPhysics(),
+      itemCount: 6, // Show 6 shimmer cards
+      itemBuilder: (context, index) {
+        return ShimmerEffect(
+          child: _buildTopicCardShimmer(),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopicCardShimmer() {
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 5,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Title shimmer
+          Container(
+            height: 18,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 16,
+            width: MediaQuery.of(context).size.width * 0.7,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Progress bar shimmer
+          Container(
+            height: 6,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Bottom text shimmer
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                height: 14,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              Container(
+                height: 14,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+// Import the existing ShimmerEffect from your widgets file
+// import 'path/to/your/shimmer_effect_widget.dart';

@@ -25,6 +25,13 @@ class ProfilePageState extends State<ProfilePage> {
   UserModel? userDetails;
   bool isLoading = true;
 
+  // Cache variables
+  static UserModel? _cachedUserDetails;
+  static Locale? _cachedLocale;
+  static String? _cachedClass;
+  static DateTime? _lastFetchTime;
+  static const Duration _cacheExpiry = Duration(minutes: 10); // Cache expires after 10 minutes
+
   @override
   void initState() {
     super.initState();
@@ -33,23 +40,60 @@ class ProfilePageState extends State<ProfilePage> {
 
   Future<void> _initData() async {
     _selectedLocale = const Locale('en');
-    await _loadLanguage();
-    await _loadUserDetails();
+
+    // Check if we have valid cached data
+    if (_isCacheValid()) {
+      _loadFromCache();
+    } else {
+      await _loadLanguage();
+      await _loadUserDetails();
+    }
+  }
+
+  bool _isCacheValid() {
+    if (_cachedUserDetails == null || _cachedLocale == null || _lastFetchTime == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    return now.difference(_lastFetchTime!) < _cacheExpiry;
+  }
+
+  void _loadFromCache() {
+    setState(() {
+      userDetails = _cachedUserDetails;
+      _selectedLocale = _cachedLocale!;
+      selectedClass = _cachedClass ?? 'SELECT';
+      isLoading = false;
+    });
+
+    // Update language provider if needed
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    if (languageProvider.locale != _cachedLocale) {
+      languageProvider.setLocale(_cachedLocale!);
+    }
   }
 
   Future<void> _loadUserDetails() async {
     try {
       final details = await _controller.loadUserDetails();
+      final newUserDetails = UserModel(
+        name: details['name'],
+        email: details['email'],
+        studentClass: details['student_class'],
+        photoUrl: details['photo_url'],
+      );
+
       setState(() {
-        userDetails = UserModel(
-          name: details['name'],
-          email: details['email'],
-          studentClass: details['student_class'],
-          photoUrl: details['photo_url'],
-        );
+        userDetails = newUserDetails;
         selectedClass = details['student_class'] ?? 'SELECT';
         isLoading = false;
       });
+
+      // Update cache
+      _cachedUserDetails = newUserDetails;
+      _cachedClass = selectedClass;
+      _lastFetchTime = DateTime.now();
     } catch (e) {
       setState(() => isLoading = false);
       _showErrorSnackbar(e.toString());
@@ -60,12 +104,48 @@ class ProfilePageState extends State<ProfilePage> {
     final locale = await _controller.loadLanguage();
     if (!mounted) return;
 
-    final languageProvider =
-    Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     if (languageProvider.locale != locale) {
       languageProvider.setLocale(locale);
     }
+
     setState(() => _selectedLocale = locale);
+
+    // Update cache
+    _cachedLocale = locale;
+    if (_lastFetchTime == null) {
+      _lastFetchTime = DateTime.now();
+    }
+  }
+
+  // Method to refresh data and clear cache
+  Future<void> _refreshData() async {
+    setState(() => isLoading = true);
+    _clearCache();
+    await _loadLanguage();
+    await _loadUserDetails();
+  }
+
+  // Method to clear cache (useful when user updates profile)
+  static void _clearCache() {
+    _cachedUserDetails = null;
+    _cachedLocale = null;
+    _cachedClass = null;
+    _lastFetchTime = null;
+  }
+
+  // Method to update cache when class is changed
+  void _updateClassCache(String newClass) {
+    _cachedClass = newClass;
+    selectedClass = newClass;
+    if (_cachedUserDetails != null) {
+      _cachedUserDetails = UserModel(
+        name: _cachedUserDetails!.name,
+        email: _cachedUserDetails!.email,
+        studentClass: newClass,
+        photoUrl: _cachedUserDetails!.photoUrl,
+      );
+    }
   }
 
   void _showErrorSnackbar(String error) {
@@ -80,12 +160,6 @@ class ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
@@ -100,10 +174,23 @@ class ProfilePageState extends State<ProfilePage> {
             ),
           ),
           centerTitle: true,
+          actions: [
+            // Add refresh button for manual refresh
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: _refreshData,
+            ),
+          ],
         ),
       ),
-      body: SingleChildScrollView(
-        child: _buildProfileContent(),
+      body: isLoading
+          ? const ProfilePageShimmer()
+          : RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: _buildProfileContent(),
+        ),
       ),
     );
   }
@@ -151,7 +238,10 @@ class ProfilePageState extends State<ProfilePage> {
 
   Widget _buildEditButton() {
     return ElevatedButton(
-      onPressed: () {},
+      onPressed: () {
+        // When edit profile is implemented, clear cache after editing
+        // _clearCache();
+      },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.yellow,
         foregroundColor: Colors.black,
@@ -255,10 +345,13 @@ class ProfilePageState extends State<ProfilePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(  // ✅ Correct - builder is separate
+      builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: ClassSelectionBottomSheet(
-          onClassSelected: () => _loadUserDetails(),
+          onClassSelected: () async {
+            // Reload user details and update cache
+            await _loadUserDetails();
+          },
         ),
       ),
     );
@@ -273,8 +366,12 @@ class ProfilePageState extends State<ProfilePage> {
       ),
       builder: (context) => LanguageSelectionBottomSheet(
         selectedLocale: _selectedLocale,
-        onLanguageSelected: (newLocale) =>
-            _controller.changeLanguage(newLocale, context),
+        onLanguageSelected: (newLocale) async {
+          await _controller.changeLanguage(newLocale, context);
+          // Update cache with new locale
+          _cachedLocale = newLocale;
+          setState(() => _selectedLocale = newLocale);
+        },
       ),
     );
   }
@@ -282,6 +379,10 @@ class ProfilePageState extends State<ProfilePage> {
   Future<void> _handleLogout() async {
     try {
       await AuthService().signOut();
+
+      // Clear cache on logout
+      _clearCache();
+
       if (!mounted) return;
 
       Navigator.pushAndRemoveUntil(
@@ -299,5 +400,439 @@ class ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       debugPrint('❌ Error during logout: $e');
     }
+  }
+}
+
+// Base Shimmer Effect Widget
+class ShimmerEffect extends StatefulWidget {
+  final Widget child;
+
+  const ShimmerEffect({super.key, required this.child});
+
+  @override
+  State<ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (rect) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.centerRight,
+              colors: const [
+                Colors.transparent,
+                Colors.white54,
+                Colors.transparent,
+              ],
+              stops: [
+                (_animation.value - 0.3).clamp(0.0, 1.0),
+                _animation.value.clamp(0.0, 1.0),
+                (_animation.value + 0.3).clamp(0.0, 1.0),
+              ],
+            ).createShader(rect);
+          },
+          blendMode: BlendMode.srcATop,
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+// Reusable Shimmer Components
+class ShimmerBox extends StatelessWidget {
+  final double? width;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry? margin;
+
+  const ShimmerBox({
+    super.key,
+    this.width,
+    required this.height,
+    this.borderRadius = 4.0,
+    this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      margin: margin,
+      child: ShimmerEffect(
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ShimmerCircle extends StatelessWidget {
+  final double radius;
+  final EdgeInsetsGeometry? margin;
+
+  const ShimmerCircle({
+    super.key,
+    required this.radius,
+    this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: margin,
+      child: ShimmerEffect(
+        child: CircleAvatar(
+          radius: radius,
+          backgroundColor: Colors.grey.shade300,
+        ),
+      ),
+    );
+  }
+}
+
+class ShimmerLine extends StatelessWidget {
+  final double? width;
+  final double height;
+  final EdgeInsetsGeometry? margin;
+
+  const ShimmerLine({
+    super.key,
+    this.width,
+    this.height = 16.0,
+    this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerBox(
+      width: width,
+      height: height,
+      borderRadius: 4.0,
+      margin: margin,
+    );
+  }
+}
+
+class ShimmerButton extends StatelessWidget {
+  final double? width;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry? margin;
+
+  const ShimmerButton({
+    super.key,
+    this.width,
+    this.height = 45.0,
+    this.borderRadius = 30.0,
+    this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerBox(
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      margin: margin,
+    );
+  }
+}
+
+class ShimmerCard extends StatelessWidget {
+  final double? width;
+  final double height;
+  final double borderRadius;
+  final EdgeInsetsGeometry? margin;
+
+  const ShimmerCard({
+    super.key,
+    this.width,
+    required this.height,
+    this.borderRadius = 12.0,
+    this.margin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerBox(
+      width: width,
+      height: height,
+      borderRadius: borderRadius,
+      margin: margin,
+    );
+  }
+}
+
+class ShimmerListTile extends StatelessWidget {
+  final double height;
+  final EdgeInsetsGeometry? margin;
+  final bool showLeading;
+  final bool showTrailing;
+
+  const ShimmerListTile({
+    super.key,
+    this.height = 60.0,
+    this.margin,
+    this.showLeading = true,
+    this.showTrailing = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      margin: margin ?? const EdgeInsets.only(bottom: 12),
+      child: ShimmerEffect(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              if (showLeading) ...[
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: Colors.grey.shade400,
+                ),
+                const SizedBox(width: 16),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: 14,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 12,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showTrailing) ...[
+                const SizedBox(width: 16),
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Pre-built Shimmer Layouts
+class ProfilePageShimmer extends StatelessWidget {
+  const ProfilePageShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 15),
+          // Avatar shimmer
+          const ShimmerCircle(radius: 50),
+          const SizedBox(height: 10),
+          // Name shimmer
+          const ShimmerLine(width: 150, height: 24),
+          const SizedBox(height: 8),
+          // Email shimmer
+          const ShimmerLine(width: 200, height: 18),
+          const SizedBox(height: 20),
+          // Edit button shimmer
+          const ShimmerButton(width: 120),
+          const SizedBox(height: 20),
+          // Options list shimmer
+          ListView.builder(
+            padding: const EdgeInsets.all(10),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 7,
+            itemBuilder: (context, index) {
+              return const ShimmerListTile();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FullPageShimmer extends StatelessWidget {
+  const FullPageShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        // Search field shimmer
+        const ShimmerBox(height: 48, borderRadius: 26),
+        const SizedBox(height: 20),
+
+        // Ask Me Card shimmer
+        const ShimmerCard(height: 120),
+        const SizedBox(height: 20),
+
+        // Progress Card shimmer
+        const ShimmerCard(height: 100),
+        const SizedBox(height: 20),
+
+        // Continue Learning section shimmer
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const ShimmerLine(width: 150, height: 20),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 180,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return ShimmerCard(
+                    width: 160,
+                    height: 180,
+                    margin: const EdgeInsets.only(right: 12),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Banner shimmer
+        const ShimmerCard(height: 120),
+        const SizedBox(height: 16),
+
+        // All Courses header shimmer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const ShimmerLine(width: 100, height: 18),
+            const ShimmerLine(width: 60, height: 16),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Course tags shimmer
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(6, (index) {
+            return ShimmerBox(
+              height: 32,
+              width: 80 + (index * 10).toDouble(),
+              borderRadius: 16,
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+
+        // My Courses header shimmer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const ShimmerLine(width: 100, height: 18),
+            const ShimmerLine(width: 60, height: 16),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Courses grid shimmer
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            return const ShimmerCard(height: double.infinity);
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Recommended section shimmer
+        const ShimmerLine(width: 120, height: 18),
+        const SizedBox(height: 12),
+
+        // Recommended courses shimmer
+        SizedBox(
+          height: 160,
+          child: Row(
+            children: [
+              Expanded(
+                child: const ShimmerCard(height: 160),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: const ShimmerCard(height: 160),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }

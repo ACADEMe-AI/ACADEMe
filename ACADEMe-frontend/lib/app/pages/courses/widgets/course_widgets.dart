@@ -93,7 +93,7 @@ class CourseTabBar extends StatelessWidget {
 class CourseCard extends StatelessWidget {
   final Course course;
   final Future<String> Function(String courseId, BuildContext context)
-      getModuleProgressText;
+  getModuleProgressText;
 
   const CourseCard({
     super.key,
@@ -109,7 +109,7 @@ class CourseCard extends StatelessWidget {
 
         try {
           final controller =
-              Provider.of<CourseController>(context, listen: false);
+          Provider.of<CourseController>(context, listen: false);
           await controller.selectCourse(course.id);
 
           if (!context.mounted) return;
@@ -120,7 +120,7 @@ class CourseCard extends StatelessWidget {
               builder: (context) => TopicViewScreen(
                 courseId: course.id,
                 courseTitle:
-                    course.title, // Add the required courseTitle parameter
+                course.title, // Add the required courseTitle parameter
               ),
             ),
           );
@@ -219,6 +219,175 @@ class CourseCard extends StatelessWidget {
   }
 }
 
+class ShimmerEffect extends StatefulWidget {
+  final Widget child;
+
+  const ShimmerEffect({super.key, required this.child});
+
+  @override
+  State<ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (rect) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.centerRight,
+              colors: const [
+                Colors.transparent,
+                Colors.white54,
+                Colors.transparent,
+              ],
+              stops: [
+                (_animation.value - 0.3).clamp(0.0, 1.0),
+                _animation.value.clamp(0.0, 1.0),
+                (_animation.value + 0.3).clamp(0.0, 1.0),
+              ],
+            ).createShader(rect);
+          },
+          blendMode: BlendMode.srcATop,
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+class CourseCardShimmer extends StatelessWidget {
+  const CourseCardShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 120,
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade300,
+            blurRadius: 5,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Title shimmer
+                Container(
+                  height: 16,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 16,
+                  width: MediaQuery.of(context).size.width * 0.6,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Progress bar shimmer
+                Container(
+                  height: 5,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                // Bottom text shimmer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      height: 12,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    Container(
+                      height: 12,
+                      width: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ShimmerLoadingList extends StatelessWidget {
+  const ShimmerLoadingList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: 6, // Show 6 shimmer cards
+      itemBuilder: (context, index) {
+        return ShimmerEffect(
+          child: CourseCardShimmer(),
+        );
+      },
+    );
+  }
+}
+
 class EmptyStateWidget extends StatelessWidget {
   final String message;
   final VoidCallback? onRefresh;
@@ -261,7 +430,7 @@ class CourseListView extends StatelessWidget {
   final VoidCallback onRefresh;
   final String emptyMessage;
   final Future<String> Function(String courseId, BuildContext context)
-      getModuleProgressText;
+  getModuleProgressText;
 
   const CourseListView({
     super.key,
@@ -276,11 +445,7 @@ class CourseListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && !hasInitialized) {
-      return Center(
-        child: CircularProgressIndicator(
-          color: AcademeTheme.appColor,
-        ),
-      );
+      return const ShimmerLoadingList();
     }
 
     if (courses.isEmpty && hasInitialized) {
