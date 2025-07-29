@@ -134,9 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return FutureBuilder<Map<String, String?>>(
                       future: controller.getUserDetails(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
+                        // Always show the AppBar without shimmer, use default values if loading
                         return HomeAppBar(
                           onProfileTap: widget.onProfileTap,
                           onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
@@ -193,6 +191,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMainContent() {
     return Consumer<HomeController>(
       builder: (context, controller, child) {
+        if (controller.isLoading) {
+          return const FullPageShimmer();
+        }
+
         return ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
@@ -302,10 +304,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Loading indicator or courses grid
-            controller.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : CoursesGrid(),
+            // Courses grid
+            CoursesGrid(),
 
             const SizedBox(height: 16),
             // Recommended section
@@ -351,6 +351,313 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+// Shimmer Effect Widget
+class ShimmerEffect extends StatefulWidget {
+  final Widget child;
+
+  const ShimmerEffect({super.key, required this.child});
+
+  @override
+  State<ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.repeat();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (rect) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.centerRight,
+              colors: const [
+                Colors.transparent,
+                Colors.white54,
+                Colors.transparent,
+              ],
+              stops: [
+                (_animation.value - 0.3).clamp(0.0, 1.0),
+                _animation.value.clamp(0.0, 1.0),
+                (_animation.value + 0.3).clamp(0.0, 1.0),
+              ],
+            ).createShader(rect);
+          },
+          blendMode: BlendMode.srcATop,
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
+// Full page shimmer for entire homepage
+class FullPageShimmer extends StatelessWidget {
+  const FullPageShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      children: [
+        // Search field shimmer
+        ShimmerEffect(
+          child: Container(
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(26),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Ask Me Card shimmer
+        ShimmerEffect(
+          child: Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Progress Card shimmer
+        ShimmerEffect(
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Continue Learning section shimmer
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShimmerEffect(
+              child: Container(
+                height: 20,
+                width: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 180,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: 3,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: ShimmerEffect(
+                      child: Container(
+                        width: 160,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // Banner shimmer
+        ShimmerEffect(
+          child: Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // All Courses header shimmer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ShimmerEffect(
+              child: Container(
+                height: 18,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            ShimmerEffect(
+              child: Container(
+                height: 16,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Course tags shimmer
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: List.generate(6, (index) {
+            return ShimmerEffect(
+              child: Container(
+                height: 32,
+                width: 80 + (index * 10).toDouble(),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+
+        // My Courses header shimmer
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            ShimmerEffect(
+              child: Container(
+                height: 18,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            ShimmerEffect(
+              child: Container(
+                height: 16,
+                width: 60,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Courses grid shimmer
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.8,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            return ShimmerEffect(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+
+        // Recommended section shimmer
+        ShimmerEffect(
+          child: Container(
+            height: 18,
+            width: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Recommended courses shimmer
+        SizedBox(
+          height: 160,
+          child: Row(
+            children: [
+              Expanded(
+                child: ShimmerEffect(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ShimmerEffect(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
