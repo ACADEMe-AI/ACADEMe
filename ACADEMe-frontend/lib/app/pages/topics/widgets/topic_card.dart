@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
-import '../controllers/topic_api_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TopicCard extends StatelessWidget {
   final Map<String, dynamic> topic;
   final String courseId;
   final VoidCallback onTap;
-  final TopicApiController _apiController = TopicApiController();
 
-  TopicCard({
+  const TopicCard({
     super.key,
     required this.topic,
     required this.courseId,
@@ -99,7 +98,23 @@ class TopicCard extends StatelessWidget {
   }
 
   Future<String> _getModuleProgressText(BuildContext context) async {
-    final progressText = await _apiController.getModuleProgressText(courseId, topic["id"]);
-    return "$progressText ${L10n.getTranslatedText(context, 'Modules')}";
+    final prefs = await SharedPreferences.getInstance();
+    final topicId = topic["id"].toString();
+
+    // Get total subtopics for this topic
+    int totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+
+    // Get completed subtopics for this topic
+    List<String> completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
+    int completedCount = completedSubtopics.length;
+
+    // Alternative method: Calculate completed modules based on progress percentage
+    // If you don't have subtopic completion data, estimate from progress
+    if (totalSubtopics > 0 && completedCount == 0) {
+      double progressDecimal = (topic["progress"] / 100).clamp(0.0, 1.0);
+      completedCount = (totalSubtopics * progressDecimal).round();
+    }
+
+    return "$completedCount/$totalSubtopics ${L10n.getTranslatedText(context, 'Modules')}";
   }
 }

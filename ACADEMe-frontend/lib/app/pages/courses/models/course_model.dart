@@ -1,7 +1,7 @@
 class Course {
   final String id;
   final String title;
-  double progress;
+  final double progress;
 
   Course({
     required this.id,

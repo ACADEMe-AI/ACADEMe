@@ -1,7 +1,5 @@
 import 'dart:developer';
-
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/topic_cache_data.dart';
 
 class TopicCacheController {
@@ -37,7 +35,7 @@ class TopicCacheController {
     return List.from(cacheData.topics);
   }
 
-  // NEW: Cache topic details
+  // Cache topic details
   void cacheTopicDetails(String courseId, String topicId, String languageCode, Map<String, dynamic> details) {
     final key = '${courseId}_${topicId}_$languageCode';
     _topicDetailsCache[key] = {
@@ -61,7 +59,7 @@ class TopicCacheController {
     return Map.from(cached)..remove('timestamp');
   }
 
-  // NEW: Cache subtopics
+  // Cache subtopics
   void cacheSubtopics(String courseId, String topicId, String languageCode, List<Map<String, dynamic>> subtopics) {
     final key = '${courseId}_${topicId}_$languageCode';
     _subtopicsCache[key] = List.from(subtopics);
@@ -72,7 +70,7 @@ class TopicCacheController {
     return _subtopicsCache[key] != null ? List.from(_subtopicsCache[key]!) : null;
   }
 
-  // Add this method to update cached topic progress without API calls
+  // Update cached topic progress without API calls
   void updateCachedTopicProgress(String courseId, String topicId, String languageCode, double progressPercentage) {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
@@ -96,7 +94,7 @@ class TopicCacheController {
     }
   }
 
-// Add this method to refresh cached data with latest progress from SharedPreferences
+  // Enhanced method to refresh cached data with latest progress AND module completion from SharedPreferences
   Future<void> refreshCachedTopicsProgress(String courseId, String languageCode) async {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
@@ -109,6 +107,14 @@ class TopicCacheController {
         final topicId = topic['id'].toString();
         final progress = prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
         topic['progress'] = progress * 100; // Convert to percentage
+
+        // Also cache module completion data for immediate access
+        final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+        final completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
+        
+        // Store module completion info in the topic data for quick access
+        topic['totalModules'] = totalSubtopics;
+        topic['completedModules'] = completedSubtopics.length;
       }
 
       // Update cache timestamp
@@ -117,11 +123,44 @@ class TopicCacheController {
         timestamp: DateTime.now(),
       );
 
-      log("✅ Refreshed all cached topics progress for course $courseId");
+      log("✅ Refreshed all cached topics progress and module completion for course $courseId");
     }
   }
 
-// Add this method to check if we need to refresh progress
+  // NEW: Method to update module completion for a specific topic
+  Future<void> updateTopicModuleCompletion(String courseId, String topicId, String languageCode) async {
+    final key = _getCacheKey(courseId, languageCode);
+    final cacheData = _cache[key];
+
+    if (cacheData != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final topics = cacheData.topics;
+      final topicIndex = topics.indexWhere((topic) => topic['id'] == topicId);
+
+      if (topicIndex != -1) {
+        // Update module completion data
+        final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+        final completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
+        
+        topics[topicIndex]['totalModules'] = totalSubtopics;
+        topics[topicIndex]['completedModules'] = completedSubtopics.length;
+
+        // Also update progress if needed
+        final progress = prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
+        topics[topicIndex]['progress'] = progress * 100;
+
+        // Update the cache
+        _cache[key] = TopicCacheData(
+          topics: topics,
+          timestamp: DateTime.now(),
+        );
+
+        log("✅ Updated cached module completion for topic $topicId: ${completedSubtopics.length}/$totalSubtopics");
+      }
+    }
+  }
+
+  // Check if we need to refresh progress
   bool shouldRefreshProgress(String courseId, String languageCode) {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
