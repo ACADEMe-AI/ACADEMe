@@ -50,11 +50,11 @@ class PdfReportService {
       logoImageBytes: logoBytes,
       userName: userName,
     );
-    
+
     if (service.userName == null) {
       await service._loadUserNameFromStorage();
     }
-    
+
     return service;
   }
 
@@ -66,9 +66,12 @@ class PdfReportService {
     try {
       final String? name = await _secureStorage.read(key: 'name');
       final String? photoUrl = await _secureStorage.read(key: 'photo_url');
+      final String? studentClass =
+          await _secureStorage.read(key: 'student_class');
       _userDetails = {
         'name': name,
         'photo_url': photoUrl,
+        'class': studentClass,
       };
       return _userDetails;
     } catch (e) {
@@ -76,6 +79,7 @@ class PdfReportService {
       return {
         'name': null,
         'photo_url': null,
+        'class': null,
       };
     }
   }
@@ -96,7 +100,7 @@ class PdfReportService {
       if (userName == null) {
         await _loadUserNameFromStorage();
       }
-      
+
       final pdf = await _generateReportDocument();
       await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save(),
@@ -111,7 +115,7 @@ class PdfReportService {
       if (userName == null) {
         await _loadUserNameFromStorage();
       }
-      
+
       final pdf = await _generateReportDocument();
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/quiz_report_share.pdf');
@@ -171,7 +175,8 @@ class PdfReportService {
                   pw.SizedBox(height: 16), // Reduced spacing
                   _buildCompactScoreOverviewCard(topicScore, correct, total),
                   pw.SizedBox(height: 16), // Reduced spacing
-                  _buildCompactDetailedMetricsCard(correct, incorrect, skipped, total),
+                  _buildCompactDetailedMetricsCard(
+                      correct, incorrect, skipped, total),
                   pw.SizedBox(height: 8), // Much smaller space before footer
                   _buildCompactFooter(),
                 ],
@@ -195,7 +200,8 @@ class PdfReportService {
         ),
       ),
       child: pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Reduced padding
+        padding: const pw.EdgeInsets.symmetric(
+            horizontal: 24, vertical: 12), // Reduced padding
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
@@ -240,7 +246,7 @@ class PdfReportService {
   pw.Widget _buildCompactUserInfoCard() {
     return pw.Container(
       width: double.infinity,
-      padding: const pw.EdgeInsets.all(16), // Reduced padding
+      padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
         color: lightBlue,
         borderRadius: pw.BorderRadius.circular(10),
@@ -248,9 +254,8 @@ class PdfReportService {
       ),
       child: pw.Row(
         children: [
-          // Smaller User Avatar/Icon
           pw.Container(
-            width: 48, // Reduced from 60
+            width: 48,
             height: 48,
             decoration: pw.BoxDecoration(
               color: primaryBlue,
@@ -258,11 +263,11 @@ class PdfReportService {
             ),
             child: pw.Center(
               child: pw.Text(
-                userName != null && userName!.isNotEmpty 
-                  ? userName!.substring(0, 1).toUpperCase()
-                  : 'S',
+                userName != null && userName!.isNotEmpty
+                    ? userName!.substring(0, 1).toUpperCase()
+                    : 'S',
                 style: pw.TextStyle(
-                  fontSize: 20, // Reduced from 24
+                  fontSize: 20,
                   fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white,
                 ),
@@ -286,12 +291,14 @@ class PdfReportService {
                 pw.Text(
                   userName ?? 'Student',
                   style: pw.TextStyle(
-                    fontSize: 16, // Reduced from 20
+                    fontSize: 16,
                     fontWeight: pw.FontWeight.bold,
                     color: primaryBlue,
                   ),
                 ),
                 pw.SizedBox(height: 6),
+                _buildInfoRow(
+                    'Class:', _userDetails['class'] ?? 'Not specified'),
                 _buildInfoRow('Course:', controller.courseTitle),
                 pw.SizedBox(height: 2),
                 _buildInfoRow('Topic:', controller.topicTitle),
@@ -329,7 +336,8 @@ class PdfReportService {
     );
   }
 
-  pw.Widget _buildCompactScoreOverviewCard(double score, int correct, int total) {
+  pw.Widget _buildCompactScoreOverviewCard(
+      double score, int correct, int total) {
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(18), // Reduced padding
@@ -400,11 +408,14 @@ class PdfReportService {
                   ),
                 ),
                 pw.SizedBox(height: 12),
-                _buildScoreDetailRow('Correct Answers:', '$correct out of $total'),
+                _buildScoreDetailRow(
+                    'Correct Answers:', '$correct out of $total'),
                 pw.SizedBox(height: 6),
-                _buildScoreDetailRow('Accuracy Rate:', '${score.toStringAsFixed(1)}%'),
+                _buildScoreDetailRow(
+                    'Accuracy Rate:', '${score.toStringAsFixed(1)}%'),
                 pw.SizedBox(height: 6),
-                _buildScoreDetailRow('Completion Date:', DateFormat('MMM dd, yyyy').format(DateTime.now())),
+                _buildScoreDetailRow('Completion Date:',
+                    DateFormat('MMM dd, yyyy').format(DateTime.now())),
               ],
             ),
           ),
@@ -437,7 +448,8 @@ class PdfReportService {
     );
   }
 
-  pw.Widget _buildCompactDetailedMetricsCard(int correct, int incorrect, int skipped, int total) {
+  pw.Widget _buildCompactDetailedMetricsCard(
+      int correct, int incorrect, int skipped, int total) {
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.all(18), // Reduced padding
@@ -461,10 +473,13 @@ class PdfReportService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
             children: [
-              _buildCompactMetricCard('Correct', '$correct', successGreen, '${(correct / total * 100).toStringAsFixed(1)}%'),
-              _buildCompactMetricCard('Incorrect', '$incorrect', errorRed, '${(incorrect / total * 100).toStringAsFixed(1)}%'),
+              _buildCompactMetricCard('Correct', '$correct', successGreen,
+                  '${(correct / total * 100).toStringAsFixed(1)}%'),
+              _buildCompactMetricCard('Incorrect', '$incorrect', errorRed,
+                  '${(incorrect / total * 100).toStringAsFixed(1)}%'),
               if (skipped > 0)
-                _buildCompactMetricCard('Skipped', '$skipped', warningOrange, '${(skipped / total * 100).toStringAsFixed(1)}%'),
+                _buildCompactMetricCard('Skipped', '$skipped', warningOrange,
+                    '${(skipped / total * 100).toStringAsFixed(1)}%'),
             ],
           ),
           pw.SizedBox(height: 14),
@@ -474,7 +489,8 @@ class PdfReportService {
     );
   }
 
-  pw.Widget _buildCompactMetricCard(String title, String value, PdfColor color, String percentage) {
+  pw.Widget _buildCompactMetricCard(
+      String title, String value, PdfColor color, String percentage) {
     return pw.Container(
       width: 100, // Reduced from 120
       padding: const pw.EdgeInsets.all(12), // Reduced padding
@@ -515,7 +531,8 @@ class PdfReportService {
     );
   }
 
-  pw.Widget _buildCompactProgressBar(int correct, int incorrect, int skipped, int total) {
+  pw.Widget _buildCompactProgressBar(
+      int correct, int incorrect, int skipped, int total) {
     final correctWidth = (correct / total) * 320; // Reduced bar width
     final incorrectWidth = (incorrect / total) * 320;
     final skippedWidth = (skipped / total) * 320;
