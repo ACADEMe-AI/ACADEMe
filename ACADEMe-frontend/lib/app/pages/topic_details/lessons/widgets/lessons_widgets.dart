@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import '../controllers/lessons_controller.dart';
+import '../widgets/shimmer_widgets.dart';
 
 class LessonsAndQuizzesWidget extends StatelessWidget {
   final String subtopicId;
@@ -34,12 +35,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
     );
 
     if (isLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(
-          child: CircularProgressIndicator(color: AcademeTheme.appColor),
-        ),
-      );
+      return const SubtopicContentShimmer();
     }
 
     return Padding(

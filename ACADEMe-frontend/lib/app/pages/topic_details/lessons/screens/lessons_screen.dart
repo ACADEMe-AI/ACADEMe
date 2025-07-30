@@ -7,6 +7,7 @@ import '../../reports/screens/test_report_screen.dart';
 import '../controllers/lessons_controller.dart';
 import '../models/lessons_model.dart';
 import '../widgets/lessons_widgets.dart';
+import '../widgets/shimmer_widgets.dart'; // Add this import
 import '../../flashcard/controllers/flash_card_controller.dart';
 
 class LessonsSection extends StatefulWidget {
@@ -219,10 +220,8 @@ class LessonsSectionState extends State<LessonsSection> {
             child: Column(
               children: [
                 if (_state.isLoading)
-                  const Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(),
-                  )
+                // Replace CircularProgressIndicator with SubtopicListShimmer
+                  const SubtopicListShimmer()
                 else
                   ..._state.isExpanded.keys.map((section) {
                     return Column(
