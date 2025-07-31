@@ -215,7 +215,7 @@ class ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         Text(
-          userDetails?.name ?? 'Loading...',
+          userDetails?.name ?? 'User',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         Text(
