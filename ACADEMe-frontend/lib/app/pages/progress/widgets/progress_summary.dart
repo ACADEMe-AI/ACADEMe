@@ -72,7 +72,7 @@ class _SummarySectionState extends State<SummarySection> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AcademeTheme.appColor.withOpacity(0.1),
+                    color: AcademeTheme.appColor.withAlpha(25),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -133,7 +133,7 @@ class _SummarySectionState extends State<SummarySection> {
       future: widget.controller.fetchOverallGrade(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildShimmerLoading();
         } else if (snapshot.hasError) {
           return Center(child: Text("❌ Error: ${snapshot.error}"));
         }
@@ -395,6 +395,151 @@ class _SummarySectionState extends State<SummarySection> {
               const Icon(Icons.arrow_forward_ios_rounded),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // Two cards in a row (Total Courses and Completed)
+          Row(
+            children: [
+              Expanded(
+                child: Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                          color: const Color.fromARGB(27, 158, 158, 158)),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: _buildShimmerContent(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                          color: const Color.fromARGB(27, 158, 158, 158)),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(10),
+                          blurRadius: 6,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: _buildShimmerContent(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Overall Grade card
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(
+                    color: const Color.fromARGB(27, 158, 158, 158)),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(10),
+                    blurRadius: 6,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(16),
+              child: _buildShimmerContent(isOverallGrade: true),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerContent({bool isOverallGrade = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _buildShimmerBar(width: 120, height: 20),
+          ),
+          SizedBox(height: 16),
+          if (isOverallGrade)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildShimmerBar(width: 100, height: 52),
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.grey[300],
+                  ),
+                ),
+              ],
+            )
+          else
+            _buildShimmerBar(width: 80, height: 54),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerBar({required double width, required double height}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 1000),
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        gradient: LinearGradient(
+          colors: [
+            Colors.grey[300]!,
+            Colors.grey[100]!,
+            Colors.grey[300]!,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
         ),
       ),
     );
