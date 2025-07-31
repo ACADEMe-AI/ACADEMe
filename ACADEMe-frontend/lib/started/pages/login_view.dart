@@ -125,7 +125,7 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('timeout') ||
         lowerError.contains('socket') ||
         lowerError.contains('handshake')) {
-      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again.');
+      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again');
     }
 
     // Server errors
@@ -133,7 +133,7 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('500') ||
         lowerError.contains('502') ||
         lowerError.contains('503')) {
-      return L10n.getTranslatedText(context, '⚠️ Server is temporarily unavailable. Please try again later.');
+      return L10n.getTranslatedText(context, '⚠️ Server is temporarily unavailable. Please try again later');
     }
 
     // Authentication errors
@@ -142,32 +142,32 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('wrong') ||
         lowerError.contains('unauthorized') ||
         lowerError.contains('401')) {
-      return L10n.getTranslatedText(context, '❌ Invalid email or password. Please check your credentials.');
+      return L10n.getTranslatedText(context, '❌ Invalid email or password. Please check your credentials');
     }
 
     // User not found
     if (lowerError.contains('not found') ||
         lowerError.contains('404') ||
         lowerError.contains('user does not exist')) {
-      return L10n.getTranslatedText(context, '👤 Account not found. Please sign up first.');
+      return L10n.getTranslatedText(context, '👤 Account not found. Please sign up first');
     }
 
     // Account issues
     if (lowerError.contains('blocked') ||
         lowerError.contains('suspended') ||
         lowerError.contains('disabled')) {
-      return L10n.getTranslatedText(context, '🚫 Account is temporarily disabled. Contact support.');
+      return L10n.getTranslatedText(context, '🚫 Account is temporarily disabled. Contact support');
     }
 
     // Rate limiting
     if (lowerError.contains('too many') ||
         lowerError.contains('rate') ||
         lowerError.contains('limit')) {
-      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again.');
+      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again');
     }
 
     // Default fallback for any other error
-    return L10n.getTranslatedText(context, '❌ Something went wrong. Please try again.');
+    return L10n.getTranslatedText(context, '❌ Something went wrong. Please try again');
   }
 
 
@@ -178,7 +178,7 @@ class _LogInViewState extends State<LogInView> {
 
     try {
       _showSnackBar(L10n.getTranslatedText(context,
-          'Google Sign-In is turned off for now. Please log in manually.'));
+          'Google Sign-In is turned off for now. Please log in manually'));
     } finally {
       if (mounted) {
         setState(() => _isGoogleLoading = false);

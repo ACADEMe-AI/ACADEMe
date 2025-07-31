@@ -172,7 +172,7 @@ class _SignUpViewState extends State<SignUpView> {
         lowerError.contains('timeout') ||
         lowerError.contains('socket') ||
         lowerError.contains('handshake')) {
-      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again.');
+      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again');
     }
 
     // Server errors
@@ -187,19 +187,19 @@ class _SignUpViewState extends State<SignUpView> {
     if (lowerError.contains('already exists') ||
         lowerError.contains('duplicate') ||
         lowerError.contains('email') && lowerError.contains('taken')) {
-      return L10n.getTranslatedText(context, '📧 This email is already registered. Please use a different email or try logging in.');
+      return L10n.getTranslatedText(context, '📧 This email is already registered. Please use a different email or try logging in');
     }
 
     // OTP related errors
     if (lowerError.contains('otp') || lowerError.contains('code')) {
       if (lowerError.contains('expired') || lowerError.contains('timeout')) {
-        return L10n.getTranslatedText(context, '⏰ OTP has expired. Please request a new one.');
+        return L10n.getTranslatedText(context, '⏰ OTP has expired. Please request a new one');
       } else if (lowerError.contains('invalid') || lowerError.contains('incorrect') || lowerError.contains('wrong')) {
-        return L10n.getTranslatedText(context, '❌ Invalid OTP. Please check and try again.');
+        return L10n.getTranslatedText(context, '❌ Invalid OTP. Please check and try again');
       } else if (lowerError.contains('not found')) {
-        return L10n.getTranslatedText(context, '📮 Please request an OTP first.');
+        return L10n.getTranslatedText(context, '📮 Please request an OTP first');
       }
-      return L10n.getTranslatedText(context, '🔐 OTP verification failed. Please try again.');
+      return L10n.getTranslatedText(context, '🔐 OTP verification failed. Please try again');
     }
 
     // Validation errors
@@ -207,31 +207,31 @@ class _SignUpViewState extends State<SignUpView> {
         lowerError.contains('invalid') ||
         lowerError.contains('format') ||
         lowerError.contains('required')) {
-      return L10n.getTranslatedText(context, '📝 Please check your information and try again.');
+      return L10n.getTranslatedText(context, '📝 Please check your information and try again');
     }
 
     // Password errors
     if (lowerError.contains('password')) {
       if (lowerError.contains('weak') || lowerError.contains('short')) {
-        return L10n.getTranslatedText(context, '🔒 Please choose a stronger password.');
+        return L10n.getTranslatedText(context, '🔒 Please choose a stronger password');
       }
-      return L10n.getTranslatedText(context, '🔑 Password requirements not met. Please try a different password.');
+      return L10n.getTranslatedText(context, '🔑 Password requirements not met. Please try a different password');
     }
 
     // Rate limiting
     if (lowerError.contains('too many') ||
         lowerError.contains('rate') ||
         lowerError.contains('limit')) {
-      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again.');
+      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again');
     }
 
     // Account creation limits
     if (lowerError.contains('limit') && lowerError.contains('account')) {
-      return L10n.getTranslatedText(context, '👥 Account creation limit reached. Please try again later.');
+      return L10n.getTranslatedText(context, '👥 Account creation limit reached. Please try again later');
     }
 
     // Default fallback for any other error
-    return L10n.getTranslatedText(context, '❌ Something went wrong during signup. Please try again.');
+    return L10n.getTranslatedText(context, '❌ Something went wrong during signup. Please try again');
   }
 
   /// Handles Google Sign-Up
@@ -242,7 +242,7 @@ class _SignUpViewState extends State<SignUpView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(L10n.getTranslatedText(context,
-            'Google Sign-Up is turned off for now. Please sign up manually.')),
+            'Google Sign-Up is turned off for now. Please sign up manually')),
       ),
     );
 
