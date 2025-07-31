@@ -154,6 +154,7 @@ class ProfilePageState extends State<ProfilePage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: AcademeTheme.appColor,
           title: Text(
             L10n.getTranslatedText(context, 'Profile'),
