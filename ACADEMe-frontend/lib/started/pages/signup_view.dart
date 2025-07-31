@@ -1,4 +1,5 @@
 import 'package:ACADEMe/started/pages/login_view.dart';
+import 'package:flutter/services.dart';
 import '../../academe_theme.dart';
 import 'package:flutter/material.dart';
 import '../../app/auth/auth_service.dart';
@@ -219,6 +220,9 @@ class _SignUpViewState extends State<SignUpView> {
                       padding: EdgeInsets.symmetric(horizontal: width * 0.08),
                       child: TextFormField(
                         controller: _usernameController,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(10),
+                        ],
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AcademeTheme.notWhite,
