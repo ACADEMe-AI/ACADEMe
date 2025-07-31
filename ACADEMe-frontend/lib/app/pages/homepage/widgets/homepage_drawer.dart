@@ -5,6 +5,7 @@ import 'package:ACADEMe/app/pages/ask_me/screens/ask_me_screen.dart';
 import 'package:ACADEMe/app/pages/progress/screens/progress_screen.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../../../../started/pages/login_view.dart';
+import '../../../common/widgets/coming_soon_popup.dart';
 import '../controllers/home_controller.dart';
 
 class HomepageDrawer extends StatelessWidget {
@@ -62,16 +63,18 @@ class HomepageDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   // Drawer Items with Navigation
-                  // _buildDrawerItem(
-                  //     Icons.bookmark, L10n.getTranslatedText(context, 'Bookmarks'),
-                  //         () {
-                  //       // Navigator.push(
-                  //       //   context,
-                  //       //   MaterialPageRoute(
-                  //       //     builder: (context) => const BookmarksScreen(),
-                  //       //   ),
-                  //       // );
-                  //     }),
+                  _buildDrawerItem(
+                      Icons.bookmark, L10n.getTranslatedText(context, 'Bookmarks'),
+                          () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => ComingSoonPopup(
+                            featureName: L10n.getTranslatedText(context, 'Bookmarks'),
+                            icon: Icons.bookmark_rounded,
+                            description: L10n.getTranslatedText(context, 'Save your favorite lessons and courses to access them quickly! 🔖'),
+                          ),
+                        );
+                      }),
                   _buildDrawerItem(
                       Icons.person, L10n.getTranslatedText(context, 'Profile'), () {
                     onProfileTap();
@@ -105,21 +108,25 @@ class HomepageDrawer extends StatelessWidget {
                   _buildDrawerItem(
                       Icons.settings, L10n.getTranslatedText(context, 'Settings'),
                           () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => const SettingsScreen(),
-                        //   ),
-                        // );
+                        showDialog(
+                          context: context,
+                          builder: (context) => ComingSoonPopup(
+                            featureName: L10n.getTranslatedText(context, 'Settings'),
+                            icon: Icons.settings_rounded,
+                            description: L10n.getTranslatedText(context, 'Customize your app experience with themes, notifications, and more! ⚙️'),
+                          ),
+                        );
                       }),
                   _buildDrawerItem(Icons.help_outline,
                       L10n.getTranslatedText(context, 'Get Help'), () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => const HelpScreen(),
-                        //   ),
-                        // );
+                        showDialog(
+                          context: context,
+                          builder: (context) => ComingSoonPopup(
+                            featureName: L10n.getTranslatedText(context, 'Get Help'),
+                            icon: Icons.help_outline_rounded,
+                            description: L10n.getTranslatedText(context, 'Get support, tutorials, and answers to your questions! 🤝'),
+                          ),
+                        );
                       }),
                   const Spacer(),
                   // User Profile Section

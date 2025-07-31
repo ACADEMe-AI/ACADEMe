@@ -5,6 +5,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:ACADEMe/started/pages/login_view.dart';
+import '../../../common/widgets/coming_soon_popup.dart';
 import '../controllers/profile_controller.dart';
 import '../models/user_model.dart';
 import '../widgets/profile_class.dart';
@@ -240,8 +241,14 @@ class ProfilePageState extends State<ProfilePage> {
   Widget _buildEditButton() {
     return ElevatedButton(
       onPressed: () {
-        // When edit profile is implemented, clear cache after editing
-        // _clearCache();
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: L10n.getTranslatedText(context, 'Edit Profile'),
+            icon: Icons.edit,
+            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences.'),
+          ),
+        );
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.yellow,
@@ -325,7 +332,25 @@ class ProfilePageState extends State<ProfilePage> {
       icon: icon,
       text: text,
       iconColor: AcademeTheme.appColor,
-      onTap: () {},
+      onTap: () {
+        String description = '';
+        if (text.contains('Settings')) {
+          description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
+        } else if (text.contains('Information')) {
+          description = L10n.getTranslatedText(context, 'Learn more about ACADEMe and our features.');
+        } else if (text.contains('Redeem')) {
+          description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
+        }
+
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: text,
+            icon: icon,
+            description: description,
+          ),
+        );
+      },
     );
   }
 
