@@ -315,18 +315,18 @@ class _HomeScreenState extends State<HomeScreen> {
             // Courses grid
             CoursesGrid(),
 
-            const SizedBox(height: 16),
-            // Recommended section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                L10n.getTranslatedText(context, 'Recommended'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            // const SizedBox(height: 16),
+            // // Recommended section
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 4),
+            //   child: Text(
+            //     L10n.getTranslatedText(context, 'Recommended'),
+            //     style: const TextStyle(
+            //       fontSize: 18,
+            //       fontWeight: FontWeight.bold,
+            //     ),
+            //   ),
+            // ),
             // const SizedBox(height: 8),
             // // Recommended courses
             // Padding(
