@@ -259,7 +259,7 @@ class _SearchUIState extends State<SearchUI> {
                         if (_searchQuery.isEmpty) ...[
                           const SizedBox(height: 20),
                           Text(
-                            L10n.getTranslatedText(context, 'Recent Searches'),
+                            L10n.getTranslatedText(context, 'Searches For You'),
                             style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold),
                           ),
