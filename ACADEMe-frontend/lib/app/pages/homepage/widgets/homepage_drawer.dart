@@ -62,16 +62,16 @@ class HomepageDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   // Drawer Items with Navigation
-                  _buildDrawerItem(
-                      Icons.bookmark, L10n.getTranslatedText(context, 'Bookmarks'),
-                          () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => const BookmarksScreen(),
-                        //   ),
-                        // );
-                      }),
+                  // _buildDrawerItem(
+                  //     Icons.bookmark, L10n.getTranslatedText(context, 'Bookmarks'),
+                  //         () {
+                  //       // Navigator.push(
+                  //       //   context,
+                  //       //   MaterialPageRoute(
+                  //       //     builder: (context) => const BookmarksScreen(),
+                  //       //   ),
+                  //       // );
+                  //     }),
                   _buildDrawerItem(
                       Icons.person, L10n.getTranslatedText(context, 'Profile'), () {
                     onProfileTap();
