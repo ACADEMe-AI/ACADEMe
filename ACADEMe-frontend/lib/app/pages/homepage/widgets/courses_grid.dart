@@ -17,7 +17,7 @@ class CoursesGrid extends StatelessWidget {
         final courses = controller.courses;
 
         if (courses.isEmpty) {
-          return const SizedBox.shrink();
+          return const Center(child: Text("No courses found"));
         }
 
         return GridView.builder(
