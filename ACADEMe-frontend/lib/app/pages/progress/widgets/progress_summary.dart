@@ -152,13 +152,13 @@ class _SummarySectionState extends State<SummarySection> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withAlpha(25),
+                    color: AcademeTheme.appColor.withAlpha(25),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.grade_rounded,
                     size: 48,
-                    color: Colors.orange[600],
+                    color: AcademeTheme.appColor,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -191,7 +191,7 @@ class _SummarySectionState extends State<SummarySection> {
                   icon: const Icon(Icons.refresh_rounded),
                   label: Text(L10n.getTranslatedText(context, 'Try Again')),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange[600],
+                    backgroundColor: AcademeTheme.appColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
