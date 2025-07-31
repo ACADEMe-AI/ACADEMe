@@ -80,6 +80,7 @@ dependencies:
   share_plus: ^11.0.0
   mailer: ^6.0.1
   shimmer: ^3.0.0
+  lottie: ^3.3.1
 
 
 
