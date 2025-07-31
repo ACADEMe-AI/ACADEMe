@@ -1,5 +1,4 @@
 import 'package:ACADEMe/started/pages/login_view.dart';
-import 'package:flutter/services.dart';
 import '../../academe_theme.dart';
 import 'package:flutter/material.dart';
 import '../../app/auth/auth_service.dart';
@@ -137,6 +136,8 @@ class _SignUpViewState extends State<SignUpView> {
         ),
       );
 
+
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -145,13 +146,92 @@ class _SignUpViewState extends State<SignUpView> {
       );
     } else {
       if (!mounted) return;
+      String displayMessage = errorMessage != null
+          ? _getUserFriendlyErrorMessage(errorMessage)
+          : L10n.getTranslatedText(context, 'Signup failed. Please try again');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage ?? L10n.getTranslatedText(context, 'Signup failed. Please try again')),
+          content: Text(displayMessage),
           backgroundColor: Colors.red,
         ),
       );
     }
+  }
+
+
+  String _getUserFriendlyErrorMessage(String originalError) {
+    // Convert to lowercase for easier matching
+    String lowerError = originalError.toLowerCase();
+
+    // Network connection errors
+    if (lowerError.contains('clientexception') ||
+        lowerError.contains('hostname') ||
+        lowerError.contains('lookup') ||
+        lowerError.contains('network') ||
+        lowerError.contains('connection') ||
+        lowerError.contains('timeout') ||
+        lowerError.contains('socket') ||
+        lowerError.contains('handshake')) {
+      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again.');
+    }
+
+    // Server errors
+    if (lowerError.contains('server') ||
+        lowerError.contains('500') ||
+        lowerError.contains('502') ||
+        lowerError.contains('503')) {
+      return L10n.getTranslatedText(context, '⚠️ Server is temporarily unavailable. Please try again later.');
+    }
+
+    // Email already exists
+    if (lowerError.contains('already exists') ||
+        lowerError.contains('duplicate') ||
+        lowerError.contains('email') && lowerError.contains('taken')) {
+      return L10n.getTranslatedText(context, '📧 This email is already registered. Please use a different email or try logging in.');
+    }
+
+    // OTP related errors
+    if (lowerError.contains('otp') || lowerError.contains('code')) {
+      if (lowerError.contains('expired') || lowerError.contains('timeout')) {
+        return L10n.getTranslatedText(context, '⏰ OTP has expired. Please request a new one.');
+      } else if (lowerError.contains('invalid') || lowerError.contains('incorrect') || lowerError.contains('wrong')) {
+        return L10n.getTranslatedText(context, '❌ Invalid OTP. Please check and try again.');
+      } else if (lowerError.contains('not found')) {
+        return L10n.getTranslatedText(context, '📮 Please request an OTP first.');
+      }
+      return L10n.getTranslatedText(context, '🔐 OTP verification failed. Please try again.');
+    }
+
+    // Validation errors
+    if (lowerError.contains('validation') ||
+        lowerError.contains('invalid') ||
+        lowerError.contains('format') ||
+        lowerError.contains('required')) {
+      return L10n.getTranslatedText(context, '📝 Please check your information and try again.');
+    }
+
+    // Password errors
+    if (lowerError.contains('password')) {
+      if (lowerError.contains('weak') || lowerError.contains('short')) {
+        return L10n.getTranslatedText(context, '🔒 Please choose a stronger password.');
+      }
+      return L10n.getTranslatedText(context, '🔑 Password requirements not met. Please try a different password.');
+    }
+
+    // Rate limiting
+    if (lowerError.contains('too many') ||
+        lowerError.contains('rate') ||
+        lowerError.contains('limit')) {
+      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again.');
+    }
+
+    // Account creation limits
+    if (lowerError.contains('limit') && lowerError.contains('account')) {
+      return L10n.getTranslatedText(context, '👥 Account creation limit reached. Please try again later.');
+    }
+
+    // Default fallback for any other error
+    return L10n.getTranslatedText(context, '❌ Something went wrong during signup. Please try again.');
   }
 
   /// Handles Google Sign-Up
@@ -220,9 +300,6 @@ class _SignUpViewState extends State<SignUpView> {
                       padding: EdgeInsets.symmetric(horizontal: width * 0.08),
                       child: TextFormField(
                         controller: _usernameController,
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(10),
-                        ],
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AcademeTheme.notWhite,

@@ -1,241 +1,263 @@
-import 'package:ACADEMe/api_endpoints.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../../../localization/l10n.dart';
+import 'package:ACADEMe/localization/l10n.dart';
+// Import your class selection bottom sheet
+import '../../../../started/pages/class.dart'; // Update with your actual path
 
-class ClassSelectionBottomSheet extends StatefulWidget {
-  final VoidCallback onClassSelected;
-
-  const ClassSelectionBottomSheet({super.key, required this.onClassSelected});
+class ProfileClassPage extends StatefulWidget {
+  const ProfileClassPage({super.key});
 
   @override
-  ClassSelectionBottomSheetState createState() =>
-      ClassSelectionBottomSheetState();
+  State<ProfileClassPage> createState() => _ProfileClassPageState();
 }
 
-class ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
-  String? selectedClass;
-  final List<String> classes = ['5'];
+class _ProfileClassPageState extends State<ProfileClassPage> {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
-  final _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
-  String? _storedClass;
-  bool _isClassChanged = false;
+  String? _currentClass;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStoredClass();
+    _loadCurrentClass();
   }
 
-  Future<void> _loadStoredClass() async {
-    final storedClass = await _secureStorage.read(key: 'student_class');
-    if (mounted) {
-      setState(() {
-        _storedClass = storedClass;
-        selectedClass = storedClass;
-        _isClassChanged = false;
-      });
+  Future<void> _loadCurrentClass() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final storedClass = await _secureStorage.read(key: 'student_class');
+      if (mounted) {
+        setState(() {
+          _currentClass = storedClass;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentClass = null;
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  Future<void> _showClassSelection() async {
+    await showClassSelectionSheet(
+      context,
+      onClassSelected: () {
+        debugPrint('Class selection completed');
+      },
+      onClassUpdated: (newClass) {
+        // This is the key part - update the UI when class changes
+        setState(() {
+          _currentClass = newClass;
+        });
+
+        // Optional: Show a confirmation message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${L10n.getTranslatedText(context, 'Class updated to')} $newClass',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: _scaffoldMessengerKey,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(L10n.getTranslatedText(context, 'Profile - Class')),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              L10n.getTranslatedText(context, 'What class are you in?'),
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey[200],
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+            // Current Class Display
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              hint: Text(L10n.getTranslatedText(context, 'Select class')),
-              value: selectedClass?.isNotEmpty == true ? selectedClass : null,
-              items: classes
-                  .map((className) => DropdownMenuItem(
-                value: className,
-                child: Text(className),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedClass = value;
-                  _isClassChanged = value != _storedClass;
-                });
-              },
-            ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.yellow,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L10n.getTranslatedText(context, 'Current Class'),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _isLoading
+                            ? const CircularProgressIndicator()
+                            : Text(
+                          _currentClass ?? L10n.getTranslatedText(context, 'No class selected'),
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _loadCurrentClass,
+                          icon: const Icon(Icons.refresh),
+                          tooltip: L10n.getTranslatedText(context, 'Refresh'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Change Class Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _showClassSelection,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.yellow,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  onPressed: _isClassChanged ? _handleConfirmPressed : null,
-                  child: Text(
-                    L10n.getTranslatedText(context, 'Confirm'),
-                    style: TextStyle(fontSize: 16, color: Colors.black),
+                ),
+                child: Text(
+                  L10n.getTranslatedText(context, 'Change Class'),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 20),
+
+            // Additional Information Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.blue),
+                        const SizedBox(width: 8),
+                        Text(
+                          L10n.getTranslatedText(context, 'Important Note'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      L10n.getTranslatedText(context, 'Changing your class will reset all your progress data. Make sure you really want to switch before confirming.'),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Future<void> _handleConfirmPressed() async {
-    if (selectedClass == null) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Please select a valid class'));
-      return;
-    }
+// Alternative approach using a StatefulWidget mixin for auto-refresh
+mixin AutoRefreshClassMixin<T extends StatefulWidget> on State<T> {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  String? currentClass;
 
-    final confirmed = await _showConfirmationDialog();
-    if (!confirmed) return;
+  @override
+  void initState() {
+    super.initState();
+    loadClassData();
+  }
 
-    final success = await _updateClassInBackend(selectedClass!);
-    if (!success) return;
-
-    widget.onClassSelected();
+  Future<void> loadClassData() async {
+    final storedClass = await _secureStorage.read(key: 'student_class');
     if (mounted) {
-      Navigator.of(context).pop();
+      setState(() {
+        currentClass = storedClass;
+      });
     }
   }
 
-  Future<bool> _showConfirmationDialog() async {
-    return await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            L10n.getTranslatedText(context, 'Are you sure you want to change your class?'),
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          content: Text(
-            L10n.getTranslatedText(context, 'All your progress data will be erased for this class.'),
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                L10n.getTranslatedText(context, 'Cancel'),
-                style: TextStyle(color: Colors.grey, fontSize: 16),
-              ),
-            ),
+  // Call this method whenever you need to refresh class data
+  Future<void> refreshClassData() async {
+    await loadClassData();
+  }
+}
+
+// Example of using the mixin in another widget
+class AnotherProfileWidget extends StatefulWidget {
+  const AnotherProfileWidget({super.key});
+
+  @override
+  State<AnotherProfileWidget> createState() => _AnotherProfileWidgetState();
+}
+
+class _AnotherProfileWidgetState extends State<AnotherProfileWidget>
+    with AutoRefreshClassMixin {
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Current Class: ${currentClass ?? "Not set"}'),
             ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(L10n.getTranslatedText(context, 'Yes')),
+              onPressed: () async {
+                await showClassSelectionSheet(
+                  context,
+                  onClassSelected: () {},
+                  onClassUpdated: (newClass) {
+                    // Automatically refresh when class is updated
+                    refreshClassData();
+                  },
+                );
+              },
+              child: const Text('Change Class'),
             ),
           ],
-        );
-      },
-    ) ??
-        false;
-  }
-
-  Future<bool> _updateClassInBackend(String selectedClass) async {
-    final String? token = await _secureStorage.read(key: 'access_token');
-
-    if (token == null) {
-      _showSnackBar(L10n.getTranslatedText(context, 'No access token found'));
-      return false;
-    }
-
-    try {
-      final response = await http.patch(
-        ApiEndpoints.getUri(ApiEndpoints.updateClass),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'new_class': selectedClass}),
-      );
-
-      if (response.statusCode == 200) {
-        return await _reloginUser();
-      }
-
-      _showSnackBar('${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
-      return false;
-    } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'An error occurred. Please try again.'));
-      return false;
-    }
-  }
-
-  Future<bool> _reloginUser() async {
-    final String? email = await _secureStorage.read(key: 'email');
-    final String? password = await _secureStorage.read(key: 'password');
-
-    if (email == null || password == null) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Session expired. Please login again.'));
-      return false;
-    }
-
-    try {
-      final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.login),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        await _secureStorage.write(
-            key: 'access_token', value: responseData['access_token']);
-        await _secureStorage.write(key: 'student_class', value: selectedClass);
-        return true;
-      }
-
-      _showSnackBar('${L10n.getTranslatedText(context, 'Login failed')}: ${response.statusCode}');
-      return false;
-    } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Network error during login'));
-      return false;
-    }
-  }
-
-  void _showSnackBar(String message) {
-    _scaffoldMessengerKey.currentState?.showSnackBar(
-      SnackBar(content: Text(message)),
+        ),
+      ),
     );
   }
 }

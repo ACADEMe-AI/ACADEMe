@@ -5,7 +5,7 @@ import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:ACADEMe/started/pages/login_view.dart';
-import '../../../common/widgets/coming_soon_popup.dart';
+import '../../../../started/pages/class.dart';
 import '../controllers/profile_controller.dart';
 import '../models/user_model.dart';
 import '../widgets/profile_class.dart';
@@ -64,7 +64,7 @@ class ProfilePageState extends State<ProfilePage> {
     setState(() {
       userDetails = _cachedUserDetails;
       _selectedLocale = _cachedLocale!;
-      selectedClass = _cachedClass ?? 'SELECT';
+      selectedClass = _cachedClass;
       isLoading = false;
     });
 
@@ -87,7 +87,10 @@ class ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         userDetails = newUserDetails;
-        selectedClass = details['student_class'] ?? 'SELECT';
+        // Fix: Use null instead of 'SELECT'
+        selectedClass = details['student_class']?.isNotEmpty == true
+            ? details['student_class']
+            : null;
         isLoading = false;
       });
 
@@ -135,20 +138,6 @@ class ProfilePageState extends State<ProfilePage> {
     _lastFetchTime = null;
   }
 
-  // Method to update cache when class is changed
-  void _updateClassCache(String newClass) {
-    _cachedClass = newClass;
-    selectedClass = newClass;
-    if (_cachedUserDetails != null) {
-      _cachedUserDetails = UserModel(
-        name: _cachedUserDetails!.name,
-        email: _cachedUserDetails!.email,
-        studentClass: newClass,
-        photoUrl: _cachedUserDetails!.photoUrl,
-      );
-    }
-  }
-
   void _showErrorSnackbar(String error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -165,7 +154,6 @@ class ProfilePageState extends State<ProfilePage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
-          automaticallyImplyLeading: false,
           backgroundColor: AcademeTheme.appColor,
           title: Text(
             L10n.getTranslatedText(context, 'Profile'),
@@ -227,7 +215,7 @@ class ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         Text(
-          userDetails?.name ?? 'User',
+          userDetails?.name ?? 'Loading...',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         Text(
@@ -241,14 +229,8 @@ class ProfilePageState extends State<ProfilePage> {
   Widget _buildEditButton() {
     return ElevatedButton(
       onPressed: () {
-        showDialog(
-          context: context,
-          builder: (context) => ComingSoonPopup(
-            featureName: L10n.getTranslatedText(context, 'Edit Profile'),
-            icon: Icons.edit,
-            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences.'),
-          ),
-        );
+        // When edit profile is implemented, clear cache after editing
+        // _clearCache();
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.yellow,
@@ -275,10 +257,10 @@ class ProfilePageState extends State<ProfilePage> {
           icon: Icons.settings,
           text: L10n.getTranslatedText(context, 'Settings'),
         ),
-        // _buildProfileOption(
-        //   icon: Icons.credit_card,
-        //   text: L10n.getTranslatedText(context, 'Billing Details'),
-        // ),
+        _buildProfileOption(
+          icon: Icons.credit_card,
+          text: L10n.getTranslatedText(context, 'Billing Details'),
+        ),
         _buildProfileOption(
           icon: Icons.info,
           text: L10n.getTranslatedText(context, 'Information'),
@@ -302,8 +284,10 @@ class ProfilePageState extends State<ProfilePage> {
         trailingWidget: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(selectedClass ?? 'SELECT',
-                style: const TextStyle(fontSize: 16)),
+            Text(
+              selectedClass ?? L10n.getTranslatedText(context, 'SELECT'), // Fix
+              style: const TextStyle(fontSize: 16),
+            ),
             const SizedBox(width: 8),
             const Icon(Icons.arrow_drop_down, color: Colors.black),
           ],
@@ -332,25 +316,7 @@ class ProfilePageState extends State<ProfilePage> {
       icon: icon,
       text: text,
       iconColor: AcademeTheme.appColor,
-      onTap: () {
-        String description = '';
-        if (text.contains('Settings')) {
-          description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
-        } else if (text.contains('Information')) {
-          description = L10n.getTranslatedText(context, 'Learn more about ACADEMe and our features.');
-        } else if (text.contains('Redeem')) {
-          description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
-        }
-
-        showDialog(
-          context: context,
-          builder: (context) => ComingSoonPopup(
-            featureName: text,
-            icon: icon,
-            description: description,
-          ),
-        );
-      },
+      onTap: () {},
     );
   }
 
@@ -375,8 +341,34 @@ class ProfilePageState extends State<ProfilePage> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: ClassSelectionBottomSheet(
           onClassSelected: () async {
-            // Reload user details and update cache
+            // Clear cache to force fresh data fetch
+            _clearCache();
+
+            // Set loading state
+            setState(() {
+              isLoading = true;
+            });
+
+            // Add a small delay to ensure the backend update is complete
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            // Reload user details from backend
             await _loadUserDetails();
+          },
+          // Add this callback for immediate UI update
+          onClassUpdated: (newClass) {
+            setState(() {
+              selectedClass = newClass;
+              _cachedClass = newClass;
+              if (userDetails != null) {
+                userDetails = UserModel(
+                  name: userDetails!.name,
+                  email: userDetails!.email,
+                  studentClass: newClass,
+                  photoUrl: userDetails!.photoUrl,
+                );
+              }
+            });
           },
         ),
       ),
@@ -428,6 +420,8 @@ class ProfilePageState extends State<ProfilePage> {
     }
   }
 }
+
+// ... rest of the file (shimmer components) remains unchanged ...
 
 // Base Shimmer Effect Widget
 class ShimmerEffect extends StatefulWidget {
