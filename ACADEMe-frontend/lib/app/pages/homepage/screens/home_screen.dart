@@ -142,7 +142,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     return FutureBuilder<Map<String, String?>>(
                       future: controller.getUserDetails(),
                       builder: (context, snapshot) {
-                        // Always show the AppBar without shimmer, use default values if loading
+                        // Force a fresh fetch every time
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return HomeAppBar(
+                            onProfileTap: widget.onProfileTap,
+                            onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
+                            name: 'Loading...',
+                            photoUrl: 'assets/design_course/userImage.png',
+                          );
+                        }
+
                         return HomeAppBar(
                           onProfileTap: widget.onProfileTap,
                           onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
