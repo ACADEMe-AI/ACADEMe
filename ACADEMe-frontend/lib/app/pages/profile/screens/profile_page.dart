@@ -164,6 +164,7 @@ class ProfilePageState extends State<ProfilePage> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
+          automaticallyImplyLeading: false,
           backgroundColor: AcademeTheme.appColor,
           title: Text(
             L10n.getTranslatedText(context, 'Profile'),
@@ -225,7 +226,7 @@ class ProfilePageState extends State<ProfilePage> {
     return Column(
       children: [
         Text(
-          userDetails?.name ?? 'Loading...',
+          userDetails?.name ?? 'User',
           style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         Text(
@@ -267,10 +268,10 @@ class ProfilePageState extends State<ProfilePage> {
           icon: Icons.settings,
           text: L10n.getTranslatedText(context, 'Settings'),
         ),
-        _buildProfileOption(
-          icon: Icons.credit_card,
-          text: L10n.getTranslatedText(context, 'Billing Details'),
-        ),
+        // _buildProfileOption(
+        //   icon: Icons.credit_card,
+        //   text: L10n.getTranslatedText(context, 'Billing Details'),
+        // ),
         _buildProfileOption(
           icon: Icons.info,
           text: L10n.getTranslatedText(context, 'Information'),
