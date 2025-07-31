@@ -6,6 +6,7 @@ import 'package:ACADEMe/app/auth/auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../app/auth/role.dart';
 import '../../app/pages/bottom_nav/bottom_nav.dart';
+import '../../app/pages/homepage/controllers/home_controller.dart';
 import 'forgot_password.dart';
 
 class LogInView extends StatefulWidget {
@@ -60,19 +61,13 @@ class _LogInViewState extends State<LogInView> {
       }
 
       if (user != null) {
-        // Store user info
-        await _secureStorage.write(key: "user_id", value: user.id);
-        await _secureStorage.write(key: "user_name", value: user.name);
-        await _secureStorage.write(key: "user_email", value: user.email);
-        await _secureStorage.write(
-            key: "student_class", value: user.studentClass);
-        await _secureStorage.write(key: "photo_url", value: user.photoUrl);
-
         // Store credentials
-        await _secureStorage.write(
-            key: 'email', value: _emailController.text.trim());
-        await _secureStorage.write(
-            key: 'password', value: _passwordController.text.trim());
+        await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+        await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
+
+        // Force refresh HomeController user details
+        final homeController = HomeController();
+        await homeController.forceRefreshUserDetails();
 
         if (mounted) {
           _showSnackBar(L10n.getTranslatedText(context, '✅ Login successful!'));
@@ -82,7 +77,7 @@ class _LogInViewState extends State<LogInView> {
         await UserRoleManager().fetchUserRole(user.email);
         bool isAdmin = UserRoleManager().isAdmin;
 
-        if (!mounted) return; // Ensure the widget is still active
+        if (!mounted) return;
 
         Navigator.pushReplacement(
           context,

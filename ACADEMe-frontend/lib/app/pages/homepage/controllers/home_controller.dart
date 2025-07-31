@@ -231,6 +231,20 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
+// Add this new method
+  void clearUserCache() {
+    _userDetails = {};
+    _userDetailsFetched = false;
+    notifyListeners();
+  }
+
+// Add this method to force refresh user details
+  Future<void> forceRefreshUserDetails() async {
+    _userDetails = {};
+    _userDetailsFetched = false;
+    await fetchAndStoreUserDetails();
+  }
+
   Future<void> refreshData(String language) async {
     clearCache();
     await fetchCourses(language, forceRefresh: true);

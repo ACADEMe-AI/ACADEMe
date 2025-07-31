@@ -10,6 +10,7 @@ class ProfileController {
 
   Future<Map<String, dynamic>> loadUserDetails() async {
     try {
+      // Always fetch fresh data from secure storage
       final name = await _secureStorage.read(key: 'name');
       final email = await _secureStorage.read(key: 'email');
       final studentClass = await _secureStorage.read(key: 'student_class');
@@ -38,5 +39,10 @@ class ProfileController {
     final prefs = await SharedPreferences.getInstance();
     final langCode = prefs.getString('language') ?? 'en';
     return Locale(langCode);
+  }
+
+  // Add method to clear cache
+  static void clearCache() {
+    // This will be called during logout
   }
 }

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api_endpoints.dart';
 import '../pages/homepage/controllers/home_controller.dart';
+import '../pages/profile/controllers/profile_controller.dart';
 import '../pages/topics/controllers/topic_cache_controller.dart' as topic;
 import '../pages/courses/models/course_model.dart';
 
@@ -349,7 +350,6 @@ class AuthService {
     }
   }
 
-  /// ✅ Logout user and clear stored access token
   Future<void> signOut() async {
     try {
       debugPrint("🔄 Starting complete logout process...");
@@ -370,15 +370,14 @@ class AuthService {
       }
 
       // 2. Clear home controller cache first
-      // try {
-      //   final homeController = HomeCourseDataCache();
-      //   homeController.clearCache();
-      //   final homeControllerInstance = HomeController();
-      //   homeControllerInstance.clearUserCache();
-      //   debugPrint("✅ HomeController cache cleared");
-      // } catch (e) {
-      //   debugPrint("⚠️ HomeController clear error: $e");
-      // }
+      try {
+        final homeController = HomeController();
+        homeController.clearCache();
+        homeController.clearUserCache();
+        debugPrint("✅ HomeController cache cleared");
+      } catch (e) {
+        debugPrint("⚠️ HomeController clear error: $e");
+      }
 
       // 3. Clear ALL FlutterSecureStorage data
       try {
@@ -422,9 +421,16 @@ class AuthService {
         debugPrint("⚠️ TopicCacheController clear error: $e");
       }
 
-      // 6. Clear additional Flutter caches (if needed)
+      // 6. Clear ProfileController cache
       try {
-        // Clear image cache
+        ProfileController.clearCache();
+        debugPrint("✅ ProfileController cache cleared");
+      } catch (e) {
+        debugPrint("⚠️ ProfileController clear error: $e");
+      }
+
+      // 7. Clear additional Flutter caches
+      try {
         PaintingBinding.instance.imageCache.clear();
         PaintingBinding.instance.imageCache.clearLiveImages();
         debugPrint("✅ Image cache cleared");
@@ -432,17 +438,7 @@ class AuthService {
         debugPrint("⚠️ Image cache clear error: $e");
       }
 
-      // 7. Clear any Provider/State Management data
-      try {
-        // If you're using Provider, clear any cached providers here
-        // Example: Provider.of<UserProvider>(context, listen: false).clearData();
-        // Add your specific provider clear methods here
-        debugPrint("✅ Provider data cleared");
-      } catch (e) {
-        debugPrint("⚠️ Provider clear error: $e");
-      }
-
-      // 8. Clear temporary directory cache (optional)
+      // 8. Clear temporary directory cache
       try {
         final tempDir = await getTemporaryDirectory();
         if (tempDir.existsSync()) {
@@ -451,20 +447,6 @@ class AuthService {
         }
       } catch (e) {
         debugPrint("⚠️ Temp directory clear error: $e");
-      }
-
-      // 9. Clear application documents directory cache (use with caution)
-      try {
-        final appDocDir = await getApplicationDocumentsDirectory();
-        final cacheFiles = appDocDir.listSync();
-        for (var file in cacheFiles) {
-          if (file.path.contains('cache') || file.path.contains('temp')) {
-            await file.delete(recursive: true);
-          }
-        }
-        debugPrint("✅ App documents cache cleared");
-      } catch (e) {
-        debugPrint("⚠️ App documents clear error: $e");
       }
 
       debugPrint("🎉 Complete logout process finished successfully");

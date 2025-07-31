@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import '../../app/auth/role.dart';
 import '../../app/pages/bottom_nav/bottom_nav.dart';
+import '../../app/pages/homepage/controllers/home_controller.dart';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({super.key});
@@ -125,6 +126,10 @@ class _SignUpViewState extends State<SignUpView> {
       await _secureStorage.write(key: 'email', value: _emailController.text.trim());
       await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
 
+      // Force refresh HomeController user details
+      final homeController = HomeController();
+      await homeController.forceRefreshUserDetails();
+
       await UserRoleManager().fetchUserRole(_emailController.text.trim());
       if (!mounted) return;
       bool isAdmin = UserRoleManager().isAdmin;
@@ -135,8 +140,6 @@ class _SignUpViewState extends State<SignUpView> {
           backgroundColor: Colors.green,
         ),
       );
-
-
 
       Navigator.pushReplacement(
         context,

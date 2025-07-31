@@ -26,12 +26,9 @@ class ProfilePageState extends State<ProfilePage> {
   UserModel? userDetails;
   bool isLoading = true;
 
-  // Cache variables
-  static UserModel? _cachedUserDetails;
-  static Locale? _cachedLocale;
-  static String? _cachedClass;
-  static DateTime? _lastFetchTime;
-  static const Duration _cacheExpiry = Duration(minutes: 10); // Cache expires after 10 minutes
+  UserModel? _currentUserDetails;
+  Locale? _currentLocale;
+  String? _currentClass;
 
   @override
   void initState() {
@@ -42,41 +39,15 @@ class ProfilePageState extends State<ProfilePage> {
   Future<void> _initData() async {
     _selectedLocale = const Locale('en');
 
-    // Check if we have valid cached data
-    if (_isCacheValid()) {
-      _loadFromCache();
-    } else {
-      await _loadLanguage();
-      await _loadUserDetails();
-    }
-  }
-
-  bool _isCacheValid() {
-    if (_cachedUserDetails == null || _cachedLocale == null || _lastFetchTime == null) {
-      return false;
-    }
-
-    final now = DateTime.now();
-    return now.difference(_lastFetchTime!) < _cacheExpiry;
-  }
-
-  void _loadFromCache() {
-    setState(() {
-      userDetails = _cachedUserDetails;
-      _selectedLocale = _cachedLocale!;
-      selectedClass = _cachedClass;
-      isLoading = false;
-    });
-
-    // Update language provider if needed
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    if (languageProvider.locale != _cachedLocale) {
-      languageProvider.setLocale(_cachedLocale!);
-    }
+    // Always load fresh data, no cache checking
+    await _loadLanguage();
+    await _loadUserDetails();
   }
 
   Future<void> _loadUserDetails() async {
     try {
+      setState(() => isLoading = true);
+
       final details = await _controller.loadUserDetails();
       final newUserDetails = UserModel(
         name: details['name'],
@@ -87,17 +58,11 @@ class ProfilePageState extends State<ProfilePage> {
 
       setState(() {
         userDetails = newUserDetails;
-        // Fix: Use null instead of 'SELECT'
         selectedClass = details['student_class']?.isNotEmpty == true
             ? details['student_class']
             : null;
         isLoading = false;
       });
-
-      // Update cache
-      _cachedUserDetails = newUserDetails;
-      _cachedClass = selectedClass;
-      _lastFetchTime = DateTime.now();
     } catch (e) {
       setState(() => isLoading = false);
       _showErrorSnackbar(e.toString());
@@ -114,28 +79,12 @@ class ProfilePageState extends State<ProfilePage> {
     }
 
     setState(() => _selectedLocale = locale);
-
-    // Update cache
-    _cachedLocale = locale;
-    if (_lastFetchTime == null) {
-      _lastFetchTime = DateTime.now();
-    }
   }
 
-  // Method to refresh data and clear cache
   Future<void> _refreshData() async {
     setState(() => isLoading = true);
-    _clearCache();
     await _loadLanguage();
     await _loadUserDetails();
-  }
-
-  // Method to clear cache (useful when user updates profile)
-  static void _clearCache() {
-    _cachedUserDetails = null;
-    _cachedLocale = null;
-    _cachedClass = null;
-    _lastFetchTime = null;
   }
 
   void _showErrorSnackbar(String error) {
@@ -366,9 +315,6 @@ class ProfilePageState extends State<ProfilePage> {
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: ClassSelectionBottomSheet(
           onClassSelected: () async {
-            // Clear cache to force fresh data fetch
-            _clearCache();
-
             // Set loading state
             setState(() {
               isLoading = true;
@@ -384,7 +330,6 @@ class ProfilePageState extends State<ProfilePage> {
           onClassUpdated: (newClass) {
             setState(() {
               selectedClass = newClass;
-              _cachedClass = newClass;
               if (userDetails != null) {
                 userDetails = UserModel(
                   name: userDetails!.name,
@@ -411,8 +356,6 @@ class ProfilePageState extends State<ProfilePage> {
         selectedLocale: _selectedLocale,
         onLanguageSelected: (newLocale) async {
           await _controller.changeLanguage(newLocale, context);
-          // Update cache with new locale
-          _cachedLocale = newLocale;
           setState(() => _selectedLocale = newLocale);
         },
       ),
@@ -422,9 +365,6 @@ class ProfilePageState extends State<ProfilePage> {
   Future<void> _handleLogout() async {
     try {
       await AuthService().signOut();
-
-      // Clear cache on logout
-      _clearCache();
 
       if (!mounted) return;
 
