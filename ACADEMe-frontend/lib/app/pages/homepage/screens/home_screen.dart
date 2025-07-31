@@ -307,47 +307,47 @@ class _HomeScreenState extends State<HomeScreen> {
             // Courses grid
             CoursesGrid(),
 
-            const SizedBox(height: 16),
-            // Recommended section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                L10n.getTranslatedText(context, 'Recommended'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Recommended courses
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: SizedBox(
-                height: 160,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CourseCard(
-                        L10n.getTranslatedText(context, 'Marketing'),
-                        "9 ${L10n.getTranslatedText(context, 'Lessons')}",
-                        Colors.pink[100]!,
-                        onTap: () {},
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: CourseCard(
-                        L10n.getTranslatedText(context, 'Trading'),
-                        "14 ${L10n.getTranslatedText(context, 'Lessons')}",
-                        Colors.green[100]!,
-                        onTap: () {},
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // const SizedBox(height: 16),
+            // // Recommended section
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 4),
+            //   child: Text(
+            //     L10n.getTranslatedText(context, 'Recommended'),
+            //     style: const TextStyle(
+            //       fontSize: 18,
+            //       fontWeight: FontWeight.bold,
+            //     ),
+            //   ),
+            // ),
+            // const SizedBox(height: 8),
+            // // Recommended courses
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 4),
+            //   child: SizedBox(
+            //     height: 160,
+            //     child: Row(
+            //       children: [
+            //         Expanded(
+            //           child: CourseCard(
+            //             L10n.getTranslatedText(context, 'Marketing'),
+            //             "9 ${L10n.getTranslatedText(context, 'Lessons')}",
+            //             Colors.pink[100]!,
+            //             onTap: () {},
+            //           ),
+            //         ),
+            //         const SizedBox(width: 8),
+            //         Expanded(
+            //           child: CourseCard(
+            //             L10n.getTranslatedText(context, 'Trading'),
+            //             "14 ${L10n.getTranslatedText(context, 'Lessons')}",
+            //             Colors.green[100]!,
+            //             onTap: () {},
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
           ],
         );
       },
