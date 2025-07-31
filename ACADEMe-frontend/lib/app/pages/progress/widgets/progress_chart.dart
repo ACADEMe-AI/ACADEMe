@@ -98,7 +98,7 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
             ],
           ),
           Text(
-            'Today: ${_formatTime(todayStudyTime)}',
+            '${L10n.getTranslatedText(context, 'Today')}: ${_formatTime(todayStudyTime)}',
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,

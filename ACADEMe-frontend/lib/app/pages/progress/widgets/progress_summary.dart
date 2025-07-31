@@ -83,7 +83,7 @@ class _SummarySectionState extends State<SummarySection> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'No Internet Connection',
+                  L10n.getTranslatedText(context, 'No Internet Connection'),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -93,7 +93,7 @@ class _SummarySectionState extends State<SummarySection> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Please check your internet connection and try again. Your progress data needs an active connection to load.',
+                  L10n.getTranslatedText(context, 'Please check your internet connection and try again. Your progress data needs an active connection to load'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -105,9 +105,93 @@ class _SummarySectionState extends State<SummarySection> {
                 ElevatedButton.icon(
                   onPressed: _checkConnectivity,
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Retry'),
+                  label: Text(L10n.getTranslatedText(context, 'Retry')),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AcademeTheme.appColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGradeErrorMessage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.transparent),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha(10),
+                  blurRadius: 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withAlpha(25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.grade_rounded,
+                    size: 48,
+                    color: Colors.orange[600],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  L10n.getTranslatedText(context, 'Couldn\'t load your overall grade'),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  L10n.getTranslatedText(context, 'We\'re having trouble fetching your grade data right now. Please try again in a moment'),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      // This will trigger a rebuild and retry the FutureBuilder
+                    });
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: Text(L10n.getTranslatedText(context, 'Try Again')),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange[600],
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -135,7 +219,8 @@ class _SummarySectionState extends State<SummarySection> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildShimmerLoading();
         } else if (snapshot.hasError) {
-          return Center(child: Text("❌ Error: ${snapshot.error}"));
+          // Show the attractive error message instead of the ugly one
+          return _buildGradeErrorMessage();
         }
 
         double overallGrade = snapshot.data ?? 0.0;

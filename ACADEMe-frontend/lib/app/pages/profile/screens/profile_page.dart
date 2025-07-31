@@ -6,9 +6,9 @@ import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:ACADEMe/started/pages/login_view.dart';
 import '../../../../started/pages/class.dart';
+import '../../../common/widgets/coming_soon_popup.dart';
 import '../controllers/profile_controller.dart';
 import '../models/user_model.dart';
-import '../widgets/profile_class.dart';
 import '../widgets/profile_dropdown.dart';
 import '../widgets/language_selection_bottom_sheet.dart';
 
@@ -229,8 +229,14 @@ class ProfilePageState extends State<ProfilePage> {
   Widget _buildEditButton() {
     return ElevatedButton(
       onPressed: () {
-        // When edit profile is implemented, clear cache after editing
-        // _clearCache();
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: L10n.getTranslatedText(context, 'Edit Profile'),
+            icon: Icons.edit,
+            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences.'),
+          ),
+        );
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.yellow,
@@ -257,10 +263,10 @@ class ProfilePageState extends State<ProfilePage> {
           icon: Icons.settings,
           text: L10n.getTranslatedText(context, 'Settings'),
         ),
-        _buildProfileOption(
-          icon: Icons.credit_card,
-          text: L10n.getTranslatedText(context, 'Billing Details'),
-        ),
+        // _buildProfileOption(
+        //   icon: Icons.credit_card,
+        //   text: L10n.getTranslatedText(context, 'Billing Details'),
+        // ),
         _buildProfileOption(
           icon: Icons.info,
           text: L10n.getTranslatedText(context, 'Information'),
@@ -316,7 +322,25 @@ class ProfilePageState extends State<ProfilePage> {
       icon: icon,
       text: text,
       iconColor: AcademeTheme.appColor,
-      onTap: () {},
+      onTap: () {
+        String description = '';
+        if (text.contains('Settings')) {
+          description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
+        } else if (text.contains('Information')) {
+          description = L10n.getTranslatedText(context, 'Learn more about ACADEMe and our features.');
+        } else if (text.contains('Redeem')) {
+          description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
+        }
+
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: text,
+            icon: icon,
+            description: description,
+          ),
+        );
+      },
     );
   }
 
