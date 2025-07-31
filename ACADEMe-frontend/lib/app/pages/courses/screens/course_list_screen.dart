@@ -75,6 +75,11 @@ class CourseListScreenState extends State<CourseListScreen>
                   tabController: _tabController,
                   tabTextGroup: _tabTextGroup,
                 ),
+                if (controller.isRefreshing)
+                  const LinearProgressIndicator(
+                    backgroundColor: Colors.grey,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
                 Expanded(
                   child: TabBarView(
                     controller: _tabController,
