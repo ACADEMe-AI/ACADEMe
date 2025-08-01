@@ -105,7 +105,7 @@ class FlashCardContentWidget extends StatelessWidget {
               itemWidth: constraints.maxWidth,
               itemHeight: constraints.maxHeight,
               loop: false,
-              duration: 250, // Increased from 0 to 400ms for slower animation
+              duration: 175, // Increased from 0 to 400ms for slower animation
               layout: SwiperLayout.STACK,
               axisDirection: AxisDirection.right,
               index: controller.currentPage,
