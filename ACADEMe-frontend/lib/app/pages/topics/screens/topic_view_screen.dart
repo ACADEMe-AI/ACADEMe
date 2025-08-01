@@ -131,7 +131,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
         if (cachedTopics == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Error loading topics: ${e.toString()}"),
+              // content: Text("Error loading topics: ${e.toString()}"),
+              content: Text("Error loading topics, try again"),
               action: SnackBarAction(
                 label: 'Retry',
                 onPressed: () => _fetchTopicsFromBackend(),
