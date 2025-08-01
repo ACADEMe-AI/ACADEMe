@@ -54,35 +54,30 @@ class ChatHistoryDrawer extends StatelessWidget {
                           children: [
                             // Profile Picture
                             Container(
+                              width: 60,
+                              height: 60,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: Colors.white,
                                 border: Border.all(
                                   color: Colors.white,
                                   width: 2,
                                 ),
                               ),
-                              child: ClipOval(
-                                child: SizedBox(
+                              child: photoUrl != null && photoUrl.isNotEmpty
+                                  ? ClipOval(
+                                child: Image.network(
+                                  photoUrl,
+                                  fit: BoxFit.cover,
                                   width: 60,
                                   height: 60,
-                                  child: photoUrl != null && photoUrl.isNotEmpty
-                                      ? Image.network(
-                                    photoUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) {
-                                      return Image.asset(
-                                        'assets/design_course/userImage.png',
-                                        fit: BoxFit.cover,
-                                      );
-                                    },
-                                  )
-                                      : Image.asset(
-                                    'assets/design_course/userImage.png',
-                                    fit: BoxFit.cover,
-                                  ),
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Return empty container on error, showing just white circle
+                                    return Container();
+                                  },
                                 ),
-                              ),
+                              )
+                                  : Container(), // Empty container for white circle
                             ),
                             const SizedBox(width: 20),
                             // Username
@@ -128,7 +123,6 @@ class ChatHistoryDrawer extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildOption(BuildContext context) {
     return Expanded(
