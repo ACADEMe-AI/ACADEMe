@@ -65,7 +65,8 @@ class TestReportScreenState extends State<TestReportScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        // SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('Error occured loading yourchat test report, please ensure you are connected to the internet')),
       );
     }
   }
