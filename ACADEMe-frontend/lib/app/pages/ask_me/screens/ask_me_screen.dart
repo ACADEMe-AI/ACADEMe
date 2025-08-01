@@ -127,7 +127,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     onPressed: controller.startNewChat,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.translate, size: 24, color: Colors.white),
+                    icon: const Icon(Icons.translate,
+                        size: 24, color: Colors.white),
                     onPressed: () {
                       _showLanguageSelection(context, controller);
                     },
@@ -141,7 +142,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
     );
   }
 
-  void _showLanguageSelection(BuildContext context, AskMeController controller) {
+  void _showLanguageSelection(
+      BuildContext context, AskMeController controller) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -251,7 +253,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
     return TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w600);
   }
 
-  Widget _buildButton(BuildContext context, IconData icon, String text, Color color, double width) {
+  Widget _buildButton(BuildContext context, IconData icon, String text,
+      Color color, double width) {
     final height = MediaQuery.of(context).size.height;
     final width = MediaQuery.of(context).size.width;
 
@@ -320,7 +323,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
                           Clipboard.setData(ClipboardData(text: message.text!));
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(L10n.getTranslatedText(context, 'Copied to clipboard')),
+                              content: Text(L10n.getTranslatedText(
+                                  context, 'Copied to clipboard')),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -352,7 +356,6 @@ class _AskMeScreenState extends State<AskMeScreen> {
     );
   }
 
-
   Widget _buildFilePreview(BuildContext context, ChatMessage message) {
     switch (message.fileType) {
       case 'Image':
@@ -361,7 +364,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FullScreenImage(imagePath: message.fileInfo!),
+                builder: (context) =>
+                    FullScreenImage(imagePath: message.fileInfo!),
               ),
             );
           },
@@ -381,7 +385,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FullScreenVideo(videoPath: message.fileInfo!),
+                builder: (context) =>
+                    FullScreenVideo(videoPath: message.fileInfo!),
               ),
             );
           },
@@ -441,7 +446,6 @@ class _AskMeScreenState extends State<AskMeScreen> {
     }
   }
 
-
   void _showReportDialog(BuildContext context, ChatMessage message) {
     TextEditingController reportController = TextEditingController();
     bool isButtonEnabled = false;
@@ -456,14 +460,16 @@ class _AskMeScreenState extends State<AskMeScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(L10n.getTranslatedText(context, 'Please describe the issue:')),
+                  Text(L10n.getTranslatedText(
+                      context, 'Please describe the issue:')),
                   const SizedBox(height: 10),
                   TextField(
                     controller: reportController,
                     maxLines: 3,
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      hintText: "${L10n.getTranslatedText(context, 'Enter your reason for reporting')}...",
+                      hintText:
+                      "${L10n.getTranslatedText(context, 'Enter your reason for reporting')}...",
                     ),
                     onChanged: (text) {
                       setState(() {
@@ -495,7 +501,6 @@ class _AskMeScreenState extends State<AskMeScreen> {
     );
   }
 
-
   Future<void> _sendEmail(String? messageText, String reportReason) async {
     final subject = Uri.encodeComponent('Report: Message Issue');
     final body = Uri.encodeComponent(
@@ -503,28 +508,36 @@ class _AskMeScreenState extends State<AskMeScreen> {
     );
 
     final Uri emailUri = Uri.parse(
-      'mailto:dasp69833@gmail.com?subject=$subject&body=$body',
+      'mailto:academe.noreply@gmail.com?subject=$subject&body=$body',
     );
 
     try {
       if (await canLaunchUrl(emailUri)) {
+        // First show the "email client opened" dialog
+        _showInfoDialog(L10n.getTranslatedText(context,
+            'Email client opened. Please send the email to complete your report.'));
+
+        // Then launch the email client
         final launched = await launchUrl(
           emailUri,
-          mode: LaunchMode.externalApplication, // Force external app
+          mode: LaunchMode.externalApplication,
         );
 
-        if (launched) {
-          // Show confirmation that email client opened
-          _showInfoDialog('Email client opened. Please send the email to complete your report.');
-        } else {
-          _showErrorDialog('Failed to open email client. Please try again.');
-        }
+        // After some delay (to give user time to send), show confirmation
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            _showInfoDialog(L10n.getTranslatedText(
+                context, 'Thank you! Your report has been submitted.'));
+          }
+        });
       } else {
-        _showErrorDialog('No email client found. Please install Gmail or another email app.');
+        _showErrorDialog(L10n.getTranslatedText(context,
+            'No email client found. Please install Gmail or another email app.'));
       }
     } catch (e) {
       print('Error launching email: $e');
-      _showErrorDialog('Error opening email client: ${e.toString()}');
+      _showErrorDialog(
+          '${L10n.getTranslatedText(context, 'Error opening email client')}: ${e.toString()}');
     }
   }
 
@@ -547,19 +560,20 @@ class _AskMeScreenState extends State<AskMeScreen> {
   void _showInfoDialog(String message) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Text(L10n.getTranslatedText(context, 'Info')),
         content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(L10n.getTranslatedText(context, 'OK')),
-          ),
-        ],
       ),
     );
-  }
 
+    // Auto-dismiss after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    });
+  }
 
   Widget _buildInputBar(BuildContext context, AskMeController controller) {
     return AnimatedPadding(
@@ -581,25 +595,30 @@ class _AskMeScreenState extends State<AskMeScreen> {
                   showModalBottomSheet(
                     context: context,
                     shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     builder: (BuildContext bottomSheetContext) {
                       return AttachmentOptionsSheet(
                         onImageSelected: () {
-                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          Navigator.pop(
+                              bottomSheetContext); // Close bottom sheet
                           // Use the main screen context, not bottom sheet context
                           controller.pickFile(context, 'Image');
                         },
                         onDocumentSelected: () {
-                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          Navigator.pop(
+                              bottomSheetContext); // Close bottom sheet
                           controller.pickFile(context, 'Document');
                         },
                         onVideoSelected: () {
-                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          Navigator.pop(
+                              bottomSheetContext); // Close bottom sheet
                           controller.pickFile(context, 'Video');
                         },
                         onAudioSelected: () {
-                          Navigator.pop(bottomSheetContext); // Close bottom sheet
+                          Navigator.pop(
+                              bottomSheetContext); // Close bottom sheet
                           controller.pickFile(context, 'Audio');
                         },
                       );
@@ -621,8 +640,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
                       hintText: controller.isConverting
                           ? L10n.getTranslatedText(context, 'Converting ... ')
                           : (controller.isRecording
-                          ? '${L10n.getTranslatedText(
-                          context, 'Recording')}... ${controller.seconds}s'
+                          ? '${L10n.getTranslatedText(context, 'Recording')}... ${controller.seconds}s'
                           : L10n.getTranslatedText(
                           context, 'Type a message ...')),
                       contentPadding: const EdgeInsets.only(
@@ -675,7 +693,8 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     onPressed: isEmpty
                         ? null
                         : () {
-                      String message = controller.textController.text.trim();
+                      String message =
+                      controller.textController.text.trim();
                       controller.sendMessage(message);
                       controller.textController.clear();
                     },
