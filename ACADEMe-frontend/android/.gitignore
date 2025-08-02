@@ -8,6 +8,8 @@ build/
 android/app/debug.keystore
 assets/.env
 
+android/app/google-services.json
+
 # Gradle-specific
 /.gradle/
 **/build/
