@@ -11,6 +11,7 @@ import '../controllers/profile_controller.dart';
 import '../models/user_model.dart';
 import '../widgets/profile_dropdown.dart';
 import '../widgets/language_selection_bottom_sheet.dart';
+import '../widgets/policy.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -219,7 +220,7 @@ class ProfilePageState extends State<ProfilePage> {
         // ),
         _buildProfileOption(
           icon: Icons.info,
-          text: L10n.getTranslatedText(context, 'Information'),
+          text: L10n.getTranslatedText(context, 'Terms and Policy'),
         ),
         _buildProfileOption(
           icon: Icons.card_giftcard,
@@ -264,24 +265,19 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildProfileOption({
-    required IconData icon,
-    required String text,
-  }) {
-    return ProfileOption(
-      icon: icon,
-      text: text,
-      iconColor: AcademeTheme.appColor,
-      onTap: () {
-        String description = '';
-        if (text.contains('Settings')) {
-          description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
-        } else if (text.contains('Information')) {
-          description = L10n.getTranslatedText(context, 'Learn more about ACADEMe and our features.');
-        } else if (text.contains('Redeem')) {
-          description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
-        }
-
+ Widget _buildProfileOption({
+  required IconData icon,
+  required String text,
+}) {
+  return ProfileOption(
+    icon: icon,
+    text: text,
+    iconColor: AcademeTheme.appColor,
+    onTap: () {
+      String description = '';
+      
+      if (text.contains('Settings')) {
+        description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
         showDialog(
           context: context,
           builder: (context) => ComingSoonPopup(
@@ -290,10 +286,36 @@ class ProfilePageState extends State<ProfilePage> {
             description: description,
           ),
         );
-      },
-    );
-  }
-
+      } else if (text.contains('Terms and Policy')) {
+        // Navigate to Privacy Policy page
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+        );
+      } else if (text.contains('Redeem')) {
+        description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: text,
+            icon: icon,
+            description: description,
+          ),
+        );
+      } else {
+        // Default case for other options
+        showDialog(
+          context: context,
+          builder: (context) => ComingSoonPopup(
+            featureName: text,
+            icon: icon,
+            description: description,
+          ),
+        );
+      }
+    },
+  );
+}
   Widget _buildLogoutOption() {
     return ProfileOption(
       icon: Icons.logout,

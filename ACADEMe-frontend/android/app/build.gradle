@@ -17,7 +17,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace "com.academe.flutter"
 
-    compileSdk 35  // Ensure compileSdkVersion is set to an appropriate version
+    compileSdk 35
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -30,26 +30,30 @@ android {
     }
 
     defaultConfig {
-        // Specify your own unique Application ID
         applicationId = "com.academe.flutter"
         minSdkVersion 23
-        targetSdkVersion 35  // Explicitly set targetSdkVersion
-        versionCode 2
-        versionName "1.0.1"
+        targetSdkVersion 35
+        versionCode 1
+        versionName "1.0"
     }
 
-    signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
+    // Signing config (only if key.properties exists)
+    if (keystorePropertiesFile.exists()) {
+        signingConfigs {
+            release {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release // ✅ FIXED this line
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -58,5 +62,5 @@ android {
 }
 
 flutter {
-    source "../.."  // Ensure this is set to the correct path to your Flutter project
+    source "../.."
 }
