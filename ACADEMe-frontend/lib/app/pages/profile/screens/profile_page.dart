@@ -13,6 +13,25 @@ import '../widgets/profile_dropdown.dart';
 import '../widgets/language_selection_bottom_sheet.dart';
 import '../widgets/policy.dart';
 
+// Define enum for better type safety
+enum ProfileOptionType {
+  settings,
+  billing,
+  termsPolicy,
+  redeemPoints,
+  other,
+}
+
+class ProfileOptionConfig {
+  final ProfileOptionType type;
+  final String descriptionKey;
+  
+  const ProfileOptionConfig({
+    required this.type,
+    required this.descriptionKey,
+  });
+}
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -30,6 +49,46 @@ class ProfilePageState extends State<ProfilePage> {
   UserModel? _currentUserDetails;
   Locale? _currentLocale;
   String? _currentClass;
+
+  // Configuration map for options (alternative approach)
+  static const Map<String, ProfileOptionConfig> _optionConfigs = {
+    'Settings': ProfileOptionConfig(
+      type: ProfileOptionType.settings,
+      descriptionKey: 'settings_description',
+    ),
+    'Terms and Policy': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    'नियम और नीति': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    'Nutzungsbedingungen und Richtlinien': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    '条款与政策': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    'Conditions générales et politique': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    'Términos y política': ProfileOptionConfig(
+      type: ProfileOptionType.termsPolicy,
+      descriptionKey: 'terms_description',
+    ),
+    'Redeem Me Points': ProfileOptionConfig(
+      type: ProfileOptionType.redeemPoints,
+      descriptionKey: 'redeem_description',
+    ),
+    'Billing Details': ProfileOptionConfig(
+      type: ProfileOptionType.billing,
+      descriptionKey: 'billing_description',
+    ),
+  };
 
   @override
   void initState() {
@@ -213,18 +272,22 @@ class ProfilePageState extends State<ProfilePage> {
         _buildProfileOption(
           icon: Icons.settings,
           text: L10n.getTranslatedText(context, 'Settings'),
+          optionType: ProfileOptionType.settings,
         ),
         // _buildProfileOption(
         //   icon: Icons.credit_card,
         //   text: L10n.getTranslatedText(context, 'Billing Details'),
+        //   optionType: ProfileOptionType.billing,
         // ),
         _buildProfileOption(
           icon: Icons.info,
           text: L10n.getTranslatedText(context, 'Terms and Policy'),
+          optionType: ProfileOptionType.termsPolicy,
         ),
         _buildProfileOption(
           icon: Icons.card_giftcard,
           text: L10n.getTranslatedText(context, 'Redeem Me Points'),
+          optionType: ProfileOptionType.redeemPoints,
         ),
         _buildLogoutOption(),
         const SizedBox(height: 20),
@@ -242,11 +305,19 @@ class ProfilePageState extends State<ProfilePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              selectedClass ?? L10n.getTranslatedText(context, 'SELECT'), // Fix
-              style: const TextStyle(fontSize: 16),
+              selectedClass ?? L10n.getTranslatedText(context, 'SELECT'),
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontSize: 16,
+                color: selectedClass != null 
+                  ? Theme.of(context).textTheme.bodyLarge?.color
+                  : Theme.of(context).hintColor,
+              ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_drop_down, color: Colors.black),
+            Icon(
+              Icons.arrow_drop_down, 
+              color: Theme.of(context).iconTheme.color ?? Colors.black,
+            ),
           ],
         ),
       ),
@@ -259,63 +330,101 @@ class ProfilePageState extends State<ProfilePage> {
       child: ReusableProfileOption(
         icon: Icons.translate,
         title: L10n.getTranslatedText(context, 'language'),
-        trailingWidget:
-        Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey[500]),
+        trailingWidget: Icon(
+          Icons.arrow_forward_ios, 
+          size: 18, 
+          color: Theme.of(context).hintColor,
+        ),
       ),
     );
   }
 
- Widget _buildProfileOption({
-  required IconData icon,
-  required String text,
-}) {
-  return ProfileOption(
-    icon: icon,
-    text: text,
-    iconColor: AcademeTheme.appColor,
-    onTap: () {
-      String description = '';
-      
-      if (text.contains('Settings')) {
-        description = L10n.getTranslatedText(context, 'Manage your app preferences and account settings.');
-        showDialog(
-          context: context,
-          builder: (context) => ComingSoonPopup(
-            featureName: text,
-            icon: icon,
-            description: description,
-          ),
+  Widget _buildProfileOption({
+    required IconData icon,
+    required String text,
+    ProfileOptionType optionType = ProfileOptionType.other,
+  }) {
+    return ProfileOption(
+      icon: icon,
+      text: text,
+      iconColor: AcademeTheme.appColor,
+      onTap: () => _handleProfileOptionTap(optionType, text, icon),
+    );
+  }
+
+  void _handleProfileOptionTap(ProfileOptionType type, String text, IconData icon) {
+    switch (type) {
+      case ProfileOptionType.settings:
+        _showComingSoonDialog(
+          text, 
+          icon, 
+          L10n.getTranslatedText(context, 'Manage your app preferences and account settings.'),
         );
-      } else if (text.contains('Terms and Policy')) {
-        // Navigate to Privacy Policy page
+        break;
+        
+      case ProfileOptionType.termsPolicy:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
         );
-      } else if (text.contains('Redeem')) {
-        description = L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.');
-        showDialog(
-          context: context,
-          builder: (context) => ComingSoonPopup(
-            featureName: text,
-            icon: icon,
-            description: description,
-          ),
+        break;
+        
+      case ProfileOptionType.redeemPoints:
+        _showComingSoonDialog(
+          text, 
+          icon, 
+          L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.'),
         );
-      } else {
-        // Default case for other options
-        showDialog(
-          context: context,
-          builder: (context) => ComingSoonPopup(
-            featureName: text,
-            icon: icon,
-            description: description,
-          ),
+        break;
+        
+      case ProfileOptionType.billing:
+        _showComingSoonDialog(
+          text, 
+          icon, 
+          L10n.getTranslatedText(context, 'Manage your billing information and payment methods.'),
         );
+        break;
+        
+      case ProfileOptionType.other:
+      default:
+        _showComingSoonDialog(text, icon, '');
+        break;
+    }
+  }
+
+  void _showComingSoonDialog(String featureName, IconData icon, String description) {
+    showDialog(
+      context: context,
+      builder: (context) => ComingSoonPopup(
+        featureName: featureName,
+        icon: icon,
+        description: description,
+      ),
+    );
+  }
+
+  // Alternative method using configuration map
+  void _handleProfileOptionTapAlternative(String text, IconData icon) {
+    final config = _optionConfigs[text];
+    
+    if (config != null) {
+      switch (config.type) {
+        case ProfileOptionType.termsPolicy:
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
+          );
+          break;
+        default:
+          final description = L10n.getTranslatedText(context, config.descriptionKey);
+          _showComingSoonDialog(text, icon, description);
+          break;
       }
-    },
-  );
-}
+    } else {
+      _showComingSoonDialog(text, icon, '');
+    }
+  }
+
   Widget _buildLogoutOption() {
     return ProfileOption(
       icon: Icons.logout,
