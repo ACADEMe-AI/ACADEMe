@@ -184,7 +184,7 @@ class ProfilePageState extends State<ProfilePage> {
           builder: (context) => ComingSoonPopup(
             featureName: L10n.getTranslatedText(context, 'Edit Profile'),
             icon: Icons.edit,
-            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences.'),
+            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences'),
           ),
         );
       },

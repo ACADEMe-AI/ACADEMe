@@ -83,7 +83,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return;
       }
 
@@ -101,10 +101,12 @@ class SubtopicScreenState extends State<SubtopicScreen>
           subtopics = data.cast<Map<String, dynamic>>();
         });
       } else {
-        _showError("Failed to fetch subtopics: ${response.statusCode}");
+        // _showError("Failed to fetch subtopics: ${response.statusCode}");
+        _showError(L10n.getTranslatedText(context, 'Failed to fetch subtopics'));
       }
     } catch (e) {
-      _showError("Error fetching subtopics: $e");
+      // _showError("Error fetching subtopics: $e");
+      _showError(L10n.getTranslatedText(context, 'Error fetching subtopics'));
     }
   }
 
@@ -115,7 +117,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return;
       }
 
@@ -133,10 +135,12 @@ class SubtopicScreenState extends State<SubtopicScreen>
           materials = data.cast<Map<String, dynamic>>();
         });
       } else {
-        _showError("Failed to fetch materials: ${response.statusCode}");
+        // _showError("Failed to fetch materials: ${response.statusCode}");
+        _showError(L10n.getTranslatedText(context, 'Failed to fetch materials'));
       }
     } catch (e) {
-      _showError("Error fetching materials: $e");
+      // _showError("Error fetching materials: $e");
+      _showError(L10n.getTranslatedText(context, 'Error fetching materials'));
     }
   }
 
@@ -151,7 +155,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return;
       }
 
@@ -169,10 +173,12 @@ class SubtopicScreenState extends State<SubtopicScreen>
           quizzes = data.cast<Map<String, dynamic>>();
         });
       } else {
-        _showError("Failed to fetch quizzes: ${response.statusCode}");
+        // _showError("Failed to fetch quizzes: ${response.statusCode}");
+        _showError(L10n.getTranslatedText(context, 'Failed to fetch quizzes'));
       }
     } catch (e) {
-      _showError("Error fetching quizzes: $e");
+      // _showError("Error fetching quizzes: $e");
+      _showError(L10n.getTranslatedText(context, 'Error fetching quizzes'));
     }
   }
 
@@ -240,7 +246,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return false;
       }
 
@@ -261,11 +267,13 @@ class SubtopicScreenState extends State<SubtopicScreen>
         debugPrint("✅ Subtopic added successfully: ${responseData["message"]}");
         return true;
       } else {
-        _showError("Failed to add subtopic: ${response.body}");
+        // _showError("Failed to add subtopic: ${response.body}");
+        _showError(L10n.getTranslatedText(context, 'Failed to add subtopic'));
         return false;
       }
     } catch (e) {
-      _showError("Error submitting subtopic: $e");
+      // _showError("Error submitting subtopic: $e");
+      _showError(L10n.getTranslatedText(context, 'Error submitting subtopic'));
       return false;
     }
   }
@@ -384,10 +392,10 @@ class SubtopicScreenState extends State<SubtopicScreen>
                         }
                         Navigator.pop(context);
                       } else {
-                        _showError("Please fill all required fields!");
+                        _showError(L10n.getTranslatedText(context, 'Please fill all required fields!'));
                       }
                     } else {
-                      _showError("Please select type and category!");
+                      _showError(L10n.getTranslatedText(context, 'Please select type and category!'));
                     }
                   },
                   child: Text(L10n.getTranslatedText(context, 'Upload')),
@@ -413,7 +421,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return;
       }
 
@@ -446,11 +454,14 @@ class SubtopicScreenState extends State<SubtopicScreen>
         debugPrint("✅ Material uploaded successfully!");
         await _fetchMaterials();
       } else {
+        // _showError(
+        //     "Failed to upload material: ${response.statusCode} - $responseBody");
         _showError(
-            "Failed to upload material: ${response.statusCode} - $responseBody");
+            L10n.getTranslatedText(context, 'Failed to upload material'));
       }
     } catch (e) {
-      _showError("Error uploading material: $e");
+      // _showError("Error uploading material: $e");
+      _showError(L10n.getTranslatedText(context, 'Error uploading material'));
     }
   }
 
@@ -542,7 +553,7 @@ class SubtopicScreenState extends State<SubtopicScreen>
       String? token =
           await _storage.read(key: "access_token"); // Retrieve token
       if (token == null) {
-        _showError("No access token found");
+        _showError(L10n.getTranslatedText(context, 'No access token found'));
         return false;
       }
 
@@ -563,11 +574,13 @@ class SubtopicScreenState extends State<SubtopicScreen>
         debugPrint("✅ Quiz added successfully: ${responseData["message"]}");
         return true;
       } else {
-        _showError("Failed to add quiz: ${response.body}");
+        // _showError("Failed to add quiz: ${response.body}");
+        _showError(L10n.getTranslatedText(context, 'Failed to add quiz'));
         return false;
       }
     } catch (e) {
-      _showError("Error submitting quiz: $e");
+      // _showError("Error submitting quiz: $e");
+      _showError(L10n.getTranslatedText(context, 'Error submitting quiz'));
       return false;
     }
   }

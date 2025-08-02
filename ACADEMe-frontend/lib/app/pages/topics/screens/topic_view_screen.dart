@@ -132,17 +132,17 @@ class _TopicViewScreenState extends State<TopicViewScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               // content: Text("Error loading topics: ${e.toString()}"),
-              content: Text("Error loading topics, try again"),
+              content: Text(L10n.getTranslatedText(context, 'Error loading topics, try again')),
               action: SnackBarAction(
-                label: 'Retry',
+                label: L10n.getTranslatedText(context, 'Retry'),
                 onPressed: () => _fetchTopicsFromBackend(),
               ),
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Failed to refresh. Showing cached data."),
+            SnackBar(
+              content: Text(L10n.getTranslatedText(context, 'Failed to refresh. Showing cached data')),
               duration: Duration(seconds: 2),
             ),
           );
