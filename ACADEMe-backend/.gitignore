@@ -1,5 +1,6 @@
 .env
 venv
+.venv
 __pycache__/
 routes/__pycache__
 utils/__pycache__
@@ -33,3 +34,6 @@ __pycache__/
 
 # Ignore uploaded files (if they are temporary)
 static/uploads/
+
+.direnv
+my-release-key.jks

@@ -27,3 +27,5 @@ assets/.env
 .flutter-plugins-dependencies
 
 db/sessions/
+
+google-services.json
