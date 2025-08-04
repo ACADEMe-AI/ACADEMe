@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,8 +41,8 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDDWPYD8QWUxfPeNIp0qx_EMRtd1hpnatg',
+  static final FirebaseOptions web = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB']!,
     appId: '1:159501230908:web:9ad3ec184dfb7cd711b439',
     messagingSenderId: '159501230908',
     projectId: 'academe-c9ea5',
@@ -50,16 +51,16 @@ class DefaultFirebaseOptions {
     measurementId: 'G-LVF851E4M5',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCUJrC-uugTCGxbOWAOcAEUSsbtUbMxIcQ',
+  static final FirebaseOptions android = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB']!,
     appId: '1:159501230908:android:f9d3ed7c17c9b6e411b439',
     messagingSenderId: '159501230908',
     projectId: 'academe-c9ea5',
     storageBucket: 'academe-c9ea5.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAaYhrgm28w18mg1aS1KmbYqc-q7iaO5AU',
+  static final FirebaseOptions ios = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_IOS']!,
     appId: '1:159501230908:ios:fcfbc8f031250b0811b439',
     messagingSenderId: '159501230908',
     projectId: 'academe-c9ea5',
@@ -67,8 +68,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.flutterApp',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAaYhrgm28w18mg1aS1KmbYqc-q7iaO5AU',
+  static final FirebaseOptions macos = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_MACOS']!,
     appId: '1:159501230908:ios:fcfbc8f031250b0811b439',
     messagingSenderId: '159501230908',
     projectId: 'academe-c9ea5',
@@ -76,8 +77,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.flutterApp',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDDWPYD8QWUxfPeNIp0qx_EMRtd1hpnatg',
+  static final FirebaseOptions windows = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WINDOWS']!,
     appId: '1:159501230908:web:3f62fcc544aca76111b439',
     messagingSenderId: '159501230908',
     projectId: 'academe-c9ea5',
