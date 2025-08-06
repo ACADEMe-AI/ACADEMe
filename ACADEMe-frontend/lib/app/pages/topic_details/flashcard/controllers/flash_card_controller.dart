@@ -51,6 +51,7 @@ class FlashCardController with ChangeNotifier {
   Animation<double>? _pulseAnimation;
   Animation<double>? _rotateAnimation;
   final SwiperController _swiperController = SwiperController();
+  bool _isDisposed = false;
 
   FlashCardController({
     required this.materials,
@@ -68,7 +69,7 @@ class FlashCardController with ChangeNotifier {
 
     if (materials.isEmpty && quizzes.isEmpty) {
       Future.delayed(Duration.zero, () {
-        if (onQuizComplete != null) {
+        if (!_isDisposed && onQuizComplete != null) {
           onQuizComplete!();
         }
       });
@@ -79,23 +80,29 @@ class FlashCardController with ChangeNotifier {
 
     if (_currentPage < materials.length) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        unawaited(_sendProgressToBackend());
+        if (!_isDisposed) {
+          unawaited(_sendProgressToBackend());
+        }
       });
     }
 
     if (_showSwipeHint) {
       Timer(const Duration(seconds: 3), () {
-        hideSwipeHint();
+        if (!_isDisposed) {
+          hideSwipeHint();
+        }
       });
     }
   }
 
+  // Getters
   int get currentPage => _currentPage;
   bool get showSwipeHint => _showSwipeHint;
   bool get isTransitioning => _isTransitioning;
   bool get showCelebration => _showCelebration;
   VideoPlayerController? get videoController => _videoController;
   ChewieController? get chewieController => _chewieController;
+  AudioPlayer get audioPlayer => _audioPlayer; // Added public getter for audio player
   String get currentTopicTitle => topicTitle;
   SwiperController get swiperController => _swiperController;
   AnimationController? get celebrationController => _celebrationController;
@@ -107,6 +114,8 @@ class FlashCardController with ChangeNotifier {
   bool get animationsInitialized => _celebrationController != null;
 
   void initializeAnimations(TickerProvider vsync) {
+    if (_isDisposed) return;
+    
     _celebrationController?.dispose();
 
     _celebrationController = AnimationController(
@@ -142,8 +151,7 @@ class FlashCardController with ChangeNotifier {
       CurvedAnimation(
         parent: _celebrationController!,
         curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
-      ),
-    );
+    ),);
 
     _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
       CurvedAnimation(
@@ -154,7 +162,7 @@ class FlashCardController with ChangeNotifier {
   }
 
   void hideSwipeHint() async {
-    if (_showSwipeHint) {
+    if (_showSwipeHint && !_isDisposed) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('show_swipe_hint', false);
       _showSwipeHint = false;
@@ -163,6 +171,8 @@ class FlashCardController with ChangeNotifier {
   }
 
   void _preloadAdjacentMaterials() {
+    if (_isDisposed) return;
+    
     _preloadTimer?.cancel();
     _preloadQueue.clear();
 
@@ -175,12 +185,14 @@ class FlashCardController with ChangeNotifier {
     ].where((index) => index >= 0 && index < totalPages).toList();
 
     _preloadTimer = Timer(const Duration(milliseconds: 300), () {
-      _processPreloadQueue();
+      if (!_isDisposed) {
+        _processPreloadQueue();
+      }
     });
   }
 
   void _processPreloadQueue() async {
-    while (_preloadQueue.isNotEmpty) {
+    while (_preloadQueue.isNotEmpty && !_isDisposed) {
       final index = _preloadQueue.removeAt(0);
 
       if (index < materials.length) {
@@ -219,10 +231,17 @@ class FlashCardController with ChangeNotifier {
   Future<void> _preloadAndInitializeVideo(int index, String url) async {
     try {
       final file = await _cacheManager.getSingleFile(url);
+      if (_isDisposed) return;
+      
       _cachedVideos[index] = file;
 
       final controller = VideoPlayerController.file(file);
       await controller.initialize();
+
+      if (_isDisposed) {
+        controller.dispose();
+        return;
+      }
 
       final chewieController = ChewieController(
         videoPlayerController: controller,
@@ -261,11 +280,13 @@ class FlashCardController with ChangeNotifier {
   Future<void> _loadSwipeHintState() async {
     final prefs = await SharedPreferences.getInstance();
     _showSwipeHint = prefs.getBool('show_swipe_hint') ?? true;
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   void _handleSwipe() async {
-    if (_showSwipeHint) {
+    if (_showSwipeHint && !_isDisposed) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('show_swipe_hint', false);
       _showSwipeHint = false;
@@ -274,6 +295,8 @@ class FlashCardController with ChangeNotifier {
   }
 
   Future<void> fetchTopicDetails() async {
+    if (_isDisposed) return;
+    
     String? token = await _storage.read(key: 'access_token');
     if (token == null) {
       debugPrint("❌ Missing access token");
@@ -293,6 +316,8 @@ class FlashCardController with ChangeNotifier {
         },
       );
 
+      if (_isDisposed) return;
+
       if (response.statusCode == 200) {
         final String responseBody = utf8.decode(response.bodyBytes);
         final dynamic jsonData = jsonDecode(responseBody);
@@ -308,21 +333,29 @@ class FlashCardController with ChangeNotifier {
     } catch (e) {
       debugPrint("❌ Error fetching topic details: $e");
     } finally {
-      isLoading = false;
-      notifyListeners();
+      if (!_isDisposed) {
+        isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   void updateTopicDetails(Map<String, dynamic> data) {
+    if (_isDisposed) return;
+    
     topicTitle = data["title"]?.toString() ?? "Untitled Topic";
     notifyListeners();
   }
 
   Future<void> _setupVideoController() async {
+    if (_isDisposed) return;
+    
     if (_videoController != null) {
       _videoController!.removeListener(_videoListener);
     }
+    _videoController?.pause();
     _videoController?.dispose();
+    _chewieController?.pause();
     _chewieController?.dispose();
 
     if (_currentPage < materials.length && materials[_currentPage]["type"] == "video") {
@@ -337,6 +370,10 @@ class FlashCardController with ChangeNotifier {
         final videoFile = _cachedVideos[_currentPage]!;
         _videoController = VideoPlayerController.file(videoFile);
         await _videoController!.initialize();
+        if (_isDisposed) {
+          _videoController?.dispose();
+          return;
+        }
         _chewieController = ChewieController(
           videoPlayerController: _videoController!,
           autoPlay: true,
@@ -350,6 +387,10 @@ class FlashCardController with ChangeNotifier {
         final videoUrl = materials[_currentPage]["content"]!;
         _videoController = VideoPlayerController.network(videoUrl);
         await _videoController!.initialize();
+        if (_isDisposed) {
+          _videoController?.dispose();
+          return;
+        }
         _chewieController = ChewieController(
           videoPlayerController: _videoController!,
           autoPlay: true,
@@ -364,12 +405,15 @@ class FlashCardController with ChangeNotifier {
       _videoController = null;
       _chewieController = null;
     }
-    notifyListeners();
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   void _videoListener() {
-    if (_videoController != null &&
-        _videoController!.value.isInitialized &&
+    if (_isDisposed || _videoController == null) return;
+    
+    if (_videoController!.value.isInitialized &&
         !_videoController!.value.isPlaying &&
         _videoController!.value.position >= _videoController!.value.duration) {
       _videoController!.seekTo(Duration.zero);
@@ -389,6 +433,8 @@ class FlashCardController with ChangeNotifier {
   }
 
   Future<void> _sendProgressToBackend() async {
+    if (_isDisposed) return;
+    
     final material = getCurrentMaterial();
     final materialId = material["id"] ?? "material_$_currentPage";
 
@@ -422,6 +468,8 @@ class FlashCardController with ChangeNotifier {
   }
 
   Future<void> nextMaterialOrQuiz() async {
+    if (_isDisposed) return;
+    
     final totalItems = materials.length + quizzes.length;
     final hasNextPage = _currentPage < totalItems - 1;
 
@@ -468,8 +516,9 @@ class FlashCardController with ChangeNotifier {
     }
   }
 
-
   void updateCurrentPage(int index) {
+    if (_isDisposed) return;
+    
     _handleSwipe();
     if (_currentPage != index) {
       _currentPage = index;
@@ -485,21 +534,47 @@ class FlashCardController with ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _showSwipeHint = false;
+    
+    // Pause and dispose video controllers
+    _videoController?.pause();
     _videoController?.removeListener(_videoListener);
     _videoController?.dispose();
+    _videoController = null;
+    
+    _chewieController?.pause();
     _chewieController?.dispose();
+    _chewieController = null;
+    
+    // Stop audio player
+    _audioPlayer.stop();
     _audioPlayer.dispose();
+    
+    // Cancel timers
     _preloadTimer?.cancel();
+    _preloadTimer = null;
+    
+    // Dispose animations
     _celebrationController?.dispose();
+    _celebrationController = null;
+    
+    // Dispose swiper controller
     _swiperController.dispose();
-
+    
+    // Dispose all preloaded controllers
     for (final controller in _preloadedControllers.values) {
+      controller.pause();
       controller.dispose();
     }
+    _preloadedControllers.clear();
+    
     for (final controller in _preloadedChewieControllers.values) {
+      controller.pause();
       controller.dispose();
     }
+    _preloadedChewieControllers.clear();
+
     super.dispose();
   }
 }

@@ -9,6 +9,68 @@ import '../controllers/flash_card_controller.dart';
 import 'quiz.dart';
 import 'whatsapp_audio.dart';
 
+class FlashCardScreen extends StatefulWidget {
+  final FlashCardController controller;
+
+  const FlashCardScreen({super.key, required this.controller});
+
+  @override
+  State<FlashCardScreen> createState() => _FlashCardScreenState();
+}
+
+class _FlashCardScreenState extends State<FlashCardScreen> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      widget.controller.videoController?.pause();
+      widget.controller.audioPlayer.pause();
+    } else if (state == AppLifecycleState.resumed) {
+      if (widget.controller.videoController != null && 
+          !widget.controller.videoController!.value.isPlaying) {
+        widget.controller.videoController!.play();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        widget.controller.videoController?.pause();
+        widget.controller.audioPlayer.stop();
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.controller.subtopicTitle),
+        ),
+        body: Column(
+          children: [
+            ProgressIndicatorWidget(controller: widget.controller),
+            SubtopicTitleWidget(controller: widget.controller),
+            Expanded(
+              child: FlashCardContentWidget(controller: widget.controller),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ProgressIndicatorWidget extends StatelessWidget {
   final FlashCardController controller;
 
@@ -77,10 +139,39 @@ class SubtopicTitleWidget extends StatelessWidget {
   }
 }
 
-class FlashCardContentWidget extends StatelessWidget {
+class FlashCardContentWidget extends StatefulWidget {
   final FlashCardController controller;
 
   const FlashCardContentWidget({super.key, required this.controller});
+
+  @override
+  State<FlashCardContentWidget> createState() => _FlashCardContentWidgetState();
+}
+
+class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.videoController?.addListener(_videoListener);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.videoController?.removeListener(_videoListener);
+    super.dispose();
+  }
+
+  void _videoListener() {
+    if (!mounted) return;
+    if (widget.controller.videoController != null &&
+        widget.controller.videoController!.value.isInitialized &&
+        !widget.controller.videoController!.value.isPlaying &&
+        widget.controller.videoController!.value.position >= 
+        widget.controller.videoController!.value.duration) {
+      widget.controller.videoController!.seekTo(Duration.zero);
+      widget.controller.videoController!.pause();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,54 +181,52 @@ class FlashCardContentWidget extends StatelessWidget {
         builder: (context, constraints) {
           return GestureDetector(
             onTapDown: (_) {
-              if (controller.showSwipeHint) {
-                controller.hideSwipeHint();
+              if (widget.controller.showSwipeHint) {
+                widget.controller.hideSwipeHint();
               }
             },
             onPanStart: (_) {
-              if (controller.showSwipeHint) {
-                controller.hideSwipeHint();
+              if (widget.controller.showSwipeHint) {
+                widget.controller.hideSwipeHint();
               }
             },
             behavior: HitTestBehavior.translucent,
             child: Swiper(
-              controller: controller.swiperController,
+              controller: widget.controller.swiperController,
               itemWidth: constraints.maxWidth,
               itemHeight: constraints.maxHeight,
               loop: false,
-              duration: 175, // Increased from 0 to 400ms for slower animation
+              duration: 175,
               layout: SwiperLayout.STACK,
               axisDirection: AxisDirection.right,
-              index: controller.currentPage,
-              curve: Curves.easeInOutCubic, // Changed to smoother curve
+              index: widget.controller.currentPage,
+              curve: Curves.easeInOutCubic,
               viewportFraction: 1.0,
               scale: 0.9,
               onIndexChanged: (index) {
-                controller.updateCurrentPage(index);
-                if (controller.showSwipeHint) {
-                  controller.hideSwipeHint();
+                widget.controller.updateCurrentPage(index);
+                if (widget.controller.showSwipeHint) {
+                  widget.controller.hideSwipeHint();
                 }
               },
               itemBuilder: (context, index) {
                 return Stack(
                   children: [
-                    // Only show content if it's the current page or we're not transitioning
-                    if (!controller.isTransitioning ||
-                        index == controller.currentPage)
+                    if (!widget.controller.isTransitioning ||
+                        index == widget.controller.currentPage)
                       ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(20),
                           topRight: Radius.circular(20),
                         ),
-                        child: _buildMaterial(index, controller),
+                        child: _buildMaterial(index, widget.controller),
                       ),
 
-                    // Show overlay for non-current pages
-                    if (controller.currentPage != index &&
-                        !controller.isTransitioning)
+                    if (widget.controller.currentPage != index &&
+                        !widget.controller.isTransitioning)
                       IgnorePointer(
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300), // Slightly increased duration
+                          duration: const Duration(milliseconds: 300),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.2),
                             borderRadius: const BorderRadius.only(
@@ -148,8 +237,7 @@ class FlashCardContentWidget extends StatelessWidget {
                         ),
                       ),
 
-                    // Swipe hint overlay
-                    if (controller.showSwipeHint && index == 0)
+                    if (widget.controller.showSwipeHint && index == 0)
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Center(
@@ -165,7 +253,7 @@ class FlashCardContentWidget extends StatelessWidget {
                   ],
                 );
               },
-              itemCount: controller.materials.length + controller.quizzes.length,
+              itemCount: widget.controller.materials.length + widget.controller.quizzes.length,
             ),
           );
         },
@@ -187,15 +275,13 @@ class FlashCardContentWidget extends StatelessWidget {
         Expanded(
           child: AnimatedOpacity(
             opacity: controller.isTransitioning && index != controller.currentPage ? 0.0 : 1.0,
-            duration: const Duration(milliseconds: 200), // Smooth opacity transition
+            duration: const Duration(milliseconds: 200),
             child: Container(
-              // Add explicit white background to prevent blue background showing
               color: Colors.white,
               width: double.infinity,
               height: double.infinity,
               child: controller.isTransitioning && index != controller.currentPage
                   ? Container(
-                      // Ensure the placeholder also has white background
                       color: Colors.white,
                       width: double.infinity,
                       height: double.infinity,
@@ -211,16 +297,28 @@ class FlashCardContentWidget extends StatelessWidget {
   Widget _getMaterialWidget(Map<String, dynamic> material, int index,
       FlashCardController controller) {
     switch (material["type"]) {
+      case "video":
+        return WillPopScope(
+          onWillPop: () async {
+            controller.videoController?.pause();
+            return true;
+          },
+          child: VideoContentWidget(controller: controller),
+        );
+      case "audio":
+        return WillPopScope(
+          onWillPop: () async {
+            controller.audioPlayer.stop();
+            return true;
+          },
+          child: AudioContentWidget(audioUrl: material["content"]!),
+        );
       case "text":
         return TextContentWidget(
             content: material["content"]!, controller: controller);
-      case "video":
-        return VideoContentWidget(controller: controller);
       case "image":
         return ImageContentWidget(
             imageUrl: material["content"]!, controller: controller);
-      case "audio":
-        return AudioContentWidget(audioUrl: material["content"]!);
       case "document":
         return DocumentContentWidget(docUrl: material["content"]!);
       case "quiz":
@@ -232,187 +330,6 @@ class FlashCardContentWidget extends StatelessWidget {
   }
 }
 
-// Celebration Widget
-// class CelebrationWidget extends StatelessWidget {
-//   final FlashCardController controller;
-//
-//   const CelebrationWidget({super.key, required this.controller});
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final listenable =
-//         controller.celebrationController ?? AlwaysStoppedAnimation(0);
-//
-//     return Positioned.fill(
-//       child: Container(
-//         color: Colors.black54,
-//         child: Center(
-//           child: AnimatedBuilder(
-//             animation: listenable,
-//             builder: (context, child) {
-//               // Safely get all animation values with null checks
-//               final bounceValue = controller.bounceAnimation?.value ?? 0;
-//               final scaleValue = controller.scaleAnimation?.value ?? 1;
-//               // Use the animation itself, not its value for SlideTransition
-//               final slideAnimation = controller.slideAnimation ??
-//                   AlwaysStoppedAnimation(Offset.zero);
-//               final pulseValue = controller.pulseAnimation?.value ?? 1;
-//               final rotateValue = controller.rotateAnimation?.value ?? 0;
-//               final controllerValue =
-//                   controller.celebrationController?.value ?? 0;
-//
-//               return Column(
-//                 mainAxisAlignment: MainAxisAlignment.center,
-//                 children: [
-//                   Transform.scale(
-//                     scale: bounceValue,
-//                     child: Container(
-//                       width: 100,
-//                       height: 100,
-//                       decoration: BoxDecoration(
-//                         color: Colors.yellow[600],
-//                         shape: BoxShape.circle,
-//                         boxShadow: [
-//                           BoxShadow(
-//                             color: Colors.yellow.withOpacity(0.5),
-//                             blurRadius: 20,
-//                             spreadRadius: 5,
-//                           ),
-//                         ],
-//                       ),
-//                       child: const Icon(
-//                         Icons.star,
-//                         color: Colors.white,
-//                         size: 50,
-//                       ),
-//                     ),
-//                   ),
-//                   const SizedBox(height: 30),
-//                   SlideTransition(
-//                     position: slideAnimation,
-//                     child: Transform.scale(
-//                       scale: scaleValue *
-//                           (1.0 +
-//                               0.1 *
-//                                   (1.0 +
-//                                       (pulseValue - 1.0) *
-//                                           (1.0 +
-//                                               0.5 *
-//                                                   (controllerValue * 10) %
-//                                                   1.0))),
-//                       child: Transform.rotate(
-//                         angle: rotateValue *
-//                             (1.0 + 0.3 * ((controllerValue * 8) % 1.0 - 0.5)),
-//                         child: Container(
-//                           padding: const EdgeInsets.symmetric(
-//                               horizontal: 30, vertical: 15),
-//                           decoration: BoxDecoration(
-//                             gradient: LinearGradient(
-//                               colors: [
-//                                 Colors.green[400]!,
-//                                 Colors.green[600]!,
-//                                 Colors.green[400]!,
-//                               ],
-//                               begin: Alignment.topLeft,
-//                               end: Alignment.bottomRight,
-//                               stops: [
-//                                 0.0,
-//                                 0.5 + 0.3 * ((controllerValue * 5) % 1.0),
-//                                 1.0,
-//                               ],
-//                             ),
-//                             borderRadius: BorderRadius.circular(25),
-//                             boxShadow: [
-//                               BoxShadow(
-//                                 color: Colors.green.withOpacity(0.4),
-//                                 blurRadius:
-//                                 15 + 5 * ((controllerValue * 6) % 1.0),
-//                                 spreadRadius: 2,
-//                               ),
-//                             ],
-//                           ),
-//                           child: const Row(
-//                             mainAxisSize: MainAxisSize.min,
-//                             children: [
-//                               Icon(
-//                                 Icons.check_circle,
-//                                 color: Colors.white,
-//                                 size: 24,
-//                               ),
-//                               SizedBox(width: 10),
-//                               Text(
-//                                 'Great Job! 🌟',
-//                                 style: TextStyle(
-//                                   color: Colors.white,
-//                                   fontSize: 22,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                   const SizedBox(height: 20),
-//                   ...List.generate(8, (index) {
-//                     final delay = index * 0.1;
-//                     final animationValue =
-//                     (controllerValue - delay).clamp(0.0, 1.0);
-//                     final continuousMotion =
-//                         (controllerValue * 4 + index) % 1.0;
-//                     return Transform.translate(
-//                       offset: Offset(
-//                         (index - 4) * 40.0 * animationValue +
-//                             20 * continuousMotion * (index % 2 == 0 ? 1 : -1),
-//                         -30 * animationValue +
-//                             10 * continuousMotion * (index % 3 == 0 ? 1 : -1),
-//                       ),
-//                       child: Transform.scale(
-//                         scale: animationValue * (0.8 + 0.4 * continuousMotion),
-//                         child: Transform.rotate(
-//                           angle: continuousMotion * 6.28,
-//                           child: Container(
-//                             width: 18,
-//                             height: 18,
-//                             decoration: BoxDecoration(
-//                               color: [
-//                                 Colors.red,
-//                                 Colors.blue,
-//                                 Colors.green,
-//                                 Colors.orange,
-//                                 Colors.purple,
-//                                 Colors.pink,
-//                                 Colors.teal,
-//                                 Colors.amber
-//                               ][index],
-//                               shape: BoxShape.circle,
-//                               boxShadow: const [
-//                                 BoxShadow(
-//                                   color: Colors.black26,
-//                                   blurRadius: 3,
-//                                   spreadRadius: 1,
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                         ),
-//                       ),
-//                     );
-//                   }),
-//                 ],
-//               );
-//             },
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-
-// Content Widgets
 class TextContentWidget extends StatelessWidget {
   final String content;
   final FlashCardController controller;
@@ -964,7 +881,6 @@ class QuizContentWidget extends StatelessWidget {
       QuizPage(
         quizzes: [quiz],
         onQuizComplete: () {
-          // Use post-frame callback to ensure smooth transition
           WidgetsBinding.instance.addPostFrameCallback((_) {
             controller.nextMaterialOrQuiz();
           });
