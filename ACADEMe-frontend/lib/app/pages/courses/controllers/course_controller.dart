@@ -24,8 +24,9 @@ class CourseController extends ChangeNotifier {
   bool get isRefreshing => _isRefreshing;
   bool get hasInitialized => _hasInitialized;
 
-  List<Course> get ongoingCourses =>
-      _courses.where((course) => course.progress < 1.0 && course.progress > 0.0).toList();
+  List<Course> get ongoingCourses => _courses
+      .where((course) => course.progress < 1.0 && course.progress > 0.0)
+      .toList();
   List<Course> get completedCourses =>
       _courses.where((course) => course.progress >= 1.0).toList();
 

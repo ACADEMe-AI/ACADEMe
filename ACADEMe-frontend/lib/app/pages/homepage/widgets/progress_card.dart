@@ -12,9 +12,7 @@ class ProgressCard extends StatelessWidget {
     if (courses.isEmpty) return 0;
 
     int totalCompleted = courses.fold<int>(
-        0,
-            (sum, course) => sum + (course['completedModules'] as int? ?? 0)
-    );
+        0, (sum, course) => sum + (course['completedModules'] as int? ?? 0));
 
     // Base calculation with a multiplier for visual appeal
     return (totalCompleted * 10).clamp(0, 999);
@@ -34,7 +32,8 @@ class ProgressCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12.0),
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 15.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 15.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -53,7 +52,8 @@ class ProgressCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          L10n.getTranslatedText(context, 'Track your progress'),
+                          L10n.getTranslatedText(
+                              context, 'Track your progress'),
                           style: const TextStyle(
                             fontSize: 14,
                             color: Colors.white70,

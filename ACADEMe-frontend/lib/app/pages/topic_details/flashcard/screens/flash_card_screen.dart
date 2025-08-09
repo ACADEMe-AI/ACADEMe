@@ -15,7 +15,6 @@ class FlashCardScreen extends StatefulWidget {
 
 class _FlashCardScreenState extends State<FlashCardScreen>
     with TickerProviderStateMixin {
-
   @override
   void initState() {
     super.initState();

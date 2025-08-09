@@ -129,7 +129,8 @@ class _ComingSoonPopupState extends State<ComingSoonPopup>
               // Description
               Text(
                 widget.description ??
-                    L10n.getTranslatedText(context, 'We\'re working hard to bring you this awesome feature! 🚀'),
+                    L10n.getTranslatedText(context,
+                        'We\'re working hard to bring you this awesome feature! 🚀'),
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey.shade600,
@@ -151,7 +152,9 @@ class _ComingSoonPopupState extends State<ComingSoonPopup>
                 child: Stack(
                   children: [
                     Container(
-                      width: MediaQuery.of(context).size.width * 0.6 * 0.75, // 75% progress
+                      width: MediaQuery.of(context).size.width *
+                          0.6 *
+                          0.75, // 75% progress
                       height: 8,
                       decoration: BoxDecoration(
                         color: AcademeTheme.appColor,
@@ -186,11 +189,13 @@ class _ComingSoonPopupState extends State<ComingSoonPopup>
                       SnackBar(
                         content: Row(
                           children: [
-                            const Icon(Icons.notifications, color: Colors.white),
+                            const Icon(Icons.notifications,
+                                color: Colors.white),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                L10n.getTranslatedText(context, 'We\'ll let you know when it\'s ready! 🎉'),
+                                L10n.getTranslatedText(context,
+                                    'We\'ll let you know when it\'s ready! 🎉'),
                               ),
                             ),
                           ],

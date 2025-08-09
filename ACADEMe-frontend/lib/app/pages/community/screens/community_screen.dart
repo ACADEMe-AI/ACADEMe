@@ -47,12 +47,14 @@ class MyCommunityScreen extends StatelessWidget {
                               children: [
                                 Center(
                                   child: Text(
-                                    L10n.getTranslatedText(context, 'Forums Section'),
+                                    L10n.getTranslatedText(
+                                        context, 'Forums Section'),
                                   ),
                                 ),
                                 Center(
                                   child: Text(
-                                    L10n.getTranslatedText(context, 'Groups Section'),
+                                    L10n.getTranslatedText(
+                                        context, 'Groups Section'),
                                   ),
                                 ),
                                 CommunityList(controller: controller),
@@ -98,7 +100,8 @@ class MyCommunityScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              L10n.getTranslatedText(context, 'Community section will be available soon'),
+                              L10n.getTranslatedText(context,
+                                  'Community section will be available soon'),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey[600],
@@ -116,7 +119,8 @@ class MyCommunityScreen extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AcademeTheme.appColor,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 15),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 15),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(25),
                                   ),
@@ -151,7 +155,8 @@ class MyCommunityScreenStateful extends StatefulWidget {
   const MyCommunityScreenStateful({super.key});
 
   @override
-  State<MyCommunityScreenStateful> createState() => _MyCommunityScreenStatefulState();
+  State<MyCommunityScreenStateful> createState() =>
+      _MyCommunityScreenStatefulState();
 }
 
 class _MyCommunityScreenStatefulState extends State<MyCommunityScreenStateful> {
@@ -206,12 +211,14 @@ class _MyCommunityScreenStatefulState extends State<MyCommunityScreenStateful> {
                             children: [
                               Center(
                                 child: Text(
-                                  L10n.getTranslatedText(context, 'Forums Section'),
+                                  L10n.getTranslatedText(
+                                      context, 'Forums Section'),
                                 ),
                               ),
                               Center(
                                 child: Text(
-                                  L10n.getTranslatedText(context, 'Groups Section'),
+                                  L10n.getTranslatedText(
+                                      context, 'Groups Section'),
                                 ),
                               ),
                               CommunityList(controller: _controller),
@@ -257,7 +264,8 @@ class _MyCommunityScreenStatefulState extends State<MyCommunityScreenStateful> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            L10n.getTranslatedText(context, 'Community section will be available soon'),
+                            L10n.getTranslatedText(context,
+                                'Community section will be available soon'),
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey[600],
@@ -275,7 +283,8 @@ class _MyCommunityScreenStatefulState extends State<MyCommunityScreenStateful> {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AcademeTheme.appColor,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 15),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(25),
                                 ),

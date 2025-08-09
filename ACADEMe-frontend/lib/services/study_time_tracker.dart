@@ -79,7 +79,8 @@ class StudyTimeTracker with WidgetsBindingObserver {
 
   void _addStudyTime(double hours) {
     final today = DateTime.now();
-    final dateKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final dateKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
     _weeklyStudyTime[dateKey] = (_weeklyStudyTime[dateKey] ?? 0.0) + hours;
     _saveStudyTimeData();
@@ -93,8 +94,7 @@ class StudyTimeTracker with WidgetsBindingObserver {
     if (jsonString != null) {
       final Map<String, dynamic> data = json.decode(jsonString);
       _weeklyStudyTime = Map<String, double>.from(
-          data.map((key, value) => MapEntry(key, value.toDouble()))
-      );
+          data.map((key, value) => MapEntry(key, value.toDouble())));
     }
   }
 
@@ -112,7 +112,8 @@ class StudyTimeTracker with WidgetsBindingObserver {
 
     for (int i = 0; i < 7; i++) {
       final date = weekStart.add(Duration(days: i));
-      final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       weekData.add(_weeklyStudyTime[dateKey] ?? 0.0);
     }
 
@@ -121,7 +122,8 @@ class StudyTimeTracker with WidgetsBindingObserver {
 
   double getTodayStudyTime() {
     final today = DateTime.now();
-    final todayKey = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+    final todayKey =
+        '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     return _weeklyStudyTime[todayKey] ?? 0.0;
   }
 
@@ -133,7 +135,8 @@ class StudyTimeTracker with WidgetsBindingObserver {
 
     for (int i = 0; i < 7; i++) {
       final date = weekStart.add(Duration(days: i));
-      final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       final dayTime = _weeklyStudyTime[dateKey] ?? 0.0;
 
       if (dayTime > 0) {

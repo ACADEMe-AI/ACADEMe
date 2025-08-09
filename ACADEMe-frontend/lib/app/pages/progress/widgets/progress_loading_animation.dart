@@ -107,7 +107,8 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
     super.dispose();
   }
 
-  Color get _primaryColor => widget.primaryColor ?? Theme.of(context).primaryColor;
+  Color get _primaryColor =>
+      widget.primaryColor ?? Theme.of(context).primaryColor;
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +119,8 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calculate responsive sizes based on available space - Fixed type casting
-        final maxHeight = constraints.maxHeight > 0 ? constraints.maxHeight : 400.0;
+        final maxHeight =
+            constraints.maxHeight > 0 ? constraints.maxHeight : 400.0;
         final circleSize = (maxHeight * 0.25).clamp(100.0, 140.0).toDouble();
         final verticalSpacing = (maxHeight * 0.03).clamp(8.0, 20.0).toDouble();
 
@@ -187,7 +189,8 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
                                         color: Colors.white,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
+                                            color:
+                                                Colors.black.withOpacity(0.1),
                                             blurRadius: 10,
                                             spreadRadius: 2,
                                           ),
@@ -220,7 +223,8 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
                         child: Column(
                           children: [
                             Text(
-                              widget.primaryText ?? 'Analyzing your progress...',
+                              widget.primaryText ??
+                                  'Analyzing your progress...',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -230,7 +234,8 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
                             ),
                             SizedBox(height: verticalSpacing * 0.6),
                             Text(
-                              widget.secondaryText ?? 'Generating personalized insights',
+                              widget.secondaryText ??
+                                  'Generating personalized insights',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey[600],
@@ -340,11 +345,12 @@ class _ProgressLoadingWidgetState extends State<ProgressLoadingWidget>
   }
 
   Widget _buildMotivationalTips() {
-    final tips = widget.motivationalTips ?? [
-      'Reviewing your study patterns',
-      'Identifying improvement areas',
-      'Creating personalized suggestions',
-    ];
+    final tips = widget.motivationalTips ??
+        [
+          'Reviewing your study patterns',
+          'Identifying improvement areas',
+          'Creating personalized suggestions',
+        ];
 
     return AnimatedBuilder(
       animation: _fadeController,

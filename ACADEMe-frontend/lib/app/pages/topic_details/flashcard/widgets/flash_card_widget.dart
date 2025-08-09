@@ -18,7 +18,8 @@ class FlashCardScreen extends StatefulWidget {
   State<FlashCardScreen> createState() => _FlashCardScreenState();
 }
 
-class _FlashCardScreenState extends State<FlashCardScreen> with WidgetsBindingObserver {
+class _FlashCardScreenState extends State<FlashCardScreen>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -38,7 +39,7 @@ class _FlashCardScreenState extends State<FlashCardScreen> with WidgetsBindingOb
       widget.controller.videoController?.pause();
       widget.controller.audioPlayer.pause();
     } else if (state == AppLifecycleState.resumed) {
-      if (widget.controller.videoController != null && 
+      if (widget.controller.videoController != null &&
           !widget.controller.videoController!.value.isPlaying) {
         widget.controller.videoController!.play();
       }
@@ -166,8 +167,8 @@ class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
     if (widget.controller.videoController != null &&
         widget.controller.videoController!.value.isInitialized &&
         !widget.controller.videoController!.value.isPlaying &&
-        widget.controller.videoController!.value.position >= 
-        widget.controller.videoController!.value.duration) {
+        widget.controller.videoController!.value.position >=
+            widget.controller.videoController!.value.duration) {
       widget.controller.videoController!.seekTo(Duration.zero);
       widget.controller.videoController!.pause();
     }
@@ -221,7 +222,6 @@ class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
                         ),
                         child: _buildMaterial(index, widget.controller),
                       ),
-
                     if (widget.controller.currentPage != index &&
                         !widget.controller.isTransitioning)
                       IgnorePointer(
@@ -236,7 +236,6 @@ class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
                           ),
                         ),
                       ),
-
                     if (widget.controller.showSwipeHint && index == 0)
                       Positioned.fill(
                         child: IgnorePointer(
@@ -253,7 +252,8 @@ class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
                   ],
                 );
               },
-              itemCount: widget.controller.materials.length + widget.controller.quizzes.length,
+              itemCount: widget.controller.materials.length +
+                  widget.controller.quizzes.length,
             ),
           );
         },
@@ -274,19 +274,23 @@ class _FlashCardContentWidgetState extends State<FlashCardContentWidget> {
       children: [
         Expanded(
           child: AnimatedOpacity(
-            opacity: controller.isTransitioning && index != controller.currentPage ? 0.0 : 1.0,
+            opacity:
+                controller.isTransitioning && index != controller.currentPage
+                    ? 0.0
+                    : 1.0,
             duration: const Duration(milliseconds: 200),
             child: Container(
               color: Colors.white,
               width: double.infinity,
               height: double.infinity,
-              child: controller.isTransitioning && index != controller.currentPage
-                  ? Container(
-                      color: Colors.white,
-                      width: double.infinity,
-                      height: double.infinity,
-                    )
-                  : _getMaterialWidget(material, index, controller),
+              child:
+                  controller.isTransitioning && index != controller.currentPage
+                      ? Container(
+                          color: Colors.white,
+                          width: double.infinity,
+                          height: double.infinity,
+                        )
+                      : _getMaterialWidget(material, index, controller),
             ),
           ),
         ),
@@ -340,7 +344,7 @@ class TextContentWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String processedContent =
-    content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
+        content.replaceAll(r'\n', '\n').replaceAll('<br>', '\n');
 
     return buildStyledContainer(
       context,
@@ -667,27 +671,27 @@ class VideoContentWidget extends StatelessWidget {
             child: Container(
               margin: const EdgeInsets.all(0),
               child: controller.chewieController == null ||
-                  controller.videoController == null ||
-                  !controller.videoController!.value.isInitialized
+                      controller.videoController == null ||
+                      !controller.videoController!.value.isInitialized
                   ? SizedBox.expand(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Loading video...",
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontSize: 16,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Loading video...",
+                            style: TextStyle(
+                              color: Theme.of(context).primaryColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              )
+                    )
                   : SizedBox.expand(
-                child: Chewie(controller: controller.chewieController!),
-              ),
+                      child: Chewie(controller: controller.chewieController!),
+                    ),
             ),
           ),
           if (controller.quizzes.isEmpty &&
@@ -746,9 +750,9 @@ class ImageContentWidget extends StatelessWidget {
                   return CachedNetworkImage(
                     imageUrl: imageUrl,
                     placeholder: (context, url) =>
-                    const Center(child: CircularProgressIndicator()),
+                        const Center(child: CircularProgressIndicator()),
                     errorWidget: (context, url, error) =>
-                    const Icon(Icons.error),
+                        const Icon(Icons.error),
                     fit: fit,
                     alignment: Alignment.center,
                   );
@@ -791,7 +795,7 @@ class ImageContentWidget extends StatelessWidget {
   Future<BoxFit> _getImageFit(String imageUrl) async {
     final Completer<ImageInfo> completer = Completer();
     final ImageStream stream =
-    NetworkImage(imageUrl).resolve(const ImageConfiguration());
+        NetworkImage(imageUrl).resolve(const ImageConfiguration());
 
     final listener = ImageStreamListener((ImageInfo info, bool _) {
       completer.complete(info);

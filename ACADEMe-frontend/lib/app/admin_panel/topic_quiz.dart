@@ -43,7 +43,8 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
   }
 
   Future<void> _fetchQuestions() async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestions(widget.courseId, widget.topicId, widget.quizId, widget.targetLanguage));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestions(
+        widget.courseId, widget.topicId, widget.quizId, widget.targetLanguage));
 
     try {
       String? token = await _storage.read(key: "access_token");
@@ -106,26 +107,31 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
                   children: [
                     TextField(
                       controller: questionController,
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Question')),
+                      decoration: InputDecoration(
+                          labelText:
+                              L10n.getTranslatedText(context, 'Question')),
                     ),
                     ...List.generate(optionControllers.length, (index) {
                       return TextField(
                         controller: optionControllers[index],
-                        decoration:
-                            InputDecoration(labelText: "${L10n.getTranslatedText(context, 'Option')} ${index + 1}"),
+                        decoration: InputDecoration(
+                            labelText:
+                                "${L10n.getTranslatedText(context, 'Option')} ${index + 1}"),
                       );
                     }),
                     if (optionControllers.length < 4)
                       TextButton(
                         onPressed: () => addOption(setDialogState),
-                        child: Text(L10n.getTranslatedText(context, 'Add Another Option')),
+                        child: Text(L10n.getTranslatedText(
+                            context, 'Add Another Option')),
                       ),
                     DropdownButtonFormField<int>(
                       value: correctOption,
                       items: List.generate(optionControllers.length, (index) {
                         return DropdownMenuItem<int>(
                           value: index,
-                          child: Text("${L10n.getTranslatedText(context, 'Correct Option')}: ${index + 1}"),
+                          child: Text(
+                              "${L10n.getTranslatedText(context, 'Correct Option')}: ${index + 1}"),
                         );
                       }),
                       onChanged: (value) {
@@ -177,7 +183,8 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
     required List<String> options,
     required int correctOption,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestionsNoLang(widget.courseId, widget.topicId, widget.quizId));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizQuestionsNoLang(
+        widget.courseId, widget.topicId, widget.quizId));
 
     try {
       String? token = await _storage.read(key: "access_token");
@@ -238,7 +245,9 @@ class TopicQuizScreenState extends State<TopicQuizScreen> {
         child: isLoading
             ? Center(child: CircularProgressIndicator())
             : questions.isEmpty
-                ? Center(child: Text(L10n.getTranslatedText(context, 'No questions added yet')))
+                ? Center(
+                    child: Text(L10n.getTranslatedText(
+                        context, 'No questions added yet')))
                 : ListView.builder(
                     itemCount: questions.length,
                     itemBuilder: (context, index) {

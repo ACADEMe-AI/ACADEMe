@@ -47,7 +47,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...materials.map(
-                      (m) => _buildMaterialTile(
+                  (m) => _buildMaterialTile(
                     m,
                     subtopicId,
                     isSubtopicComplete,
@@ -61,11 +61,11 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...quizzes.map((q) => _buildQuizTile(
-                  q,
-                  subtopicId,
-                  isSubtopicComplete,
-                  context,
-                )),
+                      q,
+                      subtopicId,
+                      isSubtopicComplete,
+                      context,
+                    )),
               ],
             ),
         ],
@@ -74,11 +74,11 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildMaterialTile(
-      Map<String, dynamic> material,
-      String subtopicId,
-      bool isSubtopicComplete,
-      BuildContext context,
-      ) {
+    Map<String, dynamic> material,
+    String subtopicId,
+    bool isSubtopicComplete,
+    BuildContext context,
+  ) {
     final controller = LessonsController();
     final isCompleted = controller.isActivityCompleted(
       courseId: courseId,
@@ -91,7 +91,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
       material["type"],
       material["category"],
       _getIconForContentType(material["type"]),
-          () => onTap(materials.indexOf(material)),
+      () => onTap(materials.indexOf(material)),
       isCompleted,
       isSubtopicComplete,
       context,
@@ -99,11 +99,11 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildQuizTile(
-      Map<String, dynamic> quiz,
-      String subtopicId,
-      bool isSubtopicComplete,
-      BuildContext context,
-      ) {
+    Map<String, dynamic> quiz,
+    String subtopicId,
+    bool isSubtopicComplete,
+    BuildContext context,
+  ) {
     final controller = LessonsController();
     final isCompleted = controller.isActivityCompleted(
       courseId: courseId,
@@ -117,7 +117,7 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
       quiz["title"],
       "${quiz["difficulty"]} • ${quiz["question_count"]} Questions",
       Icons.quiz,
-          () => onTap(materials.length + quizzes.indexOf(quiz)),
+      () => onTap(materials.length + quizzes.indexOf(quiz)),
       isCompleted,
       isSubtopicComplete,
       context,
@@ -125,14 +125,14 @@ class LessonsAndQuizzesWidget extends StatelessWidget {
   }
 
   Widget _buildTile(
-      String title,
-      String subtitle,
-      IconData icon,
-      VoidCallback onTap,
-      bool isCompleted,
-      bool isSubtopicComplete,
-      BuildContext context,
-      ) {
+    String title,
+    String subtitle,
+    IconData icon,
+    VoidCallback onTap,
+    bool isCompleted,
+    bool isSubtopicComplete,
+    BuildContext context,
+  ) {
     String localizedTitle = title;
     if (title.toLowerCase() == 'video') {
       localizedTitle = L10n.getTranslatedText(context, 'Video');

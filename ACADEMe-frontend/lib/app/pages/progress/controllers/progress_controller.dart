@@ -29,7 +29,7 @@ class ProgressController {
 
   Future<double> fetchOverallGrade() async {
     final String? token =
-    await const FlutterSecureStorage().read(key: 'access_token');
+        await const FlutterSecureStorage().read(key: 'access_token');
 
     if (token == null) {
       throw Exception("❌ No access token found");
@@ -53,7 +53,8 @@ class ProgressController {
         int courseCount = 0;
 
         for (String courseId in visualData.keys) {
-          final double avgScore = (visualData[courseId]['avg_score'] ?? 0).toDouble();
+          final double avgScore =
+              (visualData[courseId]['avg_score'] ?? 0).toDouble();
           totalAvgScore += avgScore;
           courseCount++;
         }

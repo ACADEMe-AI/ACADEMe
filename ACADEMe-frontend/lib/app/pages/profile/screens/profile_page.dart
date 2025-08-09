@@ -25,7 +25,7 @@ enum ProfileOptionType {
 class ProfileOptionConfig {
   final ProfileOptionType type;
   final String descriptionKey;
-  
+
   const ProfileOptionConfig({
     required this.type,
     required this.descriptionKey,
@@ -133,7 +133,8 @@ class ProfilePageState extends State<ProfilePage> {
     final locale = await _controller.loadLanguage();
     if (!mounted) return;
 
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     if (languageProvider.locale != locale) {
       languageProvider.setLocale(locale);
     }
@@ -186,12 +187,12 @@ class ProfilePageState extends State<ProfilePage> {
       body: isLoading
           ? const ProfilePageShimmer()
           : RefreshIndicator(
-        onRefresh: _refreshData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: _buildProfileContent(),
-        ),
-      ),
+              onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: _buildProfileContent(),
+              ),
+            ),
     );
   }
 
@@ -214,10 +215,10 @@ class ProfilePageState extends State<ProfilePage> {
     return CircleAvatar(
       radius: 50,
       backgroundImage:
-      userDetails?.photoUrl != null && userDetails!.photoUrl!.isNotEmpty
-          ? NetworkImage(userDetails!.photoUrl!)
-          : const AssetImage('assets/design_course/userImage.png')
-      as ImageProvider,
+          userDetails?.photoUrl != null && userDetails!.photoUrl!.isNotEmpty
+              ? NetworkImage(userDetails!.photoUrl!)
+              : const AssetImage('assets/design_course/userImage.png')
+                  as ImageProvider,
     );
   }
 
@@ -244,7 +245,8 @@ class ProfilePageState extends State<ProfilePage> {
           builder: (context) => ComingSoonPopup(
             featureName: L10n.getTranslatedText(context, 'Edit Profile'),
             icon: Icons.edit,
-            description: L10n.getTranslatedText(context, 'Customize your profile information and preferences'),
+            description: L10n.getTranslatedText(
+                context, 'Customize your profile information and preferences'),
           ),
         );
       },
@@ -307,15 +309,15 @@ class ProfilePageState extends State<ProfilePage> {
             Text(
               selectedClass ?? L10n.getTranslatedText(context, 'SELECT'),
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: 16,
-                color: selectedClass != null 
-                  ? Theme.of(context).textTheme.bodyLarge?.color
-                  : Theme.of(context).hintColor,
-              ),
+                    fontSize: 16,
+                    color: selectedClass != null
+                        ? Theme.of(context).textTheme.bodyLarge?.color
+                        : Theme.of(context).hintColor,
+                  ),
             ),
             const SizedBox(width: 8),
             Icon(
-              Icons.arrow_drop_down, 
+              Icons.arrow_drop_down,
               color: Theme.of(context).iconTheme.color ?? Colors.black,
             ),
           ],
@@ -331,8 +333,8 @@ class ProfilePageState extends State<ProfilePage> {
         icon: Icons.translate,
         title: L10n.getTranslatedText(context, 'language'),
         trailingWidget: Icon(
-          Icons.arrow_forward_ios, 
-          size: 18, 
+          Icons.arrow_forward_ios,
+          size: 18,
           color: Theme.of(context).hintColor,
         ),
       ),
@@ -352,39 +354,43 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _handleProfileOptionTap(ProfileOptionType type, String text, IconData icon) {
+  void _handleProfileOptionTap(
+      ProfileOptionType type, String text, IconData icon) {
     switch (type) {
       case ProfileOptionType.settings:
         _showComingSoonDialog(
-          text, 
-          icon, 
-          L10n.getTranslatedText(context, 'Manage your app preferences and account settings.'),
+          text,
+          icon,
+          L10n.getTranslatedText(
+              context, 'Manage your app preferences and account settings.'),
         );
         break;
-        
+
       case ProfileOptionType.termsPolicy:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const PrivacyPolicyPage()),
         );
         break;
-        
+
       case ProfileOptionType.redeemPoints:
         _showComingSoonDialog(
-          text, 
-          icon, 
-          L10n.getTranslatedText(context, 'Use your earned points to unlock exclusive rewards.'),
+          text,
+          icon,
+          L10n.getTranslatedText(
+              context, 'Use your earned points to unlock exclusive rewards.'),
         );
         break;
-        
+
       case ProfileOptionType.billing:
         _showComingSoonDialog(
-          text, 
-          icon, 
-          L10n.getTranslatedText(context, 'Manage your billing information and payment methods.'),
+          text,
+          icon,
+          L10n.getTranslatedText(
+              context, 'Manage your billing information and payment methods.'),
         );
         break;
-        
+
       case ProfileOptionType.other:
       default:
         _showComingSoonDialog(text, icon, '');
@@ -392,7 +398,8 @@ class ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showComingSoonDialog(String featureName, IconData icon, String description) {
+  void _showComingSoonDialog(
+      String featureName, IconData icon, String description) {
     showDialog(
       context: context,
       builder: (context) => ComingSoonPopup(
@@ -406,7 +413,7 @@ class ProfilePageState extends State<ProfilePage> {
   // Alternative method using configuration map
   void _handleProfileOptionTapAlternative(String text, IconData icon) {
     final config = _optionConfigs[text];
-    
+
     if (config != null) {
       switch (config.type) {
         case ProfileOptionType.termsPolicy:
@@ -416,7 +423,8 @@ class ProfilePageState extends State<ProfilePage> {
           );
           break;
         default:
-          final description = L10n.getTranslatedText(context, config.descriptionKey);
+          final description =
+              L10n.getTranslatedText(context, config.descriptionKey);
           _showComingSoonDialog(text, icon, description);
           break;
       }
@@ -443,7 +451,8 @@ class ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: ClassSelectionBottomSheet(
           onClassSelected: () async {
             // Set loading state
@@ -502,13 +511,13 @@ class ProfilePageState extends State<ProfilePage> {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const LogInView()),
-            (route) => false,
+        (route) => false,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-          Text(L10n.getTranslatedText(context, 'You have been logged out')),
+              Text(L10n.getTranslatedText(context, 'You have been logged out')),
         ),
       );
     } catch (e) {

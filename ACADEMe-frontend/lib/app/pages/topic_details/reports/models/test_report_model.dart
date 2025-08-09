@@ -53,8 +53,8 @@ class QuizResult {
     return QuizResult(
       title: json['title'] ?? '',
       isCorrect: json['isCorrect'] == true,
-      timestamp: json['timestamp'] != null 
-          ? DateTime.tryParse(json['timestamp']) 
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp'])
           : null,
     );
   }
@@ -100,7 +100,7 @@ class VisualData {
 
   factory VisualData.fromJson(Map<String, dynamic> json) {
     final Map<String, UserData> userData = {};
-    
+
     json.forEach((key, value) {
       if (value is Map<String, dynamic>) {
         userData[key] = UserData.fromJson(value);

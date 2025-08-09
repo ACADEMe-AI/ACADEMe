@@ -36,13 +36,15 @@ class _SignUpViewState extends State<SignUpView> {
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Please enter an email')),
+          content:
+              Text(L10n.getTranslatedText(context, 'Please enter an email')),
         ),
       );
       return;
     }
 
-    if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(_emailController.text.trim())) {
+    if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
+        .hasMatch(_emailController.text.trim())) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(L10n.getTranslatedText(context, 'Enter a valid email')),
@@ -53,7 +55,8 @@ class _SignUpViewState extends State<SignUpView> {
 
     setState(() => _isOtpLoading = true);
 
-    final (success, message) = await AuthService().sendOTP(_emailController.text.trim());
+    final (success, message) =
+        await AuthService().sendOTP(_emailController.text.trim());
 
     if (!mounted) return;
     setState(() => _isOtpLoading = false);
@@ -62,14 +65,16 @@ class _SignUpViewState extends State<SignUpView> {
       setState(() => _otpSent = true);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message ?? L10n.getTranslatedText(context, 'OTP sent successfully')),
+          content: Text(message ??
+              L10n.getTranslatedText(context, 'OTP sent successfully')),
           backgroundColor: Colors.green,
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message ?? L10n.getTranslatedText(context, 'Failed to send OTP')),
+          content: Text(
+              message ?? L10n.getTranslatedText(context, 'Failed to send OTP')),
           backgroundColor: Colors.red,
         ),
       );
@@ -83,7 +88,8 @@ class _SignUpViewState extends State<SignUpView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'I agree to terms and conditions')),
+          content: Text(L10n.getTranslatedText(
+              context, 'I agree to terms and conditions')),
         ),
       );
       return;
@@ -92,7 +98,8 @@ class _SignUpViewState extends State<SignUpView> {
     if (!_otpSent) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Please verify your email with OTP first')),
+          content: Text(L10n.getTranslatedText(
+              context, 'Please verify your email with OTP first')),
         ),
       );
       return;
@@ -101,7 +108,8 @@ class _SignUpViewState extends State<SignUpView> {
     if (_otpController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Please enter the OTP')),
+          content:
+              Text(L10n.getTranslatedText(context, 'Please enter the OTP')),
         ),
       );
       return;
@@ -123,8 +131,10 @@ class _SignUpViewState extends State<SignUpView> {
 
     if (user != null) {
       // Store email and password in secure storage
-      await _secureStorage.write(key: 'email', value: _emailController.text.trim());
-      await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
+      await _secureStorage.write(
+          key: 'email', value: _emailController.text.trim());
+      await _secureStorage.write(
+          key: 'password', value: _passwordController.text.trim());
 
       // Force refresh HomeController user details
       final homeController = HomeController();
@@ -136,7 +146,8 @@ class _SignUpViewState extends State<SignUpView> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Account created successfully!')),
+          content: Text(
+              L10n.getTranslatedText(context, 'Account created successfully!')),
           backgroundColor: Colors.green,
         ),
       );
@@ -161,7 +172,6 @@ class _SignUpViewState extends State<SignUpView> {
     }
   }
 
-
   String _getUserFriendlyErrorMessage(String originalError) {
     // Convert to lowercase for easier matching
     String lowerError = originalError.toLowerCase();
@@ -175,7 +185,8 @@ class _SignUpViewState extends State<SignUpView> {
         lowerError.contains('timeout') ||
         lowerError.contains('socket') ||
         lowerError.contains('handshake')) {
-      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again');
+      return L10n.getTranslatedText(
+          context, '🌐 Please check your internet connection and try again');
     }
 
     // Server errors
@@ -183,26 +194,34 @@ class _SignUpViewState extends State<SignUpView> {
         lowerError.contains('500') ||
         lowerError.contains('502') ||
         lowerError.contains('503')) {
-      return L10n.getTranslatedText(context, '⚠️ Server is temporarily unavailable. Please try again later.');
+      return L10n.getTranslatedText(context,
+          '⚠️ Server is temporarily unavailable. Please try again later.');
     }
 
     // Email already exists
     if (lowerError.contains('already exists') ||
         lowerError.contains('duplicate') ||
         lowerError.contains('email') && lowerError.contains('taken')) {
-      return L10n.getTranslatedText(context, '📧 This email is already registered. Please use a different email or try logging in');
+      return L10n.getTranslatedText(context,
+          '📧 This email is already registered. Please use a different email or try logging in');
     }
 
     // OTP related errors
     if (lowerError.contains('otp') || lowerError.contains('code')) {
       if (lowerError.contains('expired') || lowerError.contains('timeout')) {
-        return L10n.getTranslatedText(context, '⏰ OTP has expired. Please request a new one');
-      } else if (lowerError.contains('invalid') || lowerError.contains('incorrect') || lowerError.contains('wrong')) {
-        return L10n.getTranslatedText(context, '❌ Invalid OTP. Please check and try again');
+        return L10n.getTranslatedText(
+            context, '⏰ OTP has expired. Please request a new one');
+      } else if (lowerError.contains('invalid') ||
+          lowerError.contains('incorrect') ||
+          lowerError.contains('wrong')) {
+        return L10n.getTranslatedText(
+            context, '❌ Invalid OTP. Please check and try again');
       } else if (lowerError.contains('not found')) {
-        return L10n.getTranslatedText(context, '📮 Please request an OTP first');
+        return L10n.getTranslatedText(
+            context, '📮 Please request an OTP first');
       }
-      return L10n.getTranslatedText(context, '🔐 OTP verification failed. Please try again');
+      return L10n.getTranslatedText(
+          context, '🔐 OTP verification failed. Please try again');
     }
 
     // Validation errors
@@ -210,31 +229,37 @@ class _SignUpViewState extends State<SignUpView> {
         lowerError.contains('invalid') ||
         lowerError.contains('format') ||
         lowerError.contains('required')) {
-      return L10n.getTranslatedText(context, '📝 Please check your information and try again');
+      return L10n.getTranslatedText(
+          context, '📝 Please check your information and try again');
     }
 
     // Password errors
     if (lowerError.contains('password')) {
       if (lowerError.contains('weak') || lowerError.contains('short')) {
-        return L10n.getTranslatedText(context, '🔒 Please choose a stronger password');
+        return L10n.getTranslatedText(
+            context, '🔒 Please choose a stronger password');
       }
-      return L10n.getTranslatedText(context, '🔑 Password requirements not met. Please try a different password');
+      return L10n.getTranslatedText(context,
+          '🔑 Password requirements not met. Please try a different password');
     }
 
     // Rate limiting
     if (lowerError.contains('too many') ||
         lowerError.contains('rate') ||
         lowerError.contains('limit')) {
-      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again');
+      return L10n.getTranslatedText(
+          context, '⏰ Too many attempts. Please wait a moment and try again');
     }
 
     // Account creation limits
     if (lowerError.contains('limit') && lowerError.contains('account')) {
-      return L10n.getTranslatedText(context, '👥 Account creation limit reached. Please try again later');
+      return L10n.getTranslatedText(
+          context, '👥 Account creation limit reached. Please try again later');
     }
 
     // Default fallback for any other error
-    return L10n.getTranslatedText(context, '❌ Something went wrong during signup. Please try again');
+    return L10n.getTranslatedText(
+        context, '❌ Something went wrong during signup. Please try again');
   }
 
   /// Handles Google Sign-Up
@@ -288,7 +313,7 @@ class _SignUpViewState extends State<SignUpView> {
                         alignment: Alignment.topLeft,
                         child: Text(
                           '${L10n.getTranslatedText(context, 'Create Your ')} '
-                              '${L10n.getTranslatedText(context, 'Account')}',
+                          '${L10n.getTranslatedText(context, 'Account')}',
                           style: TextStyle(
                             fontSize: width * 0.1,
                             fontWeight: FontWeight.bold,
@@ -306,8 +331,10 @@ class _SignUpViewState extends State<SignUpView> {
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AcademeTheme.notWhite,
-                          labelText: L10n.getTranslatedText(context, 'Username'),
-                          hintText: L10n.getTranslatedText(context, 'Enter a username'),
+                          labelText:
+                              L10n.getTranslatedText(context, 'Username'),
+                          hintText: L10n.getTranslatedText(
+                              context, 'Enter a username'),
                           prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(7),
@@ -327,7 +354,8 @@ class _SignUpViewState extends State<SignUpView> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return L10n.getTranslatedText(context, 'Please enter a username');
+                            return L10n.getTranslatedText(
+                                context, 'Please enter a username');
                           }
                           return null;
                         },
@@ -348,9 +376,13 @@ class _SignUpViewState extends State<SignUpView> {
                               enabled: !_otpSent,
                               decoration: InputDecoration(
                                 filled: true,
-                                fillColor: _otpSent ? Colors.grey[200] : AcademeTheme.notWhite,
-                                labelText: L10n.getTranslatedText(context, 'Email'),
-                                hintText: L10n.getTranslatedText(context, 'Enter your email'),
+                                fillColor: _otpSent
+                                    ? Colors.grey[200]
+                                    : AcademeTheme.notWhite,
+                                labelText:
+                                    L10n.getTranslatedText(context, 'Email'),
+                                hintText: L10n.getTranslatedText(
+                                    context, 'Enter your email'),
                                 prefixIcon: const Icon(Icons.email),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(7),
@@ -370,10 +402,13 @@ class _SignUpViewState extends State<SignUpView> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return L10n.getTranslatedText(context, 'Please enter an email');
+                                  return L10n.getTranslatedText(
+                                      context, 'Please enter an email');
                                 }
-                                if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                  return L10n.getTranslatedText(context, 'Enter a valid email');
+                                if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                    .hasMatch(value)) {
+                                  return L10n.getTranslatedText(
+                                      context, 'Enter a valid email');
                                 }
                                 return null;
                               },
@@ -381,9 +416,12 @@ class _SignUpViewState extends State<SignUpView> {
                           ),
                           SizedBox(width: width * 0.02),
                           ElevatedButton(
-                            onPressed: _otpSent ? null : (_isOtpLoading ? null : _sendOtp),
+                            onPressed: _otpSent
+                                ? null
+                                : (_isOtpLoading ? null : _sendOtp),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _otpSent ? Colors.green : Colors.blue,
+                              backgroundColor:
+                                  _otpSent ? Colors.green : Colors.blue,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(7),
@@ -395,19 +433,21 @@ class _SignUpViewState extends State<SignUpView> {
                             ),
                             child: _isOtpLoading
                                 ? SizedBox(
-                              width: width * 0.04,
-                              height: width * 0.04,
-                              child: const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
+                                    width: width * 0.04,
+                                    height: width * 0.04,
+                                    child: const CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : Text(
-                              _otpSent
-                                  ? L10n.getTranslatedText(context, 'Sent')
-                                  : L10n.getTranslatedText(context, 'Send OTP'),
-                              style: TextStyle(fontSize: width * 0.03),
-                            ),
+                                    _otpSent
+                                        ? L10n.getTranslatedText(
+                                            context, 'Sent')
+                                        : L10n.getTranslatedText(
+                                            context, 'Send OTP'),
+                                    style: TextStyle(fontSize: width * 0.03),
+                                  ),
                           ),
                         ],
                       ),
@@ -428,7 +468,8 @@ class _SignUpViewState extends State<SignUpView> {
                             filled: true,
                             fillColor: AcademeTheme.notWhite,
                             labelText: L10n.getTranslatedText(context, 'OTP'),
-                            hintText: L10n.getTranslatedText(context, 'Enter 6-digit OTP'),
+                            hintText: L10n.getTranslatedText(
+                                context, 'Enter 6-digit OTP'),
                             prefixIcon: const Icon(Icons.security),
                             counterText: '',
                             border: OutlineInputBorder(
@@ -449,10 +490,12 @@ class _SignUpViewState extends State<SignUpView> {
                           ),
                           validator: (value) {
                             if (_otpSent && (value == null || value.isEmpty)) {
-                              return L10n.getTranslatedText(context, 'Please enter the OTP');
+                              return L10n.getTranslatedText(
+                                  context, 'Please enter the OTP');
                             }
                             if (_otpSent && value!.length != 6) {
-                              return L10n.getTranslatedText(context, 'OTP must be 6 digits');
+                              return L10n.getTranslatedText(
+                                  context, 'OTP must be 6 digits');
                             }
                             return null;
                           },
@@ -471,8 +514,10 @@ class _SignUpViewState extends State<SignUpView> {
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: AcademeTheme.notWhite,
-                          labelText: L10n.getTranslatedText(context, 'Password'),
-                          hintText: L10n.getTranslatedText(context, 'Enter your password'),
+                          labelText:
+                              L10n.getTranslatedText(context, 'Password'),
+                          hintText: L10n.getTranslatedText(
+                              context, 'Enter your password'),
                           prefixIcon: const Icon(Icons.lock),
                           suffixIcon: IconButton(
                             icon: Icon(_isPasswordVisible
@@ -502,10 +547,12 @@ class _SignUpViewState extends State<SignUpView> {
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return L10n.getTranslatedText(context, 'Please enter a password');
+                            return L10n.getTranslatedText(
+                                context, 'Please enter a password');
                           }
                           if (value.length < 6) {
-                            return L10n.getTranslatedText(context, 'Password must be at least 6 characters');
+                            return L10n.getTranslatedText(context,
+                                'Password must be at least 6 characters');
                           }
                           return null;
                         },
@@ -529,7 +576,8 @@ class _SignUpViewState extends State<SignUpView> {
                           ),
                           Expanded(
                             child: Text(
-                              L10n.getTranslatedText(context, 'I agree to terms and conditions'),
+                              L10n.getTranslatedText(
+                                  context, 'I agree to terms and conditions'),
                               style: TextStyle(fontSize: width * 0.037),
                             ),
                           ),
@@ -551,26 +599,27 @@ class _SignUpViewState extends State<SignUpView> {
                             minimumSize: Size(double.infinity, width * 0.11),
                           ),
                           child: _isVerifyingOtp
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/icons/house_door.png',
-                                height: height * 0.05,
-                                width: width * 0.06,
-                              ),
-                              SizedBox(width: width * 0.025),
-                              Text(
-                                L10n.getTranslatedText(context, 'Signup'),
-                                style: TextStyle(
-                                  fontSize: width * 0.045,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/icons/house_door.png',
+                                      height: height * 0.05,
+                                      width: width * 0.06,
+                                    ),
+                                    SizedBox(width: width * 0.025),
+                                    Text(
+                                      L10n.getTranslatedText(context, 'Signup'),
+                                      style: TextStyle(
+                                        fontSize: width * 0.045,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                     ),
@@ -593,17 +642,20 @@ class _SignUpViewState extends State<SignUpView> {
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isGoogleLoading ? null : _signUpWithGoogle,
+                          onPressed:
+                              _isGoogleLoading ? null : _signUpWithGoogle,
                           icon: _isGoogleLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : Padding(
-                            padding: EdgeInsets.only(right: width * 0.02),
-                            child: Image.asset(
-                                'assets/icons/google_icon.png',
-                                height: height * 0.025),
-                          ),
+                                  padding: EdgeInsets.only(right: width * 0.02),
+                                  child: Image.asset(
+                                      'assets/icons/google_icon.png',
+                                      height: height * 0.025),
+                                ),
                           label: Text(
-                            L10n.getTranslatedText(context, 'Continue with Google'),
+                            L10n.getTranslatedText(
+                                context, 'Continue with Google'),
                             style: TextStyle(
                               fontSize: width * 0.045,
                               fontWeight: FontWeight.w500,
@@ -629,7 +681,8 @@ class _SignUpViewState extends State<SignUpView> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          L10n.getTranslatedText(context, 'Already have an account?'),
+                          L10n.getTranslatedText(
+                              context, 'Already have an account?'),
                           style: TextStyle(
                             fontSize: width * 0.04,
                             color: Colors.black54,

@@ -66,17 +66,18 @@ class ChatHistoryDrawer extends StatelessWidget {
                               ),
                               child: photoUrl != null && photoUrl.isNotEmpty
                                   ? ClipOval(
-                                child: Image.network(
-                                  photoUrl,
-                                  fit: BoxFit.cover,
-                                  width: 60,
-                                  height: 60,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Return empty container on error, showing just white circle
-                                    return Container();
-                                  },
-                                ),
-                              )
+                                      child: Image.network(
+                                        photoUrl,
+                                        fit: BoxFit.cover,
+                                        width: 60,
+                                        height: 60,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          // Return empty container on error, showing just white circle
+                                          return Container();
+                                        },
+                                      ),
+                                    )
                                   : Container(), // Empty container for white circle
                             ),
                             const SizedBox(width: 20),
@@ -168,7 +169,8 @@ class ChatHistoryDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 15),
             Text(
-              L10n.getTranslatedText(context, 'We\'re building something amazing\nfor your chat experience'),
+              L10n.getTranslatedText(context,
+                  'We\'re building something amazing\nfor your chat experience'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -187,9 +189,8 @@ class ChatHistoryDrawer extends StatelessWidget {
       height: 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isCompleted
-            ? AcademeTheme.appColor
-            : Colors.grey.withOpacity(0.3),
+        color:
+            isCompleted ? AcademeTheme.appColor : Colors.grey.withOpacity(0.3),
       ),
     );
   }

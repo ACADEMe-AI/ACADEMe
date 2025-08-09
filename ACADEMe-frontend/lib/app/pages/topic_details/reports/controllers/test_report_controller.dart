@@ -68,7 +68,8 @@ class TestReportController {
 
       // Fetch subtopics for the topic
       final subtopicsResponse = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(courseId, topicId, language)),
+        ApiEndpoints.getUri(
+            ApiEndpoints.topicSubtopics(courseId, topicId, language)),
         headers: {
           'Authorization': 'Bearer $token',
           'accept': 'application/json',
@@ -78,12 +79,13 @@ class TestReportController {
       if (subtopicsResponse.statusCode == 200) {
         final String subtopicsBody = utf8.decode(subtopicsResponse.bodyBytes);
         final List<dynamic> subtopicsJson = jsonDecode(subtopicsBody);
-        
+
         // Fetch quizzes for each subtopic
         for (var subtopic in subtopicsJson) {
           final subtopicId = subtopic['id'].toString();
           final quizzesResponse = await http.get(
-            ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(courseId, topicId, subtopicId, language)),
+            ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(
+                courseId, topicId, subtopicId, language)),
             headers: {
               'Authorization': 'Bearer $token',
               'accept': 'application/json',
@@ -93,7 +95,7 @@ class TestReportController {
           if (quizzesResponse.statusCode == 200) {
             final String quizzesBody = utf8.decode(quizzesResponse.bodyBytes);
             final List<dynamic> quizzesJson = jsonDecode(quizzesBody);
-            
+
             // For each quiz, we'll include it but local results will be fetched separately
             subtopicsWithQuizzes.add({
               ...subtopic,
@@ -102,7 +104,8 @@ class TestReportController {
           }
         }
       } else {
-        throw Exception('Failed to load subtopics: ${subtopicsResponse.statusCode}');
+        throw Exception(
+            'Failed to load subtopics: ${subtopicsResponse.statusCode}');
       }
     } catch (e) {
       debugPrint('Error fetching subtopics with quizzes: $e');
@@ -115,7 +118,7 @@ class TestReportController {
     try {
       final String storageKey = 'quiz_results_${courseId}_${topicId}_$quizId';
       String? resultsJson = await _secureStorage.read(key: storageKey);
-      
+
       if (resultsJson != null) {
         return json.decode(resultsJson);
       }
@@ -129,14 +132,14 @@ class TestReportController {
   // Calculate subtopic score from local storage
   Future<double> calculateSubtopicScoreFromLocal(List<dynamic> quizzes) async {
     if (quizzes.isEmpty) return 0;
-    
+
     double totalScore = 0;
     int completedQuizzes = 0;
-    
+
     for (var quiz in quizzes) {
       final quizId = quiz['id'].toString();
       final localResults = await getLocalQuizResults(quizId);
-      
+
       if (localResults != null) {
         final correct = localResults['correctAnswers'] ?? 0;
         final total = localResults['totalQuestions'] ?? 1;
@@ -146,7 +149,7 @@ class TestReportController {
         }
       }
     }
-    
+
     return completedQuizzes > 0 ? totalScore / completedQuizzes : 0;
   }
 
@@ -157,19 +160,19 @@ class TestReportController {
     int quizzesTaken = 0;
     double totalScore = 0;
     int scoredQuizzes = 0;
-    
+
     for (var subtopic in subtopicsWithQuizzes) {
       final quizzes = subtopic['quizzes'] as List<dynamic>? ?? [];
       bool hasCompletedQuiz = false;
-      
+
       for (var quiz in quizzes) {
         final quizId = quiz['id'].toString();
         final localResults = await getLocalQuizResults(quizId);
-        
+
         if (localResults != null) {
           hasCompletedQuiz = true;
           quizzesTaken++;
-          
+
           final correct = localResults['correctAnswers'] ?? 0;
           final total = localResults['totalQuestions'] ?? 1;
           if (total > 0) {
@@ -178,10 +181,10 @@ class TestReportController {
           }
         }
       }
-      
+
       if (hasCompletedQuiz) completedSubtopics++;
     }
-    
+
     return {
       'completedSubtopics': completedSubtopics,
       'totalSubtopics': totalSubtopics,
@@ -193,16 +196,16 @@ class TestReportController {
   // Calculate overall score from local storage
   Future<double> calculateOverallScoreFromLocal() async {
     if (subtopicsWithQuizzes.isEmpty) return 0;
-    
+
     double totalScore = 0;
     int totalQuizzes = 0;
-    
+
     for (var subtopic in subtopicsWithQuizzes) {
       final quizzes = subtopic['quizzes'] as List<dynamic>? ?? [];
       for (var quiz in quizzes) {
         final quizId = quiz['id'].toString();
         final localResults = await getLocalQuizResults(quizId);
-        
+
         if (localResults != null) {
           final correct = localResults['correctAnswers'] ?? 0;
           final total = localResults['totalQuestions'] ?? 1;
@@ -213,7 +216,7 @@ class TestReportController {
         }
       }
     }
-    
+
     return totalQuizzes > 0 ? totalScore / totalQuizzes : 0;
   }
 

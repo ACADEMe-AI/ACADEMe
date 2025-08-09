@@ -77,7 +77,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(widget.courseId, widget.topicId, targetLanguage));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(
+        widget.courseId, widget.topicId, targetLanguage));
 
     try {
       String? token =
@@ -102,7 +103,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
         });
       } else {
         // _showError("Failed to fetch subtopics: ${response.statusCode}");
-        _showError(L10n.getTranslatedText(context, 'Failed to fetch subtopics'));
+        _showError(
+            L10n.getTranslatedText(context, 'Failed to fetch subtopics'));
       }
     } catch (e) {
       // _showError("Error fetching subtopics: $e");
@@ -111,7 +113,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
   }
 
   Future<void> _fetchMaterials() async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
+    final url = ApiEndpoints.getUri(
+        ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -136,7 +139,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
         });
       } else {
         // _showError("Failed to fetch materials: ${response.statusCode}");
-        _showError(L10n.getTranslatedText(context, 'Failed to fetch materials'));
+        _showError(
+            L10n.getTranslatedText(context, 'Failed to fetch materials'));
       }
     } catch (e) {
       // _showError("Error fetching materials: $e");
@@ -149,7 +153,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzes(widget.courseId, widget.topicId, targetLanguage));
+    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzes(
+        widget.courseId, widget.topicId, targetLanguage));
 
     try {
       String? token =
@@ -240,7 +245,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitSubtopic(
       {required String title, required String description}) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsNoLang(widget.courseId, widget.topicId));
+    final url = ApiEndpoints.getUri(
+        ApiEndpoints.topicSubtopicsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -291,13 +297,15 @@ class SubtopicScreenState extends State<SubtopicScreen>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(L10n.getTranslatedText(context, 'Add Topic Material')),
+              title:
+                  Text(L10n.getTranslatedText(context, 'Add Topic Material')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Type')),
+                      decoration: InputDecoration(
+                          labelText: L10n.getTranslatedText(context, 'Type')),
                       items: ["text", "video", "image", "audio", "document"]
                           .map((type) => DropdownMenuItem(
                                 value: type,
@@ -308,7 +316,9 @@ class SubtopicScreenState extends State<SubtopicScreen>
                           setDialogState(() => selectedType = value ?? ""),
                     ),
                     DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Category')),
+                      decoration: InputDecoration(
+                          labelText:
+                              L10n.getTranslatedText(context, 'Category')),
                       items: ["Notes", "Reference Links", "Practice Questions"]
                           .map((type) => DropdownMenuItem(
                                 value: type,
@@ -392,10 +402,12 @@ class SubtopicScreenState extends State<SubtopicScreen>
                         }
                         Navigator.pop(context);
                       } else {
-                        _showError(L10n.getTranslatedText(context, 'Please fill all required fields!'));
+                        _showError(L10n.getTranslatedText(
+                            context, 'Please fill all required fields!'));
                       }
                     } else {
-                      _showError(L10n.getTranslatedText(context, 'Please select type and category!'));
+                      _showError(L10n.getTranslatedText(
+                          context, 'Please select type and category!'));
                     }
                   },
                   child: Text(L10n.getTranslatedText(context, 'Upload')),
@@ -415,7 +427,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
     String? textContent,
     String? filePath,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
+    final url = ApiEndpoints.getUri(
+        ApiEndpoints.topicMaterialsNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -547,7 +560,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
 
   Future<bool> _submitQuiz(
       {required String title, required String description}) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.topicQuizzesNoLang(widget.courseId, widget.topicId));
+    final url = ApiEndpoints.getUri(
+        ApiEndpoints.topicQuizzesNoLang(widget.courseId, widget.topicId));
 
     try {
       String? token =
@@ -683,7 +697,8 @@ class SubtopicScreenState extends State<SubtopicScreen>
               );
             }).toList(),
           )
-        : Center(child: Text(L10n.getTranslatedText(context, 'No items available')));
+        : Center(
+            child: Text(L10n.getTranslatedText(context, 'No items available')));
   }
 
   Widget _buildSubtopicContent(Map<String, dynamic> item) {

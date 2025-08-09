@@ -65,7 +65,8 @@ class TopicScreenState extends State<TopicScreen> {
 
     try {
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.courseTopics(widget.courseId, _targetLanguage!)),
+        ApiEndpoints.getUri(
+            ApiEndpoints.courseTopics(widget.courseId, _targetLanguage!)),
         headers: {
           "Authorization": "Bearer $token",
           "Content-Type":
@@ -144,7 +145,8 @@ class TopicScreenState extends State<TopicScreen> {
             ElevatedButton(
               onPressed: () async {
                 final response = await http.post(
-                  ApiEndpoints.getUri(ApiEndpoints.courseTopicsNoLang(widget.courseId)),
+                  ApiEndpoints.getUri(
+                      ApiEndpoints.courseTopicsNoLang(widget.courseId)),
                   headers: {
                     "Authorization": "Bearer $token",
                     "Content-Type": "application/json; charset=UTF-8",

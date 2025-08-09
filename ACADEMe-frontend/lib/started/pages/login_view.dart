@@ -62,8 +62,10 @@ class _LogInViewState extends State<LogInView> {
 
       if (user != null) {
         // Store credentials
-        await _secureStorage.write(key: 'email', value: _emailController.text.trim());
-        await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
+        await _secureStorage.write(
+            key: 'email', value: _emailController.text.trim());
+        await _secureStorage.write(
+            key: 'password', value: _passwordController.text.trim());
 
         // Force refresh HomeController user details
         final homeController = HomeController();
@@ -91,21 +93,18 @@ class _LogInViewState extends State<LogInView> {
               context, '❌ Login failed. Please try again.'));
         }
       }
-    }
-    catch (e) {
+    } catch (e) {
       // Catch any unexpected errors and show user-friendly message
       if (mounted) {
         String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());
         _showSnackBar(userFriendlyMessage);
       }
-    }
-    finally {
+    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
   }
-
 
   String _getUserFriendlyErrorMessage(String originalError) {
     // Convert to lowercase for easier matching
@@ -120,7 +119,8 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('timeout') ||
         lowerError.contains('socket') ||
         lowerError.contains('handshake')) {
-      return L10n.getTranslatedText(context, '🌐 Please check your internet connection and try again');
+      return L10n.getTranslatedText(
+          context, '🌐 Please check your internet connection and try again');
     }
 
     // Server errors
@@ -128,7 +128,8 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('500') ||
         lowerError.contains('502') ||
         lowerError.contains('503')) {
-      return L10n.getTranslatedText(context, '⚠️ Server is temporarily unavailable. Please try again later');
+      return L10n.getTranslatedText(context,
+          '⚠️ Server is temporarily unavailable. Please try again later');
     }
 
     // Authentication errors
@@ -137,35 +138,38 @@ class _LogInViewState extends State<LogInView> {
         lowerError.contains('wrong') ||
         lowerError.contains('unauthorized') ||
         lowerError.contains('401')) {
-      return L10n.getTranslatedText(context, '❌ Invalid email or password. Please check your credentials');
+      return L10n.getTranslatedText(context,
+          '❌ Invalid email or password. Please check your credentials');
     }
 
     // User not found
     if (lowerError.contains('not found') ||
         lowerError.contains('404') ||
         lowerError.contains('user does not exist')) {
-      return L10n.getTranslatedText(context, '👤 Account not found. Please sign up first');
+      return L10n.getTranslatedText(
+          context, '👤 Account not found. Please sign up first');
     }
 
     // Account issues
     if (lowerError.contains('blocked') ||
         lowerError.contains('suspended') ||
         lowerError.contains('disabled')) {
-      return L10n.getTranslatedText(context, '🚫 Account is temporarily disabled. Contact support');
+      return L10n.getTranslatedText(
+          context, '🚫 Account is temporarily disabled. Contact support');
     }
 
     // Rate limiting
     if (lowerError.contains('too many') ||
         lowerError.contains('rate') ||
         lowerError.contains('limit')) {
-      return L10n.getTranslatedText(context, '⏰ Too many attempts. Please wait a moment and try again');
+      return L10n.getTranslatedText(
+          context, '⏰ Too many attempts. Please wait a moment and try again');
     }
 
     // Default fallback for any other error
-    return L10n.getTranslatedText(context, '❌ Something went wrong. Please try again');
+    return L10n.getTranslatedText(
+        context, '❌ Something went wrong. Please try again');
   }
-
-
 
   /// Handles Google Sign-In
   Future<void> _signInWithGoogle() async {
@@ -286,7 +290,7 @@ class _LogInViewState extends State<LogInView> {
                                           context, 'Please enter an email');
                                     }
                                     if (!RegExp(
-                                        r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                            r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
                                         .hasMatch(value)) {
                                       return L10n.getTranslatedText(
                                           context, 'Enter a valid email');
@@ -319,7 +323,7 @@ class _LogInViewState extends State<LogInView> {
                                       onPressed: () {
                                         setState(() {
                                           _isPasswordVisible =
-                                          !_isPasswordVisible;
+                                              !_isPasswordVisible;
                                         });
                                       },
                                     ),
@@ -358,7 +362,7 @@ class _LogInViewState extends State<LogInView> {
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) =>
-                                              const ForgotPasswordPage()),
+                                                  const ForgotPasswordPage()),
                                         );
                                       },
                                       child: Text(
@@ -380,45 +384,45 @@ class _LogInViewState extends State<LogInView> {
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       onPressed:
-                                      _isLoading ? null : _submitForm,
+                                          _isLoading ? null : _submitForm,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.yellow[600],
                                         minimumSize:
-                                        Size(double.infinity, width * 0.11),
+                                            Size(double.infinity, width * 0.11),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                          BorderRadius.circular(30),
+                                              BorderRadius.circular(30),
                                         ),
                                         elevation: 0,
                                       ),
                                       child: _isLoading
                                           ? const CircularProgressIndicator(
-                                        valueColor:
-                                        AlwaysStoppedAnimation<Color>(
-                                            Color.fromARGB(
-                                                255, 193, 191, 191)),
-                                      )
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Color.fromARGB(
+                                                          255, 193, 191, 191)),
+                                            )
                                           : Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                        children: [
-                                          Image.asset(
-                                            'assets/icons/house_door.png',
-                                            height: 24,
-                                            width: 24,
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Text(
-                                            L10n.getTranslatedText(
-                                                context, 'Log in'),
-                                            style: TextStyle(
-                                              fontSize: width * 0.045,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.black,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Image.asset(
+                                                  'assets/icons/house_door.png',
+                                                  height: 24,
+                                                  width: 24,
+                                                ),
+                                                const SizedBox(width: 10),
+                                                Text(
+                                                  L10n.getTranslatedText(
+                                                      context, 'Log in'),
+                                                  style: TextStyle(
+                                                    fontSize: width * 0.045,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.black,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
-                                      ),
                                     ),
                                   ),
                                 ),
@@ -446,14 +450,14 @@ class _LogInViewState extends State<LogInView> {
                                           : _signInWithGoogle,
                                       icon: _isGoogleLoading
                                           ? const CircularProgressIndicator(
-                                          color: Colors.white)
+                                              color: Colors.white)
                                           : Padding(
-                                        padding: const EdgeInsets.only(
-                                            right: 7),
-                                        child: Image.asset(
-                                            'assets/icons/google_icon.png',
-                                            height: 22),
-                                      ),
+                                              padding: const EdgeInsets.only(
+                                                  right: 7),
+                                              child: Image.asset(
+                                                  'assets/icons/google_icon.png',
+                                                  height: 22),
+                                            ),
                                       label: Text(
                                         L10n.getTranslatedText(
                                             context, 'Continue with Google'),
@@ -468,10 +472,10 @@ class _LogInViewState extends State<LogInView> {
                                         elevation: 2,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                          BorderRadius.circular(30),
+                                              BorderRadius.circular(30),
                                         ),
                                         minimumSize:
-                                        Size(double.infinity, width * 0.11),
+                                            Size(double.infinity, width * 0.11),
                                       ),
                                     ),
                                   ),

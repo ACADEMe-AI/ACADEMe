@@ -184,7 +184,8 @@ class OnboardingFlowState extends State<OnboardingFlow> {
                                   ),
                                 ),
                                 child: Text(
-                                  L10n.getTranslatedText(context, 'Get Started'),
+                                  L10n.getTranslatedText(
+                                      context, 'Get Started'),
                                   style: TextStyle(
                                     fontSize: width * 0.039,
                                     fontWeight: FontWeight.w500,

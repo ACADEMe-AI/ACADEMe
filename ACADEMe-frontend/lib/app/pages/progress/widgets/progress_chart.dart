@@ -81,7 +81,8 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: width * 0.03, vertical: height * 0.01),
+                padding: EdgeInsets.symmetric(
+                    horizontal: width * 0.03, vertical: height * 0.01),
                 decoration: BoxDecoration(
                   color: Colors.white24,
                   borderRadius: BorderRadius.circular(8),
@@ -109,7 +110,8 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
           SizedBox(
             height: 170,
             width: double.infinity,
-            child: _buildBarChart(weeklyData, maxValue > 0 ? maxValue * 1.2 : 5),
+            child:
+                _buildBarChart(weeklyData, maxValue > 0 ? maxValue * 1.2 : 5),
           ),
         ],
       ),
@@ -130,7 +132,9 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
                 BarChartRodData(
                   fromY: 0,
                   toY: weeklyData[i],
-                  color: weeklyData[i] > 0 ? Colors.yellow : Colors.yellow.withOpacity(0.3),
+                  color: weeklyData[i] > 0
+                      ? Colors.yellow
+                      : Colors.yellow.withOpacity(0.3),
                   width: 22,
                   borderRadius: BorderRadius.zero,
                 ),
@@ -144,7 +148,9 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
               reservedSize: 40,
               interval: maxY > 10 ? 2 : 1,
               getTitlesWidget: (value, meta) {
-                if (value == 0) return Text('0', style: TextStyle(color: Colors.white, fontSize: 12));
+                if (value == 0)
+                  return Text('0',
+                      style: TextStyle(color: Colors.white, fontSize: 12));
                 return Text(
                   value.toInt().toString(),
                   style: TextStyle(color: Colors.white, fontSize: 12),
@@ -182,7 +188,15 @@ class _StudyTimeCardState extends State<StudyTimeCard> {
           touchTooltipData: BarTouchTooltipData(
             tooltipBgColor: Colors.black87,
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              final day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][group.x];
+              final day = [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ][group.x];
               return BarTooltipItem(
                 '$day\n${_formatTime(rod.toY)}',
                 TextStyle(color: Colors.white, fontSize: 12),

@@ -72,7 +72,8 @@ class MaterialsQuizzesShimmer extends StatelessWidget {
         baseColor: Colors.grey[300]!,
         highlightColor: Colors.grey[100]!,
         child: Column(
-          children: List.generate(4, (index) => const MaterialQuizItemShimmer()),
+          children:
+              List.generate(4, (index) => const MaterialQuizItemShimmer()),
         ),
       ),
     );

@@ -36,7 +36,9 @@ class _SummarySectionState extends State<SummarySection> {
   }
 
   void _setupConnectivityListener() {
-    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    Connectivity()
+        .onConnectivityChanged
+        .listen((List<ConnectivityResult> results) {
       setState(() {
         _isOnline = !results.contains(ConnectivityResult.none);
       });
@@ -93,7 +95,8 @@ class _SummarySectionState extends State<SummarySection> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  L10n.getTranslatedText(context, 'Please check your internet connection and try again. Your progress data needs an active connection to load'),
+                  L10n.getTranslatedText(context,
+                      'Please check your internet connection and try again. Your progress data needs an active connection to load'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -109,7 +112,8 @@ class _SummarySectionState extends State<SummarySection> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AcademeTheme.appColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -163,7 +167,8 @@ class _SummarySectionState extends State<SummarySection> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  L10n.getTranslatedText(context, 'Couldn\'t load your overall grade'),
+                  L10n.getTranslatedText(
+                      context, 'Couldn\'t load your overall grade'),
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -173,7 +178,8 @@ class _SummarySectionState extends State<SummarySection> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  L10n.getTranslatedText(context, 'We\'re having trouble fetching your grade data right now. Please try again in a moment'),
+                  L10n.getTranslatedText(context,
+                      'We\'re having trouble fetching your grade data right now. Please try again in a moment'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -193,7 +199,8 @@ class _SummarySectionState extends State<SummarySection> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AcademeTheme.appColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -225,7 +232,7 @@ class _SummarySectionState extends State<SummarySection> {
 
         double overallGrade = snapshot.data ?? 0.0;
         String letterGrade =
-        ProgressHelpers.getLetterGrade(context, overallGrade);
+            ProgressHelpers.getLetterGrade(context, overallGrade);
         double progressValue = overallGrade / 100;
 
         return Consumer<HomeController>(
@@ -378,8 +385,8 @@ class _SummarySectionState extends State<SummarySection> {
 
   Widget _buildSummaryItem(String title, String value,
       {bool isCircular = false,
-        String letterGrade = "",
-        double progressValue = 0.0}) {
+      String letterGrade = "",
+      double progressValue = 0.0}) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: Column(
@@ -395,46 +402,46 @@ class _SummarySectionState extends State<SummarySection> {
           SizedBox(height: 16),
           isCircular
               ? Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 52,
-                  fontWeight: FontWeight.bold,
-                  color: AcademeTheme.appColor,
-                ),
-              ),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 90,
-                    height: 90,
-                    child: CircularProgressIndicator(
-                      value: progressValue,
-                      backgroundColor: Colors.grey[300],
-                      color: AcademeTheme.appColor,
-                      strokeWidth: 8,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 52,
+                        fontWeight: FontWeight.bold,
+                        color: AcademeTheme.appColor,
+                      ),
                     ),
-                  ),
-                  Text(
-                    letterGrade,
-                    style: TextStyle(
-                      fontSize: letterGrade.length == 1 ? 28 : 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple,
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 90,
+                          height: 90,
+                          child: CircularProgressIndicator(
+                            value: progressValue,
+                            backgroundColor: Colors.grey[300],
+                            color: AcademeTheme.appColor,
+                            strokeWidth: 8,
+                          ),
+                        ),
+                        Text(
+                          letterGrade,
+                          style: TextStyle(
+                            fontSize: letterGrade.length == 1 ? 28 : 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.purple,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            ],
-          )
+                  ],
+                )
               : Text(value,
-              style: TextStyle(
-                  fontSize: 54,
-                  fontWeight: FontWeight.bold,
-                  color: AcademeTheme.appColor)),
+                  style: TextStyle(
+                      fontSize: 54,
+                      fontWeight: FontWeight.bold,
+                      color: AcademeTheme.appColor)),
         ],
       ),
     );
@@ -556,8 +563,8 @@ class _SummarySectionState extends State<SummarySection> {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                border: Border.all(
-                    color: const Color.fromARGB(27, 158, 158, 158)),
+                border:
+                    Border.all(color: const Color.fromARGB(27, 158, 158, 158)),
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: [
                   BoxShadow(

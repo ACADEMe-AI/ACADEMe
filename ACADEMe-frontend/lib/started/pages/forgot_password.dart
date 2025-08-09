@@ -14,7 +14,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final AuthService _authService = AuthService();
 
   bool _isOtpSent = false;
@@ -39,16 +40,20 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _isLoading = true);
 
     try {
-      final (success, message) = await _authService.sendForgotPasswordOTP(email);
+      final (success, message) =
+          await _authService.sendForgotPasswordOTP(email);
 
       if (success) {
         setState(() => _isOtpSent = true);
-        _showSnackBar(message ?? L10n.getTranslatedText(context, 'OTP sent successfully'));
+        _showSnackBar(message ??
+            L10n.getTranslatedText(context, 'OTP sent successfully'));
       } else {
-        _showSnackBar(message ?? L10n.getTranslatedText(context, 'Failed to send OTP'));
+        _showSnackBar(
+            message ?? L10n.getTranslatedText(context, 'Failed to send OTP'));
       }
     } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'An error occurred. Please try again.'));
+      _showSnackBar(L10n.getTranslatedText(
+          context, 'An error occurred. Please try again.'));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -71,12 +76,14 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
 
     if (newPassword.isEmpty) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Please enter new password'));
+      _showSnackBar(
+          L10n.getTranslatedText(context, 'Please enter new password'));
       return;
     }
 
     if (newPassword.length < 6) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Password must be at least 6 characters'));
+      _showSnackBar(L10n.getTranslatedText(
+          context, 'Password must be at least 6 characters'));
       return;
     }
 
@@ -88,16 +95,20 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _isLoading = true);
 
     try {
-      final (success, message) = await _authService.resetPasswordWithOTP(email, otp, newPassword);
+      final (success, message) =
+          await _authService.resetPasswordWithOTP(email, otp, newPassword);
 
       if (success) {
-        _showSnackBar(message ?? L10n.getTranslatedText(context, 'Password reset successfully'));
+        _showSnackBar(message ??
+            L10n.getTranslatedText(context, 'Password reset successfully'));
         Navigator.pop(context);
       } else {
-        _showSnackBar(message ?? L10n.getTranslatedText(context, 'Failed to reset password'));
+        _showSnackBar(message ??
+            L10n.getTranslatedText(context, 'Failed to reset password'));
       }
     } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'An error occurred. Please try again.'));
+      _showSnackBar(L10n.getTranslatedText(
+          context, 'An error occurred. Please try again.'));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -105,7 +116,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _resendOtp() {
@@ -157,7 +169,8 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                L10n.getTranslatedText(context, 'Forgot Password?'),
+                                L10n.getTranslatedText(
+                                    context, 'Forgot Password?'),
                                 style: TextStyle(
                                   fontSize: width * 0.08,
                                   fontWeight: FontWeight.bold,
@@ -166,8 +179,10 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               SizedBox(height: height * 0.01),
                               Text(
                                 _isOtpSent
-                                    ? L10n.getTranslatedText(context, 'Enter the OTP sent to your email')
-                                    : L10n.getTranslatedText(context, 'Enter your email to reset password'),
+                                    ? L10n.getTranslatedText(context,
+                                        'Enter the OTP sent to your email')
+                                    : L10n.getTranslatedText(context,
+                                        'Enter your email to reset password'),
                                 style: TextStyle(
                                   fontSize: width * 0.047,
                                   color: Colors.grey,
@@ -175,7 +190,6 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 ),
                               ),
                               SizedBox(height: height * 0.03),
-
                               if (!_isOtpSent) ...[
                                 _buildEmailSection(width, height),
                                 SizedBox(height: height * 0.02),
@@ -187,7 +201,6 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 SizedBox(height: height * 0.02),
                                 _buildResetButton(width),
                               ],
-
                               SizedBox(height: height * 0.03),
                               _buildLoginLink(width),
                             ],
@@ -249,16 +262,17 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color.fromARGB(255, 193, 191, 191)),
-        )
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Color.fromARGB(255, 193, 191, 191)),
+              )
             : Text(
-          L10n.getTranslatedText(context, 'Send OTP'),
-          style: TextStyle(
-            fontSize: width * 0.045,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
+                L10n.getTranslatedText(context, 'Send OTP'),
+                style: TextStyle(
+                  fontSize: width * 0.045,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
       ),
     );
   }
@@ -330,8 +344,11 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
             hintText: L10n.getTranslatedText(context, 'Enter new password'),
             prefixIcon: const Icon(Icons.lock),
             suffixIcon: IconButton(
-              icon: Icon(_obscureNewPassword ? Icons.visibility : Icons.visibility_off),
-              onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+              icon: Icon(_obscureNewPassword
+                  ? Icons.visibility
+                  : Icons.visibility_off),
+              onPressed: () =>
+                  setState(() => _obscureNewPassword = !_obscureNewPassword),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(7),
@@ -357,8 +374,11 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
             hintText: L10n.getTranslatedText(context, 'Confirm new password'),
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-              onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+              icon: Icon(_obscureConfirmPassword
+                  ? Icons.visibility
+                  : Icons.visibility_off),
+              onPressed: () => setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(7),
@@ -385,16 +405,17 @@ class ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color.fromARGB(255, 193, 191, 191)),
-        )
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Color.fromARGB(255, 193, 191, 191)),
+              )
             : Text(
-          L10n.getTranslatedText(context, 'Reset Password'),
-          style: TextStyle(
-            fontSize: width * 0.045,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
+                L10n.getTranslatedText(context, 'Reset Password'),
+                style: TextStyle(
+                  fontSize: width * 0.045,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
       ),
     );
   }

@@ -8,7 +8,7 @@ import 'package:ACADEMe/academe_theme.dart';
 
 class CommunitySearchBar extends StatefulWidget {
   final CommunityController controller;
-  
+
   const CommunitySearchBar({
     super.key,
     required this.controller,
@@ -63,7 +63,8 @@ class _CommunitySearchBarState extends State<CommunitySearchBar> {
                   widget.controller.searchCommunities(value);
                 },
                 decoration: InputDecoration(
-                  hintText: L10n.getTranslatedText(context, 'Search Communities or topics'),
+                  hintText: L10n.getTranslatedText(
+                      context, 'Search Communities or topics'),
                   border: InputBorder.none,
                 ),
               ),
@@ -78,7 +79,7 @@ class _CommunitySearchBarState extends State<CommunitySearchBar> {
 
 class CommunityTabBar extends StatelessWidget {
   final CommunityController controller;
-  
+
   const CommunityTabBar({
     super.key,
     required this.controller,
@@ -87,7 +88,7 @@ class CommunityTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AutoSizeGroup tabTextGroup = AutoSizeGroup();
-    
+
     return Container(
       color: Colors.white,
       child: TabBar(
@@ -107,7 +108,8 @@ class CommunityTabBar extends StatelessWidget {
     );
   }
 
-  Widget _buildSynchronizedTab(BuildContext context, String labelKey, AutoSizeGroup group) {
+  Widget _buildSynchronizedTab(
+      BuildContext context, String labelKey, AutoSizeGroup group) {
     return Tab(
       child: AutoSizeText(
         L10n.getTranslatedText(context, labelKey),
@@ -123,7 +125,7 @@ class CommunityTabBar extends StatelessWidget {
 
 class CommunityList extends StatelessWidget {
   final CommunityController controller;
-  
+
   const CommunityList({
     super.key,
     required this.controller,
@@ -143,7 +145,7 @@ class CommunityList extends StatelessWidget {
 
 class CommunityCard extends StatelessWidget {
   final CommunityModel community;
-  
+
   const CommunityCard({
     super.key,
     required this.community,
@@ -163,7 +165,8 @@ class CommunityCard extends StatelessWidget {
           L10n.getTranslatedText(context, community.title),
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(L10n.getTranslatedText(context, 'Begin your journey with us!')),
+        subtitle: Text(
+            L10n.getTranslatedText(context, 'Begin your journey with us!')),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -183,7 +186,8 @@ class CommunityAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: AcademeTheme.appColor, // Using theme color instead of hardcoded
+      backgroundColor:
+          AcademeTheme.appColor, // Using theme color instead of hardcoded
       automaticallyImplyLeading: false,
       elevation: 0,
       flexibleSpace: Padding(

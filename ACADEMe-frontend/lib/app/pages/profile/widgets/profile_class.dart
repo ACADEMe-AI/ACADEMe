@@ -107,13 +107,15 @@ class _ProfileClassPageState extends State<ProfileClassPage> {
                         _isLoading
                             ? const CircularProgressIndicator()
                             : Text(
-                          _currentClass ?? L10n.getTranslatedText(context, 'No class selected'),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                        ),
+                                _currentClass ??
+                                    L10n.getTranslatedText(
+                                        context, 'No class selected'),
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
                         IconButton(
                           onPressed: _loadCurrentClass,
                           icon: const Icon(Icons.refresh),
@@ -180,7 +182,8 @@ class _ProfileClassPageState extends State<ProfileClassPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      L10n.getTranslatedText(context, 'Changing your class will reset all your progress data. Make sure you really want to switch before confirming.'),
+                      L10n.getTranslatedText(context,
+                          'Changing your class will reset all your progress data. Make sure you really want to switch before confirming.'),
                       style: const TextStyle(
                         fontSize: 14,
                         color: Colors.grey,
@@ -233,7 +236,6 @@ class AnotherProfileWidget extends StatefulWidget {
 
 class _AnotherProfileWidgetState extends State<AnotherProfileWidget>
     with AutoRefreshClassMixin {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

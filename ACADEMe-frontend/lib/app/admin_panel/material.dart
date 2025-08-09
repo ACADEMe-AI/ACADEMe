@@ -23,7 +23,8 @@ class MaterialScreen extends StatefulWidget {
   final String? textContent;
   final String? fileUrl;
 
-  const MaterialScreen({super.key, 
+  const MaterialScreen({
+    super.key,
     required this.courseId,
     required this.topicId,
     this.subtopicId,
@@ -60,13 +61,16 @@ class MaterialScreenState extends State<MaterialScreen> {
   }
 
   Future<void> _fetchMaterialDetails() async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
     // Construct the URL based on whether subtopicId is provided
     final url = widget.subtopicId == null
-        ? ApiEndpoints.getUri(ApiEndpoints.topicMaterials(widget.courseId, widget.topicId, targetLanguage))
-        : ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId!, targetLanguage));
+        ? ApiEndpoints.getUri(ApiEndpoints.topicMaterials(
+            widget.courseId, widget.topicId, targetLanguage))
+        : ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId,
+            widget.topicId, widget.subtopicId!, targetLanguage));
 
     try {
       String? token = await _storage.read(key: "access_token");
@@ -86,7 +90,7 @@ class MaterialScreenState extends State<MaterialScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
         final material = data.firstWhere(
-              (material) => material["id"] == widget.materialId,
+          (material) => material["id"] == widget.materialId,
           orElse: () => null,
         );
 
@@ -142,7 +146,8 @@ class MaterialScreenState extends State<MaterialScreen> {
 
   Widget _buildMaterialContent() {
     if (materialDetails == null) {
-      return Center(child: Text(L10n.getTranslatedText(context, 'No content available')));
+      return Center(
+          child: Text(L10n.getTranslatedText(context, 'No content available')));
     }
 
     final type = materialDetails!["type"];
@@ -156,7 +161,8 @@ class MaterialScreenState extends State<MaterialScreen> {
           child: Padding(
             padding: EdgeInsets.all(16),
             child: Text(
-              content ?? L10n.getTranslatedText(context, 'No content available'),
+              content ??
+                  L10n.getTranslatedText(context, 'No content available'),
               style: TextStyle(fontSize: 16),
             ),
           ),
@@ -230,35 +236,39 @@ class MaterialScreenState extends State<MaterialScreen> {
       appBar: AppBar(
         title: Text(
           L10n.getTranslatedText(context, 'Material Details'),
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AcademeTheme.white),
+          style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AcademeTheme.white),
         ),
         backgroundColor: AcademeTheme.appColor,
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              margin: EdgeInsets.all(8),
-              child: ListTile(
-                title: Text(
-                  "${L10n.getTranslatedText(context, 'Type')}: ${materialDetails?["type"] ?? widget.materialType}",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  "${L10n.getTranslatedText(context, 'Category')}: ${materialDetails?["category"] ?? widget.materialCategory}",
-                  style: TextStyle(fontSize: 16),
-                ),
+              padding: EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Card(
+                    margin: EdgeInsets.all(8),
+                    child: ListTile(
+                      title: Text(
+                        "${L10n.getTranslatedText(context, 'Type')}: ${materialDetails?["type"] ?? widget.materialType}",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        "${L10n.getTranslatedText(context, 'Category')}: ${materialDetails?["category"] ?? widget.materialCategory}",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                  _buildMaterialContent(),
+                  _buildOptionalText(),
+                ],
               ),
             ),
-            _buildMaterialContent(),
-            _buildOptionalText(),
-          ],
-        ),
-      ),
     );
   }
 }

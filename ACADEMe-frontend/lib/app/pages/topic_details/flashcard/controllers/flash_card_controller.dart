@@ -102,7 +102,8 @@ class FlashCardController with ChangeNotifier {
   bool get showCelebration => _showCelebration;
   VideoPlayerController? get videoController => _videoController;
   ChewieController? get chewieController => _chewieController;
-  AudioPlayer get audioPlayer => _audioPlayer; // Added public getter for audio player
+  AudioPlayer get audioPlayer =>
+      _audioPlayer; // Added public getter for audio player
   String get currentTopicTitle => topicTitle;
   SwiperController get swiperController => _swiperController;
   AnimationController? get celebrationController => _celebrationController;
@@ -115,7 +116,7 @@ class FlashCardController with ChangeNotifier {
 
   void initializeAnimations(TickerProvider vsync) {
     if (_isDisposed) return;
-    
+
     _celebrationController?.dispose();
 
     _celebrationController = AnimationController(
@@ -151,7 +152,8 @@ class FlashCardController with ChangeNotifier {
       CurvedAnimation(
         parent: _celebrationController!,
         curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
-    ),);
+      ),
+    );
 
     _rotateAnimation = Tween<double>(begin: 0.0, end: 0.1).animate(
       CurvedAnimation(
@@ -172,7 +174,7 @@ class FlashCardController with ChangeNotifier {
 
   void _preloadAdjacentMaterials() {
     if (_isDisposed) return;
-    
+
     _preloadTimer?.cancel();
     _preloadQueue.clear();
 
@@ -232,7 +234,7 @@ class FlashCardController with ChangeNotifier {
     try {
       final file = await _cacheManager.getSingleFile(url);
       if (_isDisposed) return;
-      
+
       _cachedVideos[index] = file;
 
       final controller = VideoPlayerController.file(file);
@@ -296,7 +298,7 @@ class FlashCardController with ChangeNotifier {
 
   Future<void> fetchTopicDetails() async {
     if (_isDisposed) return;
-    
+
     String? token = await _storage.read(key: 'access_token');
     if (token == null) {
       debugPrint("❌ Missing access token");
@@ -342,14 +344,14 @@ class FlashCardController with ChangeNotifier {
 
   void updateTopicDetails(Map<String, dynamic> data) {
     if (_isDisposed) return;
-    
+
     topicTitle = data["title"]?.toString() ?? "Untitled Topic";
     notifyListeners();
   }
 
   Future<void> _setupVideoController() async {
     if (_isDisposed) return;
-    
+
     if (_videoController != null) {
       _videoController!.removeListener(_videoListener);
     }
@@ -358,7 +360,8 @@ class FlashCardController with ChangeNotifier {
     _chewieController?.pause();
     _chewieController?.dispose();
 
-    if (_currentPage < materials.length && materials[_currentPage]["type"] == "video") {
+    if (_currentPage < materials.length &&
+        materials[_currentPage]["type"] == "video") {
       if (_preloadedControllers.containsKey(_currentPage)) {
         _videoController = _preloadedControllers[_currentPage];
         _chewieController = _preloadedChewieControllers[_currentPage];
@@ -412,7 +415,7 @@ class FlashCardController with ChangeNotifier {
 
   void _videoListener() {
     if (_isDisposed || _videoController == null) return;
-    
+
     if (_videoController!.value.isInitialized &&
         !_videoController!.value.isPlaying &&
         _videoController!.value.position >= _videoController!.value.duration) {
@@ -434,7 +437,7 @@ class FlashCardController with ChangeNotifier {
 
   Future<void> _sendProgressToBackend() async {
     if (_isDisposed) return;
-    
+
     final material = getCurrentMaterial();
     final materialId = material["id"] ?? "material_$_currentPage";
 
@@ -469,7 +472,7 @@ class FlashCardController with ChangeNotifier {
 
   Future<void> nextMaterialOrQuiz() async {
     if (_isDisposed) return;
-    
+
     final totalItems = materials.length + quizzes.length;
     final hasNextPage = _currentPage < totalItems - 1;
 
@@ -518,7 +521,7 @@ class FlashCardController with ChangeNotifier {
 
   void updateCurrentPage(int index) {
     if (_isDisposed) return;
-    
+
     _handleSwipe();
     if (_currentPage != index) {
       _currentPage = index;
@@ -536,39 +539,39 @@ class FlashCardController with ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _showSwipeHint = false;
-    
+
     // Pause and dispose video controllers
     _videoController?.pause();
     _videoController?.removeListener(_videoListener);
     _videoController?.dispose();
     _videoController = null;
-    
+
     _chewieController?.pause();
     _chewieController?.dispose();
     _chewieController = null;
-    
+
     // Stop audio player
     _audioPlayer.stop();
     _audioPlayer.dispose();
-    
+
     // Cancel timers
     _preloadTimer?.cancel();
     _preloadTimer = null;
-    
+
     // Dispose animations
     _celebrationController?.dispose();
     _celebrationController = null;
-    
+
     // Dispose swiper controller
     _swiperController.dispose();
-    
+
     // Dispose all preloaded controllers
     for (final controller in _preloadedControllers.values) {
       controller.pause();
       controller.dispose();
     }
     _preloadedControllers.clear();
-    
+
     for (final controller in _preloadedChewieControllers.values) {
       controller.pause();
       controller.dispose();

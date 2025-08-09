@@ -17,7 +17,9 @@ class HomeCourseDataCache {
   static const Duration _cacheValidDuration = Duration(minutes: 30);
 
   bool isCacheValid(String language) {
-    if (_lastFetchTime == null || _cachedCourses == null || _cachedLanguage != language) {
+    if (_lastFetchTime == null ||
+        _cachedCourses == null ||
+        _cachedLanguage != language) {
       return false;
     }
     return DateTime.now().difference(_lastFetchTime!) < _cacheValidDuration;
@@ -63,8 +65,9 @@ class HomeController extends ChangeNotifier {
   Map<String, String?> get userDetails => _userDetails;
 
   // Ongoing courses getter
-  List<Map<String, dynamic>> get ongoingCourses =>
-      _courses.where((course) => course["progress"] > 0 && course["progress"] < 1).toList();
+  List<Map<String, dynamic>> get ongoingCourses => _courses
+      .where((course) => course["progress"] > 0 && course["progress"] < 1)
+      .toList();
 
   Future<void> initializeData(String language) async {
     if (_currentLanguage == language && _courses.isNotEmpty && !_isLoading) {
@@ -77,12 +80,14 @@ class HomeController extends ChangeNotifier {
     ]);
   }
 
-  Future<void> fetchCourses(String language, {bool forceRefresh = false}) async {
+  Future<void> fetchCourses(String language,
+      {bool forceRefresh = false}) async {
     if (_isLoading) return;
 
     // Check cache first if not forcing refresh
     if (!forceRefresh) {
-      List<Map<String, dynamic>>? cachedCourses = _cache.getCachedCourses(language);
+      List<Map<String, dynamic>>? cachedCourses =
+          _cache.getCachedCourses(language);
       if (cachedCourses != null && _currentLanguage == language) {
         _courses = cachedCourses;
         return;
@@ -119,7 +124,8 @@ class HomeController extends ChangeNotifier {
           String courseId = course["id"].toString();
           int totalTopics = await _getTotalTopics(courseId);
           int completedCount = await _getCompletedTopicsCount(courseId);
-          double progress = totalTopics > 0 ? completedCount / totalTopics : 0.0;
+          double progress =
+              totalTopics > 0 ? completedCount / totalTopics : 0.0;
 
           coursesWithProgress.add({
             "id": courseId,
@@ -157,8 +163,11 @@ class HomeController extends ChangeNotifier {
   Future<int> _getCompletedTopicsCount(String courseId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      List<String> completedTopics = prefs.getStringList('completed_topics') ?? [];
-      return completedTopics.where((key) => key.startsWith('$courseId|')).length;
+      List<String> completedTopics =
+          prefs.getStringList('completed_topics') ?? [];
+      return completedTopics
+          .where((key) => key.startsWith('$courseId|'))
+          .length;
     } catch (e) {
       debugPrint("Error getting completed topics count: $e");
       return 0;
@@ -182,10 +191,12 @@ class HomeController extends ChangeNotifier {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> data =
+            jsonDecode(utf8.decode(response.bodyBytes));
         await _secureStorage.write(key: 'name', value: data['name']);
         await _secureStorage.write(key: 'email', value: data['email']);
-        await _secureStorage.write(key: 'student_class', value: data['student_class']);
+        await _secureStorage.write(
+            key: 'student_class', value: data['student_class']);
         await _secureStorage.write(key: 'photo_url', value: data['photo_url']);
 
         _userDetails = {
@@ -251,8 +262,10 @@ class HomeController extends ChangeNotifier {
   }
 
   // Method to update progress without full refresh
-  void updateCourseProgress(String courseId, double newProgress, int completedModules) {
-    final courseIndex = _courses.indexWhere((course) => course['id'] == courseId);
+  void updateCourseProgress(
+      String courseId, double newProgress, int completedModules) {
+    final courseIndex =
+        _courses.indexWhere((course) => course['id'] == courseId);
     if (courseIndex != -1) {
       _courses[courseIndex]['progress'] = newProgress;
       _courses[courseIndex]['completedModules'] = completedModules;

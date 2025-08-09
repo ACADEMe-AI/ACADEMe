@@ -18,9 +18,7 @@ class LanguageSelectionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(language),
-      trailing: isSelected
-          ? const Icon(Icons.check, color: Colors.blue)
-          : null,
+      trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
       onTap: onTap,
     );
   }

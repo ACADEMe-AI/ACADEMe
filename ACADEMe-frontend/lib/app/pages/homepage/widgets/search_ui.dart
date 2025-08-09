@@ -33,8 +33,6 @@ class _SearchUIState extends State<SearchUI> {
     'hindi'
   ];
 
-
-
   List<Map<String, dynamic>> get _filteredCourses {
     if (_searchQuery.isEmpty) {
       return [];
@@ -59,15 +57,17 @@ class _SearchUIState extends State<SearchUI> {
     }).toList();
   }
 
-
   // Function for module progress text using Map data
-  Future<String> getModuleProgressText(String courseId, BuildContext context) async {
+  Future<String> getModuleProgressText(
+      String courseId, BuildContext context) async {
     final course = widget.allCourses.firstWhere(
-          (c) => c['id'].toString() == courseId,
+      (c) => c['id'].toString() == courseId,
       orElse: () => <String, dynamic>{},
     );
 
-    if (course.isNotEmpty && course['completedModules'] != null && course['totalModules'] != null) {
+    if (course.isNotEmpty &&
+        course['completedModules'] != null &&
+        course['totalModules'] != null) {
       return "${course['completedModules']}/${course['totalModules']} ${L10n.getTranslatedText(context, 'Modules')}";
     } else {
       return "0/0 ${L10n.getTranslatedText(context, 'Modules')}";
@@ -123,14 +123,14 @@ class _SearchUIState extends State<SearchUI> {
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
-                      },
-                    )
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                          )
                         : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(26.0),
@@ -180,7 +180,8 @@ class _SearchUIState extends State<SearchUI> {
                               ActionChip(
                                 label: const Text('Environmental Science'),
                                 onPressed: () {
-                                  _searchController.text = 'Environmental Science';
+                                  _searchController.text =
+                                      'Environmental Science';
                                   setState(() {
                                     _searchQuery = 'Environmental Science';
                                   });
@@ -223,7 +224,8 @@ class _SearchUIState extends State<SearchUI> {
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
-                                    L10n.getTranslatedText(context, 'No results found'),
+                                    L10n.getTranslatedText(
+                                        context, 'No results found'),
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: Colors.grey[600],
@@ -245,12 +247,13 @@ class _SearchUIState extends State<SearchUI> {
                           ] else ...[
                             // Use CourseCardMap for displaying results
                             Column(
-                              children: _filteredCourses.map((course) =>
-                                  CourseCardMap(
-                                    courseData: course,
-                                    getModuleProgressText: getModuleProgressText,
-                                  )
-                              ).toList(),
+                              children: _filteredCourses
+                                  .map((course) => CourseCardMap(
+                                        courseData: course,
+                                        getModuleProgressText:
+                                            getModuleProgressText,
+                                      ))
+                                  .toList(),
                             ),
                           ],
                         ],
@@ -302,7 +305,7 @@ class _SearchUIState extends State<SearchUI> {
 class CourseCardMap extends StatelessWidget {
   final Map<String, dynamic> courseData;
   final Future<String> Function(String courseId, BuildContext context)
-  getModuleProgressText;
+      getModuleProgressText;
 
   const CourseCardMap({
     super.key,
@@ -322,7 +325,7 @@ class CourseCardMap extends StatelessWidget {
 
         try {
           final controller =
-          Provider.of<CourseController>(context, listen: false);
+              Provider.of<CourseController>(context, listen: false);
           await controller.selectCourse(courseId);
 
           if (!context.mounted) return;

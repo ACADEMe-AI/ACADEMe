@@ -293,7 +293,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
 
         return Column(
           crossAxisAlignment:
-          isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             if (message.fileInfo != null && message.fileType != null)
               _buildFilePreview(context, message),
@@ -469,7 +469,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
                       hintText:
-                      "${L10n.getTranslatedText(context, 'Enter your reason for reporting')}...",
+                          "${L10n.getTranslatedText(context, 'Enter your reason for reporting')}...",
                     ),
                     onChanged: (text) {
                       setState(() {
@@ -487,9 +487,9 @@ class _AskMeScreenState extends State<AskMeScreen> {
                 TextButton(
                   onPressed: isButtonEnabled
                       ? () {
-                    _sendEmail(message.text ?? '', reportController.text);
-                    Navigator.pop(context);
-                  }
+                          _sendEmail(message.text ?? '', reportController.text);
+                          Navigator.pop(context);
+                        }
                       : null,
                   child: Text(L10n.getTranslatedText(context, 'Send')),
                 ),
@@ -596,7 +596,7 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     context: context,
                     shape: const RoundedRectangleBorder(
                       borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(20)),
+                          BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     builder: (BuildContext bottomSheetContext) {
                       return AttachmentOptionsSheet(
@@ -640,25 +640,25 @@ class _AskMeScreenState extends State<AskMeScreen> {
                       hintText: controller.isConverting
                           ? L10n.getTranslatedText(context, 'Converting ... ')
                           : (controller.isRecording
-                          ? '${L10n.getTranslatedText(context, 'Recording')}... ${controller.seconds}s'
-                          : L10n.getTranslatedText(
-                          context, 'Type a message ...')),
+                              ? '${L10n.getTranslatedText(context, 'Recording')}... ${controller.seconds}s'
+                              : L10n.getTranslatedText(
+                                  context, 'Type a message ...')),
                       contentPadding: const EdgeInsets.only(
                           left: 20, right: 60, top: 14, bottom: 14),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide:
-                        const BorderSide(color: Colors.grey, width: 1.5),
+                            const BorderSide(color: Colors.grey, width: 1.5),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide:
-                        const BorderSide(color: Colors.grey, width: 1.5),
+                            const BorderSide(color: Colors.grey, width: 1.5),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(30),
                         borderSide:
-                        BorderSide(color: Colors.grey[300]!, width: 1.5),
+                            BorderSide(color: Colors.grey[300]!, width: 1.5),
                       ),
                     ),
                   ),
@@ -693,11 +693,11 @@ class _AskMeScreenState extends State<AskMeScreen> {
                     onPressed: isEmpty
                         ? null
                         : () {
-                      String message =
-                      controller.textController.text.trim();
-                      controller.sendMessage(message);
-                      controller.textController.clear();
-                    },
+                            String message =
+                                controller.textController.text.trim();
+                            controller.sendMessage(message);
+                            controller.textController.clear();
+                          },
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),

@@ -67,7 +67,7 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
               filled: true,
               fillColor: Colors.grey[200],
               contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -77,9 +77,9 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
             value: classes.contains(selectedClass) ? selectedClass : null,
             items: classes
                 .map((className) => DropdownMenuItem(
-              value: className,
-              child: Text(className),
-            ))
+                      value: className,
+                      child: Text(className),
+                    ))
                 .toList(),
             onChanged: (value) {
               setState(() {
@@ -96,8 +96,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.yellow,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 32, vertical: 14),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -108,10 +108,10 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : Text(
-                  L10n.getTranslatedText(context, 'Confirm'),
-                  style: const TextStyle(
-                      fontSize: 16, color: Colors.black),
-                ),
+                        L10n.getTranslatedText(context, 'Confirm'),
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.black),
+                      ),
               ),
             ),
           ),
@@ -122,7 +122,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
 
   Future<void> _handleClassSelection() async {
     if (selectedClass == null) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Please select a valid class'));
+      _showSnackBar(
+          L10n.getTranslatedText(context, 'Please select a valid class'));
       return;
     }
 
@@ -150,7 +151,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnackBar(L10n.getTranslatedText(context, 'An error occurred. Please try again.'));
+        _showSnackBar(L10n.getTranslatedText(
+            context, 'An error occurred. Please try again.'));
       }
     } finally {
       if (mounted) {
@@ -158,8 +160,6 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
       }
     }
   }
-
-
 
   Future<bool> _updateClassInBackend(String selectedClass) async {
     final String? token = await _secureStorage.read(key: 'access_token');
@@ -186,7 +186,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         // Then re-login to get fresh data
         final reloginSuccess = await _reloginUser();
         if (reloginSuccess) {
-          _showSnackBar('${L10n.getTranslatedText(context, 'Selected')} $selectedClass');
+          _showSnackBar(
+              '${L10n.getTranslatedText(context, 'Selected')} $selectedClass');
           return true;
         }
         return false;
@@ -196,10 +197,12 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         return await _reloginAndRetry(selectedClass);
       }
 
-      _showSnackBar('${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
+      _showSnackBar(
+          '${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
       return false;
     } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Network error. Please try again.'));
+      _showSnackBar(
+          L10n.getTranslatedText(context, 'Network error. Please try again.'));
       return false;
     }
   }
@@ -217,7 +220,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
     final String? password = await _secureStorage.read(key: 'password');
 
     if (email == null || password == null) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Session expired. Please login again.'));
+      _showSnackBar(L10n.getTranslatedText(
+          context, 'Session expired. Please login again.'));
       return false;
     }
 
@@ -241,10 +245,12 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         return true;
       }
 
-      _showSnackBar(L10n.getTranslatedText(context, 'Login failed. Please login manually.'));
+      _showSnackBar(L10n.getTranslatedText(
+          context, 'Login failed. Please login manually.'));
       return false;
     } catch (e) {
-      _showSnackBar(L10n.getTranslatedText(context, 'Network error during login'));
+      _showSnackBar(
+          L10n.getTranslatedText(context, 'Network error during login'));
       return false;
     }
   }
@@ -262,10 +268,10 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
 
 // Updated function to show class selection sheet
 Future<void> showClassSelectionSheet(
-    BuildContext context, {
-      VoidCallback? onClassSelected,
-      Function(String)? onClassUpdated,
-    }) async {
+  BuildContext context, {
+  VoidCallback? onClassSelected,
+  Function(String)? onClassUpdated,
+}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -275,9 +281,10 @@ Future<void> showClassSelectionSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (context) => ClassSelectionBottomSheet(
-      onClassSelected: onClassSelected ?? () {
-        debugPrint('Class selected successfully');
-      },
+      onClassSelected: onClassSelected ??
+          () {
+            debugPrint('Class selected successfully');
+          },
       onClassUpdated: onClassUpdated,
     ),
   );

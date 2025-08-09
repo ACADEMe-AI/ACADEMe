@@ -17,7 +17,8 @@ class LanguageProvider with ChangeNotifier {
   }
 
   void setLocale(Locale newLocale) async {
-    if (!L10n.supportedLocales.any((locale) => locale.languageCode == newLocale.languageCode)) {
+    if (!L10n.supportedLocales
+        .any((locale) => locale.languageCode == newLocale.languageCode)) {
       return; // Ensure valid locale
     }
 
@@ -36,7 +37,8 @@ class LanguageProvider with ChangeNotifier {
     String? languageCode = prefs.getString('language_code');
 
     if (languageCode != null &&
-        L10n.supportedLocales.any((locale) => locale.languageCode == languageCode)) {
+        L10n.supportedLocales
+            .any((locale) => locale.languageCode == languageCode)) {
       _locale = Locale(languageCode);
     } else {
       _locale = const Locale('en'); // Fallback to English if not supported

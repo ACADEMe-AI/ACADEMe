@@ -33,7 +33,8 @@ class AppUser {
       email: json["email"] ?? "",
       name: json["name"] ?? "",
       studentClass: json["student_class"] ?? "SELECT",
-      photoUrl: json["photo_url"] ?? "https://www.w3schools.com/w3images/avatar2.png",
+      photoUrl:
+          json["photo_url"] ?? "https://www.w3schools.com/w3images/avatar2.png",
     );
   }
 }
@@ -54,7 +55,10 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return (true, responseData["message"]?.toString() ?? "OTP sent successfully");
+        return (
+          true,
+          responseData["message"]?.toString() ?? "OTP sent successfully"
+        );
       } else {
         final errorData = jsonDecode(response.body);
         return (false, errorData["detail"]?.toString() ?? "Failed to send OTP");
@@ -75,10 +79,16 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return (true, responseData["message"]?.toString() ?? "Reset OTP sent successfully");
+        return (
+          true,
+          responseData["message"]?.toString() ?? "Reset OTP sent successfully"
+        );
       } else {
         final errorData = jsonDecode(response.body);
-        return (false, errorData["detail"]?.toString() ?? "Failed to send reset OTP");
+        return (
+          false,
+          errorData["detail"]?.toString() ?? "Failed to send reset OTP"
+        );
       }
     } catch (e) {
       return (false, "An unexpected error occurred: $e");
@@ -86,7 +96,8 @@ class AuthService {
   }
 
   /// ✅ Reset password with OTP verification
-  Future<(bool, String?)> resetPasswordWithOTP(String email, String otp, String newPassword) async {
+  Future<(bool, String?)> resetPasswordWithOTP(
+      String email, String otp, String newPassword) async {
     try {
       final response = await http.post(
         ApiEndpoints.getUri(ApiEndpoints.resetPassword),
@@ -100,10 +111,16 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return (true, responseData["message"]?.toString() ?? "Password reset successfully");
+        return (
+          true,
+          responseData["message"]?.toString() ?? "Password reset successfully"
+        );
       } else {
         final errorData = jsonDecode(response.body);
-        return (false, errorData["detail"]?.toString() ?? "Failed to reset password");
+        return (
+          false,
+          errorData["detail"]?.toString() ?? "Failed to reset password"
+        );
       }
     } catch (e) {
       return (false, "An unexpected error occurred: $e");
@@ -141,7 +158,8 @@ class AuthService {
         final String userName = responseData["name"] ?? "";
         final String userEmail = responseData["email"] ?? "";
         final String userClass = responseData["student_class"] ?? "SELECT";
-        final String userPhotoUrl = responseData["photo_url"] ?? "https://www.w3schools.com/w3images/avatar2.png";
+        final String userPhotoUrl = responseData["photo_url"] ??
+            "https://www.w3schools.com/w3images/avatar2.png";
 
         await _secureStorage.write(key: "user_id", value: userId);
         await _secureStorage.write(key: "user_name", value: userName);
@@ -162,11 +180,12 @@ class AuthService {
   }
 
   /// ✅ Sign up user via backend WITHOUT OTP (for Google Sign-In)
-  Future<(AppUser?, String?)> signUpWithoutOTP(String email, String password, String name,
-      String studentClass, String photoUrl) async {
+  Future<(AppUser?, String?)> signUpWithoutOTP(String email, String password,
+      String name, String studentClass, String photoUrl) async {
     try {
       // Create user in Firebase Auth first for Google Sign-In
-      final firebase_auth.UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final firebase_auth.UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -266,14 +285,14 @@ class AuthService {
 
         // ✅ Return the AppUser object
         return (
-        AppUser(
-          id: userId.isNotEmpty ? userId : "N/A",
-          name: name,
-          email: userEmail,
-          studentClass: studentClass,
-          photoUrl: photoUrl,
-        ),
-        null
+          AppUser(
+            id: userId.isNotEmpty ? userId : "N/A",
+            name: name,
+            email: userEmail,
+            studentClass: studentClass,
+            photoUrl: photoUrl,
+          ),
+          null
         );
       } else {
         final errorData = jsonDecode(response.body);
@@ -290,20 +309,24 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return (null, '❌ Google Sign-In canceled');
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final firebase_auth.AuthCredential credential = firebase_auth.GoogleAuthProvider.credential(
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final firebase_auth.AuthCredential credential =
+          firebase_auth.GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final firebase_auth.UserCredential userCredential = await _auth.signInWithCredential(credential);
+      final firebase_auth.UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
       final firebase_auth.User? firebaseUser = userCredential.user;
 
       if (firebaseUser == null) return (null, '❌ Google authentication failed');
 
       final String email = firebaseUser.email ?? "";
       final String name = firebaseUser.displayName ?? "Google User";
-      final String photoUrl = firebaseUser.photoURL ?? "https://www.w3schools.com/w3images/avatar2.png";
+      final String photoUrl = firebaseUser.photoURL ??
+          "https://www.w3schools.com/w3images/avatar2.png";
 
       if (email.isEmpty) {
         return (null, '❌ Google authentication failed: Email not found');
@@ -317,12 +340,14 @@ class AuthService {
 
       if (!userExists) {
         // ✅ Register user using backend WITHOUT OTP
-        final (_, String? signupError) = await signUpWithoutOTP(email, defaultPassword, name, defaultClass, photoUrl);
+        final (_, String? signupError) = await signUpWithoutOTP(
+            email, defaultPassword, name, defaultClass, photoUrl);
         if (signupError != null) return (null, "❌ Signup failed: $signupError");
       }
 
       // ✅ Log in the user using backend
-      final (AppUser? user, String? loginError) = await signIn(email, defaultPassword);
+      final (AppUser? user, String? loginError) =
+          await signIn(email, defaultPassword);
       if (loginError != null) return (null, "❌ Login failed: $loginError");
 
       return (user, null);
@@ -450,7 +475,6 @@ class AuthService {
       }
 
       debugPrint("🎉 Complete logout process finished successfully");
-
     } catch (e) {
       debugPrint("❌ Critical logout error: $e");
       throw Exception("Logout failed: $e");
@@ -507,7 +531,8 @@ class AuthService {
       final String? userId = await _secureStorage.read(key: "user_id");
       final String? email = await _secureStorage.read(key: "user_email");
       final String? name = await _secureStorage.read(key: "user_name");
-      final String? studentClass = await _secureStorage.read(key: "student_class");
+      final String? studentClass =
+          await _secureStorage.read(key: "student_class");
       final String? photoUrl = await _secureStorage.read(key: "photo_url");
 
       if (userId != null && email != null) {
@@ -516,7 +541,8 @@ class AuthService {
           email: email,
           name: name ?? "Unknown",
           studentClass: studentClass ?? "SELECT",
-          photoUrl: photoUrl ?? "https://www.w3schools.com/w3images/avatar2.png",
+          photoUrl:
+              photoUrl ?? "https://www.w3schools.com/w3images/avatar2.png",
         );
       }
       return null;

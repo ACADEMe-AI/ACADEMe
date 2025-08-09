@@ -89,7 +89,8 @@ class AskMeCard extends StatelessWidget {
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                           vertical: 10, horizontal: 12),
-                      hintText: L10n.getTranslatedText(context, 'ASKMe Anything...'),
+                      hintText:
+                          L10n.getTranslatedText(context, 'ASKMe Anything...'),
                       hintStyle: TextStyle(color: Colors.grey[600]),
                       filled: true,
                       fillColor: Colors.white,
@@ -129,7 +130,8 @@ class AskMeCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => AskMeScreen(initialMessage: message),
+                          builder: (context) =>
+                              AskMeScreen(initialMessage: message),
                         ),
                       );
                       messageController.clear();

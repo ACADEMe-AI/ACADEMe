@@ -12,10 +12,12 @@ class LanguageSelectionBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<LanguageSelectionBottomSheet> createState() => _LanguageSelectionBottomSheetState();
+  State<LanguageSelectionBottomSheet> createState() =>
+      _LanguageSelectionBottomSheetState();
 }
 
-class _LanguageSelectionBottomSheetState extends State<LanguageSelectionBottomSheet> {
+class _LanguageSelectionBottomSheetState
+    extends State<LanguageSelectionBottomSheet> {
   Locale? _selectedLocale;
 
   @override
@@ -38,7 +40,8 @@ class _LanguageSelectionBottomSheetState extends State<LanguageSelectionBottomSh
         children: [
           Text(
             L10n.getTranslatedText(context, 'Select Language'),
-            style: TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold),
+            style:
+                TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
           _buildLanguageDropdown(width),
@@ -54,7 +57,8 @@ class _LanguageSelectionBottomSheetState extends State<LanguageSelectionBottomSh
       decoration: InputDecoration(
         filled: true,
         fillColor: Colors.grey[200],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -78,7 +82,8 @@ class _LanguageSelectionBottomSheetState extends State<LanguageSelectionBottomSh
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.yellow,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: () {
           if (_selectedLocale != null) {

@@ -67,7 +67,9 @@ class TestReportScreenState extends State<TestReportScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         // SnackBar(content: Text('Error: ${e.toString()}')),
-        SnackBar(content: Text(L10n.getTranslatedText(context, 'Error occured loading your test report, please ensure you are connected to the internet'))),
+        SnackBar(
+            content: Text(L10n.getTranslatedText(context,
+                'Error occured loading your test report, please ensure you are connected to the internet'))),
       );
     }
   }
@@ -80,7 +82,7 @@ class TestReportScreenState extends State<TestReportScreen> {
 
   Future<void> _handleDownloadAction() async {
     if (_isDownloadingPdf) return;
-    
+
     setState(() => _isDownloadingPdf = true);
     try {
       await _pdfService.generateAndDownloadReport();

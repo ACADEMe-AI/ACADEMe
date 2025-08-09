@@ -28,8 +28,8 @@ class HomepageDrawer extends StatelessWidget {
           future: controller.getUserDetails(),
           builder: (context, snapshot) {
             final String name = snapshot.data?['name'] ?? 'User';
-            final String photoUrl =
-                snapshot.data?['photo_url'] ?? 'assets/design_course/userImage.png';
+            final String photoUrl = snapshot.data?['photo_url'] ??
+                'assets/design_course/userImage.png';
 
             return Container(
               width: MediaQuery.of(context).size.width * 0.75,
@@ -63,40 +63,42 @@ class HomepageDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                   // Drawer Items with Navigation
+                  _buildDrawerItem(Icons.bookmark,
+                      L10n.getTranslatedText(context, 'Bookmarks'), () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ComingSoonPopup(
+                        featureName:
+                            L10n.getTranslatedText(context, 'Bookmarks'),
+                        icon: Icons.bookmark_rounded,
+                        description: L10n.getTranslatedText(context,
+                            'Save your favorite lessons and courses to access them quickly! 🔖'),
+                      ),
+                    );
+                  }),
                   _buildDrawerItem(
-                      Icons.bookmark, L10n.getTranslatedText(context, 'Bookmarks'),
-                          () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ComingSoonPopup(
-                            featureName: L10n.getTranslatedText(context, 'Bookmarks'),
-                            icon: Icons.bookmark_rounded,
-                            description: L10n.getTranslatedText(context, 'Save your favorite lessons and courses to access them quickly! 🔖'),
-                          ),
-                        );
-                      }),
-                  _buildDrawerItem(
-                      Icons.person, L10n.getTranslatedText(context, 'Profile'), () {
+                      Icons.person, L10n.getTranslatedText(context, 'Profile'),
+                      () {
                     onProfileTap();
                     onClose();
                   }),
                   _buildDrawerItem(
                     Icons.menu_book,
                     L10n.getTranslatedText(context, 'My Courses'),
-                        () {
+                    () {
                       onCourseTap(); // Navigates to the function you want
                       onClose();
                     },
                   ),
                   _buildDrawerItem(Icons.show_chart,
                       L10n.getTranslatedText(context, 'My Progress'), () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProgressScreen(),
-                          ),
-                        );
-                      }),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProgressScreen(),
+                      ),
+                    );
+                  }),
                   _buildDrawerItem(Icons.headset_mic, "ASKMe", () {
                     Navigator.push(
                       context,
@@ -105,29 +107,32 @@ class HomepageDrawer extends StatelessWidget {
                       ),
                     );
                   }),
-                  _buildDrawerItem(
-                      Icons.settings, L10n.getTranslatedText(context, 'Settings'),
-                          () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ComingSoonPopup(
-                            featureName: L10n.getTranslatedText(context, 'Settings'),
-                            icon: Icons.settings_rounded,
-                            description: L10n.getTranslatedText(context, 'Customize your app experience with themes, notifications, and more! ⚙️'),
-                          ),
-                        );
-                      }),
+                  _buildDrawerItem(Icons.settings,
+                      L10n.getTranslatedText(context, 'Settings'), () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ComingSoonPopup(
+                        featureName:
+                            L10n.getTranslatedText(context, 'Settings'),
+                        icon: Icons.settings_rounded,
+                        description: L10n.getTranslatedText(context,
+                            'Customize your app experience with themes, notifications, and more! ⚙️'),
+                      ),
+                    );
+                  }),
                   _buildDrawerItem(Icons.help_outline,
                       L10n.getTranslatedText(context, 'Get Help'), () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ComingSoonPopup(
-                            featureName: L10n.getTranslatedText(context, 'Get Help'),
-                            icon: Icons.help_outline_rounded,
-                            description: L10n.getTranslatedText(context, 'Get support, tutorials, and answers to your questions! 🤝'),
-                          ),
-                        );
-                      }),
+                    showDialog(
+                      context: context,
+                      builder: (context) => ComingSoonPopup(
+                        featureName:
+                            L10n.getTranslatedText(context, 'Get Help'),
+                        icon: Icons.help_outline_rounded,
+                        description: L10n.getTranslatedText(context,
+                            'Get support, tutorials, and answers to your questions! 🤝'),
+                      ),
+                    );
+                  }),
                   const Spacer(),
                   // User Profile Section
                   Padding(
@@ -142,8 +147,8 @@ class HomepageDrawer extends StatelessWidget {
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border:
-                              Border.all(color: Colors.blueAccent, width: 3),
+                              border: Border.all(
+                                  color: Colors.blueAccent, width: 3),
                             ),
                             child: CircleAvatar(
                               radius: 25,
@@ -189,7 +194,9 @@ class HomepageDrawer extends StatelessWidget {
       // Error handling without print statements
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${L10n.getTranslatedText(context, 'Logout failed')}: ${e.toString()}')),
+          SnackBar(
+              content: Text(
+                  '${L10n.getTranslatedText(context, 'Logout failed')}: ${e.toString()}')),
         );
       }
     }

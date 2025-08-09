@@ -27,8 +27,8 @@ class _LanguageSelectionSheetState extends State<LanguageSelectionSheet> {
       builder: (context, setModalState) {
         List<Map<String, String>> filteredLanguages = widget.languages
             .where((language) => language['name']!
-            .toLowerCase()
-            .startsWith(searchQuery.toLowerCase()))
+                .toLowerCase()
+                .startsWith(searchQuery.toLowerCase()))
             .toList();
 
         return Padding(
@@ -38,13 +38,14 @@ class _LanguageSelectionSheetState extends State<LanguageSelectionSheet> {
             children: [
               Text(
                 L10n.getTranslatedText(context, 'Select Output Language'),
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Divider(),
-
               TextField(
                 decoration: InputDecoration(
-                  labelText: L10n.getTranslatedText(context, 'Search Languages'),
+                  labelText:
+                      L10n.getTranslatedText(context, 'Search Languages'),
                   border: const OutlineInputBorder(),
                   prefixIcon: const Icon(Icons.search),
                 ),
@@ -55,7 +56,6 @@ class _LanguageSelectionSheetState extends State<LanguageSelectionSheet> {
                 },
               ),
               const SizedBox(height: 10),
-
               Expanded(
                 child: ListView.builder(
                   itemCount: filteredLanguages.length,

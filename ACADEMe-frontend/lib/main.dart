@@ -68,7 +68,7 @@ void main() async {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness:
-    !kIsWeb && Platform.isAndroid ? Brightness.dark : Brightness.light,
+        !kIsWeb && Platform.isAndroid ? Brightness.dark : Brightness.light,
     systemNavigationBarColor: Colors.white,
     systemNavigationBarDividerColor: Colors.transparent,
     systemNavigationBarIconBrightness: Brightness.dark,
@@ -83,11 +83,10 @@ void main() async {
         ChangeNotifierProvider(
             create: (context) => BottomNavProvider()), // BottomNav provider
         ChangeNotifierProvider(
-            create: (context) => CourseController()), // Course controller provider
+            create: (context) =>
+                CourseController()), // Course controller provider
         ChangeNotifierProvider(create: (_) => HomeController()),
-        ChangeNotifierProvider(
-          create: (_) => ProgressProvider()
-        )
+        ChangeNotifierProvider(create: (_) => ProgressProvider())
       ],
       child: const MyApp(),
     ),

@@ -54,7 +54,8 @@ class CourseTagsGrid extends StatelessWidget {
               Expanded(
                 child: Text(
                   text,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -98,7 +99,8 @@ class CourseTagsGrid extends StatelessWidget {
                     _buildCourseTag(
                       text: second['title'] ?? '',
                       icon: Icons.school,
-                      color: Colors.primaries[(i + 1) % Colors.primaries.length],
+                      color:
+                          Colors.primaries[(i + 1) % Colors.primaries.length],
                       onTap: () => _onCourseTagTap(context, i + 1),
                     )
                   else

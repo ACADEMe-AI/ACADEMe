@@ -29,12 +29,16 @@ class ReusableProfileOption extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 0),
         child: ListTile(
-          leading: icon != null ? Icon(icon, color: AcademeTheme.appColor,
-              size: MediaQuery.of(context).size.width * 0.06) : null,
+          leading: icon != null
+              ? Icon(icon,
+                  color: AcademeTheme.appColor,
+                  size: MediaQuery.of(context).size.width * 0.06)
+              : null,
           title: Text(title, style: const TextStyle(fontSize: 18)),
           trailing: trailingWidget, // Custom widget passed here
           onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 19), // reduced vertical padding
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 19), // reduced vertical padding
           minVerticalPadding: 0, // reduces extra vertical padding
           visualDensity: const VisualDensity(vertical: -2),
         ),
@@ -42,7 +46,6 @@ class ReusableProfileOption extends StatelessWidget {
     );
   }
 }
-
 
 class ProfileOption extends StatelessWidget {
   final IconData icon;
@@ -81,21 +84,24 @@ class ProfileOption extends StatelessWidget {
           ),
           title: Text(
             text,
-            style:  TextStyle(fontSize: MediaQuery.of(context).size.width * 0.043),
+            style:
+                TextStyle(fontSize: MediaQuery.of(context).size.width * 0.043),
           ),
           trailing: showTrailing
               ? GestureDetector(
-            onTap: onTap,
-            child: Icon(
-              Icons.arrow_forward_ios,
-              size: MediaQuery.of(context).size.width * 0.05,
-              color: Colors.grey,
-            ),
-          )
+                  onTap: onTap,
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: MediaQuery.of(context).size.width * 0.05,
+                    color: Colors.grey,
+                  ),
+                )
               : null, // No trailing icon if false
-          contentPadding: const EdgeInsets.symmetric(horizontal: 19), // reduced vertical padding
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 19), // reduced vertical padding
           minVerticalPadding: 0, // reduces extra vertical padding
-          visualDensity: const VisualDensity(vertical: -2),        ),
+          visualDensity: const VisualDensity(vertical: -2),
+        ),
       ),
     );
   }

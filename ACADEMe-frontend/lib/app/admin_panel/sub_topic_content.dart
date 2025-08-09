@@ -77,7 +77,8 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterials(
+        widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
 
     try {
       String? token =
@@ -114,7 +115,8 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzes(
+        widget.courseId, widget.topicId, widget.subtopicId, targetLanguage));
 
     try {
       String? token =
@@ -165,13 +167,15 @@ class SubTopicContentState extends State<SubTopicContent>
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(L10n.getTranslatedText(context, 'Add Subtopic Material')),
+              title: Text(
+                  L10n.getTranslatedText(context, 'Add Subtopic Material')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Type')),
+                      decoration: InputDecoration(
+                          labelText: L10n.getTranslatedText(context, 'Type')),
                       items: ["text", "video", "image", "audio", "document"]
                           .map((type) => DropdownMenuItem(
                                 value: type,
@@ -182,7 +186,9 @@ class SubTopicContentState extends State<SubTopicContent>
                           setDialogState(() => selectedType = value ?? ""),
                     ),
                     DropdownButtonFormField<String>(
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Category')),
+                      decoration: InputDecoration(
+                          labelText:
+                              L10n.getTranslatedText(context, 'Category')),
                       items: ["Notes", "Reference Links", "Practice Questions"]
                           .map((type) => DropdownMenuItem(
                                 value: type,
@@ -225,7 +231,9 @@ class SubTopicContentState extends State<SubTopicContent>
                     ],
                     SizedBox(height: 10),
                     TextField(
-                      decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Optional Text')),
+                      decoration: InputDecoration(
+                          labelText:
+                              L10n.getTranslatedText(context, 'Optional Text')),
                       onChanged: (value) =>
                           setDialogState(() => optionalText = value),
                     ),
@@ -286,7 +294,8 @@ class SubTopicContentState extends State<SubTopicContent>
     String? textContent,
     String? filePath,
   }) async {
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsNoLang(widget.courseId, widget.topicId, widget.subtopicId));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsNoLang(
+        widget.courseId, widget.topicId, widget.subtopicId));
 
     try {
       String? token =
@@ -348,11 +357,13 @@ class SubTopicContentState extends State<SubTopicContent>
             children: [
               TextField(
                 controller: titleController,
-                decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Title')),
+                decoration: InputDecoration(
+                    labelText: L10n.getTranslatedText(context, 'Title')),
               ),
               TextField(
                 controller: descriptionController,
-                decoration: InputDecoration(labelText: L10n.getTranslatedText(context, 'Description')),
+                decoration: InputDecoration(
+                    labelText: L10n.getTranslatedText(context, 'Description')),
                 maxLines: 3,
               ),
             ],
@@ -395,7 +406,8 @@ class SubTopicContentState extends State<SubTopicContent>
         Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
-    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesNoLang(widget.courseId, widget.topicId, widget.subtopicId));
+    final url = ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesNoLang(
+        widget.courseId, widget.topicId, widget.subtopicId));
 
     try {
       String? token =
@@ -574,7 +586,9 @@ class SubTopicContentState extends State<SubTopicContent>
               );
             },
           )
-        : Center(child: Text(L10n.getTranslatedText(context, 'No quizzes available')));
+        : Center(
+            child:
+                Text(L10n.getTranslatedText(context, 'No quizzes available')));
   }
 
   Widget _buildMenuItem(String title, IconData icon, VoidCallback onPressed) {

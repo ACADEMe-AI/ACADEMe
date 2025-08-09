@@ -66,7 +66,8 @@ class TopicCard extends StatelessWidget {
                           future: _getModuleProgressText(context),
                           builder: (context, snapshot) {
                             return Text(
-                              snapshot.data ?? "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
+                              snapshot.data ??
+                                  "0/0 ${L10n.getTranslatedText(context, 'Modules')}",
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
@@ -102,10 +103,12 @@ class TopicCard extends StatelessWidget {
     final topicId = topic["id"].toString();
 
     // Get total subtopics for this topic
-    int totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+    int totalSubtopics =
+        prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
 
     // Get completed subtopics for this topic
-    List<String> completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
+    List<String> completedSubtopics =
+        prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
     int completedCount = completedSubtopics.length;
 
     // Alternative method: Calculate completed modules based on progress percentage

@@ -15,7 +15,7 @@ class OverviewController {
   final String courseId;
   final String topicId;
   final BuildContext context;
-  
+
   final FlutterSecureStorage storage = const FlutterSecureStorage();
 
   OverviewController({
@@ -31,7 +31,8 @@ class OverviewController {
 
     // Try to get from cache first
     final cacheController = TopicCacheController();
-    final cached = cacheController.getCachedTopicDetails(courseId, topicId, targetLanguage);
+    final cached = cacheController.getCachedTopicDetails(
+        courseId, topicId, targetLanguage);
 
     if (cached != null) {
       log("✅ Using cached topic details");
@@ -47,7 +48,8 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.courseTopics(courseId, targetLanguage)),
+        ApiEndpoints.getUri(
+            ApiEndpoints.courseTopics(courseId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -62,17 +64,19 @@ class OverviewController {
 
         if (jsonData is List) {
           final topic = jsonData.firstWhere(
-                (topic) => topic['id'] == topicId,
+            (topic) => topic['id'] == topicId,
             orElse: () => null,
           );
           if (topic != null) {
             final details = {
               'title': topic["title"]?.toString() ?? "Untitled Topic",
-              'description': topic["description"]?.toString() ?? "No description available.",
+              'description': topic["description"]?.toString() ??
+                  "No description available.",
             };
 
             // Cache for future use
-            cacheController.cacheTopicDetails(courseId, topicId, targetLanguage, details);
+            cacheController.cacheTopicDetails(
+                courseId, topicId, targetLanguage, details);
             return details;
           }
         }
@@ -91,7 +95,8 @@ class OverviewController {
 
     // Try cache first
     final cacheController = TopicCacheController();
-    final cached = cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
+    final cached =
+        cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
 
     if (cached != null) {
       log("✅ Using cached subtopics data");
@@ -110,7 +115,8 @@ class OverviewController {
 
     try {
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.topicSubtopics(courseId, topicId, targetLanguage)),
+        ApiEndpoints.getUri(
+            ApiEndpoints.topicSubtopics(courseId, topicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -144,18 +150,19 @@ class OverviewController {
     final progressProvider = ProgressProvider();
 
     // Preload progress data (will use cache if valid)
-    await progressProvider.preloadProgress(courseId: courseId, topicId: topicId);
+    await progressProvider.preloadProgress(
+        courseId: courseId, topicId: topicId);
 
     // Get progress summary from cached data
     final summary = progressProvider.getProgressSummary(courseId, topicId);
 
     // Get total subtopics from shared preferences
     final prefs = await SharedPreferences.getInstance();
-    final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_${topicId}') ?? 0;
+    final totalSubtopics =
+        prefs.getInt('total_subtopics_${courseId}_${topicId}') ?? 0;
     final completedCount = summary['completedSubtopics'] as int;
-    final progressPercentage = totalSubtopics > 0
-        ? completedCount / totalSubtopics
-        : 0.0;
+    final progressPercentage =
+        totalSubtopics > 0 ? completedCount / totalSubtopics : 0.0;
 
     // Save topic progress
     await _saveTopicProgress(courseId, topicId, progressPercentage);
@@ -184,31 +191,35 @@ class OverviewController {
 
     // Update cached topic data
     final cacheController = TopicCacheController();
-    cacheController.updateCachedTopicProgress(courseId, topicId, targetLanguage, progress);
+    cacheController.updateCachedTopicProgress(
+        courseId, topicId, targetLanguage, progress);
 
     log("✅ Updated topic cache progress: $progress");
   }
 
-  bool _isSubtopicCompleted(List<Map<String, dynamic>> progress, String subtopicId) {
+  bool _isSubtopicCompleted(
+      List<Map<String, dynamic>> progress, String subtopicId) {
     final subtopicMaterials = progress.where((p) =>
         p['subtopic_id'] == subtopicId && p['activity_type'] == 'reading');
-    final subtopicQuizzes = progress.where((p) =>
-        p['subtopic_id'] == subtopicId && p['activity_type'] == 'quiz');
+    final subtopicQuizzes = progress.where(
+        (p) => p['subtopic_id'] == subtopicId && p['activity_type'] == 'quiz');
 
-    final hasIncompleteMaterial = subtopicMaterials.any(
-        (material) => material['status'] != 'completed');
-    final hasIncompleteQuiz = subtopicQuizzes.any(
-        (quiz) => quiz['status'] != 'completed');
+    final hasIncompleteMaterial =
+        subtopicMaterials.any((material) => material['status'] != 'completed');
+    final hasIncompleteQuiz =
+        subtopicQuizzes.any((quiz) => quiz['status'] != 'completed');
 
     return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
 
-  Future<void> _storeTopicTotalSubtopics(String courseId, String topicId, int total) async {
+  Future<void> _storeTopicTotalSubtopics(
+      String courseId, String topicId, int total) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('total_subtopics_${courseId}_${topicId}', total);
   }
 
-  Future<void> _markSubtopicCompleted(String courseId, String topicId, String subtopicId) async {
+  Future<void> _markSubtopicCompleted(
+      String courseId, String topicId, String subtopicId) async {
     final prefs = await SharedPreferences.getInstance();
     final key = 'completed_subtopics_${courseId}_${topicId}';
     List<String> completed = prefs.getStringList(key) ?? [];
@@ -229,7 +240,8 @@ class OverviewController {
     }
   }
 
-  Future<void> _saveTopicProgress(String courseId, String topicId, double progress) async {
+  Future<void> _saveTopicProgress(
+      String courseId, String topicId, double progress) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('progress_${courseId}_${topicId}', progress);
 

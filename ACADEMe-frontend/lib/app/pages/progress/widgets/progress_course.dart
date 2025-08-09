@@ -31,17 +31,20 @@ class CourseProgressSection extends StatelessWidget {
                       L10n.getTranslatedText(context, 'Linear Algebra'),
                       L10n.getTranslatedText(context, 'Mathematics'),
                       80,
-                      L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
+                      L10n.getTranslatedText(context,
+                          '10 ${L10n.getTranslatedText(context, 'Modules')}')),
                   _buildCourseCard(
                       L10n.getTranslatedText(context, 'Organic Chemistry'),
                       L10n.getTranslatedText(context, 'Chemistry'),
                       25,
-                      L10n.getTranslatedText(context, '5 ${L10n.getTranslatedText(context, 'Modules')}')),
+                      L10n.getTranslatedText(context,
+                          '5 ${L10n.getTranslatedText(context, 'Modules')}')),
                   _buildCourseCard(
                       L10n.getTranslatedText(context, 'Linear Algebra'),
                       L10n.getTranslatedText(context, 'Mathematics'),
                       80,
-                      L10n.getTranslatedText(context, '10 ${L10n.getTranslatedText(context, 'Modules')}')),
+                      L10n.getTranslatedText(context,
+                          '10 ${L10n.getTranslatedText(context, 'Modules')}')),
                   _buildQuizScores(context),
                 ],
               ),
@@ -84,7 +87,8 @@ class CourseProgressSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  L10n.getTranslatedText(context, 'Upgrade to Premium to view your progress'),
+                  L10n.getTranslatedText(
+                      context, 'Upgrade to Premium to view your progress'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -142,7 +146,8 @@ class CourseProgressSection extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: height * 0.02, horizontal: width * 0.1),
+        padding: EdgeInsets.symmetric(
+            vertical: height * 0.02, horizontal: width * 0.1),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -243,7 +248,7 @@ class CourseProgressSection extends StatelessWidget {
                     Text(
                       moduleCount,
                       style:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -372,7 +377,7 @@ class CourseProgressSection extends StatelessWidget {
         _buildBar(L10n.getTranslatedText(context, 'Maths'), 0.9),
         _buildBar(L10n.getTranslatedText(context, 'Chem'), 0.6),
         _buildBar(L10n.getTranslatedText(context, 'Phy'), 0.2),
-        _buildBar(L10n.getTranslatedText(context,'English' ), 0.4),
+        _buildBar(L10n.getTranslatedText(context, 'English'), 0.4),
       ],
     );
   }

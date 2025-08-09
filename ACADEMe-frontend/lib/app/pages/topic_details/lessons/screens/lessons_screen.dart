@@ -69,12 +69,13 @@ class LessonsSectionState extends State<LessonsSection> {
         _state = _state.copyWith(
           isExpanded: {
             for (int i = 0; i < subtopics.length; i++)
-              "${(i + 1).toString().padLeft(2, '0')} - ${subtopics[i]["title"]}": false
+              "${(i + 1).toString().padLeft(2, '0')} - ${subtopics[i]["title"]}":
+                  false
           },
           subtopicIds: {
             for (var sub in subtopics)
               "${(subtopics.indexOf(sub) + 1).toString().padLeft(2, '0')} - ${sub["title"]}":
-              sub["id"].toString()
+                  sub["id"].toString()
           },
           isLoading: false,
         );
@@ -220,7 +221,7 @@ class LessonsSectionState extends State<LessonsSection> {
             child: Column(
               children: [
                 if (_state.isLoading)
-                // Replace CircularProgressIndicator with SubtopicListShimmer
+                  // Replace CircularProgressIndicator with SubtopicListShimmer
                   const SubtopicListShimmer()
                 else
                   ..._state.isExpanded.keys.map((section) {
@@ -261,16 +262,24 @@ class LessonsSectionState extends State<LessonsSection> {
                             _state.subtopicIds.containsKey(section))
                           LessonsAndQuizzesWidget(
                             subtopicId: _state.subtopicIds[section]!,
-                            materials: _state.subtopicMaterials[_state.subtopicIds[section]!] ?? [],
-                            quizzes: _state.subtopicQuizzes[_state.subtopicIds[section]!] ?? [],
-                            isLoading: _state.subtopicLoading[_state.subtopicIds[section]!] ?? false,
+                            materials: _state.subtopicMaterials[
+                                    _state.subtopicIds[section]!] ??
+                                [],
+                            quizzes: _state.subtopicQuizzes[
+                                    _state.subtopicIds[section]!] ??
+                                [],
+                            isLoading: _state.subtopicLoading[
+                                    _state.subtopicIds[section]!] ??
+                                false,
                             // userProgress: widget.userProgress,
                             courseId: widget.courseId,
                             topicId: widget.topicId,
                             onTap: (index) => _navigateToFlashcard(
                               _state.subtopicIds[section]!,
                               _state.subtopicIds.entries
-                                  .firstWhere((entry) => entry.value == _state.subtopicIds[section]!)
+                                  .firstWhere((entry) =>
+                                      entry.value ==
+                                      _state.subtopicIds[section]!)
                                   .key,
                               index,
                             ),
@@ -287,9 +296,7 @@ class LessonsSectionState extends State<LessonsSection> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         color: Colors.white,
         child: ElevatedButton(
-          onPressed: _state.isNavigating
-              ? null
-              : () => _handleResumeButton(),
+          onPressed: _state.isNavigating ? null : () => _handleResumeButton(),
           style: ElevatedButton.styleFrom(
             backgroundColor: AcademeTheme.appColor,
             minimumSize: const Size(double.infinity, 50),
@@ -301,8 +308,8 @@ class LessonsSectionState extends State<LessonsSection> {
             _state.isNavigating
                 ? L10n.getTranslatedText(context, 'Loading...')
                 : _state.showResume
-                ? L10n.getTranslatedText(context, 'Resume')
-                : L10n.getTranslatedText(context, 'Start Course'),
+                    ? L10n.getTranslatedText(context, 'Resume')
+                    : L10n.getTranslatedText(context, 'Start Course'),
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -344,7 +351,8 @@ class LessonsSectionState extends State<LessonsSection> {
     );
   }
 
-  void _navigateToFlashcard(String subtopicId, String subtopicTitle, int index) {
+  void _navigateToFlashcard(
+      String subtopicId, String subtopicTitle, int index) {
     final materials = (_state.subtopicMaterials[subtopicId] ?? [])
         .map<Map<String, String>>((material) {
       return {
@@ -373,15 +381,19 @@ class LessonsSectionState extends State<LessonsSection> {
         builder: (context) => FlashCardScreen(controller: controller),
       ),
     ).then((_) {
-      if (mounted) setState(() => _state = _state.copyWith(isNavigating: false));
+      if (mounted)
+        setState(() => _state = _state.copyWith(isNavigating: false));
     });
   }
 
   void _navigateToNextSubtopic(String currentSubtopicId) {
-    int currentIndex = _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
+    int currentIndex =
+        _state.subtopicIds.values.toList().indexOf(currentSubtopicId);
     if (currentIndex < _state.subtopicIds.length - 1) {
-      String nextSubtopicId = _state.subtopicIds.values.toList()[currentIndex + 1];
-      String nextSubtopicTitle = _state.subtopicIds.keys.toList()[currentIndex + 1];
+      String nextSubtopicId =
+          _state.subtopicIds.values.toList()[currentIndex + 1];
+      String nextSubtopicTitle =
+          _state.subtopicIds.keys.toList()[currentIndex + 1];
 
       _fetchMaterialsAndQuizzes(nextSubtopicId).then((_) {
         if (!context.mounted) return;

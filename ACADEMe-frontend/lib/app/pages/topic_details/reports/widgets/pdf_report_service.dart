@@ -51,8 +51,10 @@ class PdfReportService {
 
     try {
       // Load Noto Sans font that supports multiple languages including Hindi, Chinese, etc.
-      final regularFontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
-      final boldFontData = await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
+      final regularFontData =
+          await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+      final boldFontData =
+          await rootBundle.load('assets/fonts/NotoSans-Bold.ttf');
 
       _regularFont = pw.Font.ttf(regularFontData);
       _boldFont = pw.Font.ttf(boldFontData);
@@ -161,7 +163,7 @@ class PdfReportService {
       await Share.shareXFiles(
         [XFile(file.path)],
         text:
-        '${getTranslatedText('Here is my quiz report for')} ${controller.topicTitle} '
+            '${getTranslatedText('Here is my quiz report for')} ${controller.topicTitle} '
             '${getTranslatedText('in')} ${controller.courseTitle}. '
             '${getTranslatedText('I scored')} ${topicScore.toStringAsFixed(1)}% '
             '($correct/$total ${getTranslatedText('correct answers')})',
@@ -329,10 +331,15 @@ class PdfReportService {
                   ),
                 ),
                 pw.SizedBox(height: 6),
-                _buildInfoRow('${getTranslatedText('Class')}:', _userDetails['class'] ?? getTranslatedText('Not specified')),
-                _buildInfoRow('${getTranslatedText('Course')}:', controller.courseTitle),
+                _buildInfoRow(
+                    '${getTranslatedText('Class')}:',
+                    _userDetails['class'] ??
+                        getTranslatedText('Not specified')),
+                _buildInfoRow(
+                    '${getTranslatedText('Course')}:', controller.courseTitle),
                 pw.SizedBox(height: 2),
-                _buildInfoRow('${getTranslatedText('Topic')}:', controller.topicTitle),
+                _buildInfoRow(
+                    '${getTranslatedText('Topic')}:', controller.topicTitle),
               ],
             ),
           ),
@@ -439,11 +446,14 @@ class PdfReportService {
                   ),
                 ),
                 pw.SizedBox(height: 12),
-                _buildScoreDetailRow('${getTranslatedText('Correct Answers')}:', '$correct ${getTranslatedText('out of')} $total'),
+                _buildScoreDetailRow('${getTranslatedText('Correct Answers')}:',
+                    '$correct ${getTranslatedText('out of')} $total'),
                 pw.SizedBox(height: 6),
-                _buildScoreDetailRow('${getTranslatedText('Accuracy Rate')}:', '${score.toStringAsFixed(1)}%'),
+                _buildScoreDetailRow('${getTranslatedText('Accuracy Rate')}:',
+                    '${score.toStringAsFixed(1)}%'),
                 pw.SizedBox(height: 6),
-                _buildScoreDetailRow('${getTranslatedText('Completion Date')}:', DateFormat('MMM dd, yyyy').format(DateTime.now())),
+                _buildScoreDetailRow('${getTranslatedText('Completion Date')}:',
+                    DateFormat('MMM dd, yyyy').format(DateTime.now())),
               ],
             ),
           ),
@@ -501,12 +511,21 @@ class PdfReportService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceEvenly,
             children: [
-              _buildCompactMetricCard(getTranslatedText('Correct'), '$correct', successGreen,
+              _buildCompactMetricCard(
+                  getTranslatedText('Correct'),
+                  '$correct',
+                  successGreen,
                   '${(correct / total * 100).toStringAsFixed(1)}%'),
-              _buildCompactMetricCard(getTranslatedText('Incorrect'), '$incorrect', errorRed,
+              _buildCompactMetricCard(
+                  getTranslatedText('Incorrect'),
+                  '$incorrect',
+                  errorRed,
                   '${(incorrect / total * 100).toStringAsFixed(1)}%'),
               if (skipped > 0)
-                _buildCompactMetricCard(getTranslatedText('Skipped'), '$skipped', warningOrange,
+                _buildCompactMetricCard(
+                    getTranslatedText('Skipped'),
+                    '$skipped',
+                    warningOrange,
                     '${(skipped / total * 100).toStringAsFixed(1)}%'),
             ],
           ),
@@ -543,7 +562,7 @@ class PdfReportService {
             style: pw.TextStyle(
               fontSize: 20, // Reduced from 24
               color: PdfColors.white,
-                font: _boldFont,
+              font: _boldFont,
             ),
           ),
           pw.SizedBox(height: 2),

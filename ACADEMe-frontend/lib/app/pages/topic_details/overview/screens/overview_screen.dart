@@ -33,7 +33,8 @@ class OverviewScreenState extends State<OverviewScreen>
   late ScrollController _scrollController;
   late OverviewController _controller;
   late OverviewModel _model;
-  final GlobalKey<LessonsSectionState> _lessonsSectionKey = GlobalKey<LessonsSectionState>();
+  final GlobalKey<LessonsSectionState> _lessonsSectionKey =
+      GlobalKey<LessonsSectionState>();
 
   @override
   void initState() {
@@ -123,7 +124,9 @@ class OverviewScreenState extends State<OverviewScreen>
                             indicatorSize: TabBarIndicatorSize.tab,
                             labelStyle: TextStyle(fontSize: width * 0.045),
                             tabs: [
-                              Tab(text: L10n.getTranslatedText(context, 'Overview')),
+                              Tab(
+                                  text: L10n.getTranslatedText(
+                                      context, 'Overview')),
                               Tab(text: L10n.getTranslatedText(context, 'Q&A')),
                             ],
                           ),
@@ -143,7 +146,8 @@ class OverviewScreenState extends State<OverviewScreen>
                                     language: widget.language,
                                     userProgress: _model.userProgress,
                                   )
-                                : const Center(child: CircularProgressIndicator()),
+                                : const Center(
+                                    child: CircularProgressIndicator()),
                             const QSection(),
                           ],
                         ),

@@ -71,7 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _initializeData() async {
     if (!mounted) return;
 
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final currentLanguage = languageProvider.locale.languageCode;
 
     try {
@@ -84,7 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _refreshData() async {
     if (!mounted) return;
 
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final currentLanguage = languageProvider.locale.languageCode;
 
     await _controller.refreshData(currentLanguage);
@@ -92,12 +94,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkAndShowClassSelection() async {
     try {
-      final String? studentClass = await _secureStorage.read(key: 'student_class');
-      final String? classSelectionShown = await _secureStorage.read(key: 'class_selection_shown');
+      final String? studentClass =
+          await _secureStorage.read(key: 'student_class');
+      final String? classSelectionShown =
+          await _secureStorage.read(key: 'class_selection_shown');
 
       // Only show if class is not set AND the popup hasn't been shown before
-      if ((studentClass == null || int.tryParse(studentClass) == null ||
-          int.parse(studentClass) < 1 || int.parse(studentClass) > 12) &&
+      if ((studentClass == null ||
+              int.tryParse(studentClass) == null ||
+              int.parse(studentClass) < 1 ||
+              int.parse(studentClass) > 12) &&
           classSelectionShown != 'true') {
         if (!mounted) return;
 
@@ -143,20 +149,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       future: controller.getUserDetails(),
                       builder: (context, snapshot) {
                         // Force a fresh fetch every time
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return HomeAppBar(
                             onProfileTap: widget.onProfileTap,
-                            onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
+                            onHamburgerTap: () =>
+                                scaffoldKey.currentState?.openDrawer(),
                             name: 'User',
-                            photoUrl: 'https://www.w3schools.com/w3images/avatar2.png',
+                            photoUrl:
+                                'https://www.w3schools.com/w3images/avatar2.png',
                           );
                         }
 
                         return HomeAppBar(
                           onProfileTap: widget.onProfileTap,
-                          onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
+                          onHamburgerTap: () =>
+                              scaffoldKey.currentState?.openDrawer(),
                           name: snapshot.data?['name'] ?? 'User',
-                          photoUrl: snapshot.data?['photo_url'] ?? 'assets/design_course/userImage.png',
+                          photoUrl: snapshot.data?['photo_url'] ??
+                              'assets/design_course/userImage.png',
                         );
                       },
                     );
@@ -180,13 +191,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, showSearch, _) {
                     return showSearch
                         ? Consumer<HomeController>(
-                      builder: (context, controller, child) {
-                        return SearchUI(
-                          showSearchUI: _showSearchUI,
-                          allCourses: controller.courses,
-                        );
-                      },
-                    )
+                            builder: (context, controller, child) {
+                              return SearchUI(
+                                showSearchUI: _showSearchUI,
+                                allCourses: controller.courses,
+                              );
+                            },
+                          )
                         : _buildMainContent();
                   },
                 ),

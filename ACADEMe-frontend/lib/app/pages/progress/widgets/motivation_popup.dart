@@ -10,7 +10,6 @@ import 'package:ACADEMe/localization/language_provider.dart';
 import '../../ask_me/screens/ask_me_screen.dart';
 import '../controllers/progress_controller.dart';
 
-
 void showMotivationPopup(BuildContext context) {
   showModalBottomSheet(
     context: context,
@@ -46,9 +45,10 @@ class MotivationPopupState extends State<MotivationPopup> {
   Future<String> _fetchRecommendations() async {
     try {
       // Get the target language from the app's language provider
-      final targetLanguage = Provider.of<LanguageProvider>(context, listen: false)
-          .locale
-          .languageCode;
+      final targetLanguage =
+          Provider.of<LanguageProvider>(context, listen: false)
+              .locale
+              .languageCode;
 
       // Use the ProgressController to fetch recommendations
       final recommendations = await _progressControl.fetchRecommendations(
@@ -81,14 +81,17 @@ class MotivationPopupState extends State<MotivationPopup> {
         // Wait for the recommendation to complete
         recommendationText = await _recommendationFuture;
         print('Recommendation text length: ${recommendationText.length}');
-        print('Recommendation preview: ${recommendationText.substring(0, recommendationText.length > 100 ? 100 : recommendationText.length)}...');
+        print(
+            'Recommendation preview: ${recommendationText.substring(0, recommendationText.length > 100 ? 100 : recommendationText.length)}...');
       } catch (error) {
         print('Error fetching recommendation: $error');
-        recommendationText = "⚠️ Error fetching recommendation. Please try again.";
+        recommendationText =
+            "⚠️ Error fetching recommendation. Please try again.";
       }
 
       // Combine Recommendation + Follow-up
-      String fullMessage = "📊 Recommendation: \n$recommendationText\n\n🗨️ Follow-up: $followUpMessage";
+      String fullMessage =
+          "📊 Recommendation: \n$recommendationText\n\n🗨️ Follow-up: $followUpMessage";
 
       // Debug: Print the full message
       print('Full message length: ${fullMessage.length}');
@@ -115,20 +118,19 @@ class MotivationPopupState extends State<MotivationPopup> {
         );
 
         print('Navigation completed with result: $result');
-
       } catch (navigationError) {
         print('Navigation error: $navigationError');
         // If navigation fails, show an error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${L10n.getTranslatedText(context, 'Failed to open chat')}: $navigationError'),
+              content: Text(
+                  '${L10n.getTranslatedText(context, 'Failed to open chat')}: $navigationError'),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
-
 
       _messageController.clear();
     } else {
@@ -136,7 +138,8 @@ class MotivationPopupState extends State<MotivationPopup> {
       // Optionally show a message that input is required
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Please enter a follow-up message')),
+          content: Text(L10n.getTranslatedText(
+              context, 'Please enter a follow-up message')),
           backgroundColor: Colors.orange,
         ),
       );
@@ -173,14 +176,20 @@ class MotivationPopupState extends State<MotivationPopup> {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         // Use the ProgressLoadingWidget instead of custom loading animation
                         return ProgressLoadingWidget(
-                          primaryText: L10n.getTranslatedText(context, 'Analyzing your progress...'),
-                          secondaryText: L10n.getTranslatedText(context, 'Generating personalized insights'),
+                          primaryText: L10n.getTranslatedText(
+                              context, 'Analyzing your progress...'),
+                          secondaryText: L10n.getTranslatedText(
+                              context, 'Generating personalized insights'),
                           primaryColor: AcademeTheme.appColor,
                           motivationalTips: [
-                            L10n.getTranslatedText(context, 'Reviewing your study patterns'),
-                            L10n.getTranslatedText(context, 'Identifying improvement areas'),
-                            L10n.getTranslatedText(context, 'Creating personalized suggestions'),
-                            L10n.getTranslatedText(context, 'Preparing detailed analysis'),
+                            L10n.getTranslatedText(
+                                context, 'Reviewing your study patterns'),
+                            L10n.getTranslatedText(
+                                context, 'Identifying improvement areas'),
+                            L10n.getTranslatedText(
+                                context, 'Creating personalized suggestions'),
+                            L10n.getTranslatedText(
+                                context, 'Preparing detailed analysis'),
                           ],
                         );
                       } else if (snapshot.hasError || !snapshot.hasData) {
@@ -207,7 +216,8 @@ class MotivationPopupState extends State<MotivationPopup> {
                                   ),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: AcademeTheme.appColor.withOpacity(0.2),
+                                    color:
+                                        AcademeTheme.appColor.withOpacity(0.2),
                                   ),
                                 ),
                                 child: Row(
@@ -215,7 +225,8 @@ class MotivationPopupState extends State<MotivationPopup> {
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: AcademeTheme.appColor.withOpacity(0.15),
+                                        color: AcademeTheme.appColor
+                                            .withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Icon(
@@ -227,10 +238,12 @@ class MotivationPopupState extends State<MotivationPopup> {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            L10n.getTranslatedText(context, 'Your Progress Analysis'),
+                                            L10n.getTranslatedText(context,
+                                                'Your Progress Analysis'),
                                             style: const TextStyle(
                                               fontSize: 20,
                                               fontWeight: FontWeight.bold,
@@ -239,7 +252,8 @@ class MotivationPopupState extends State<MotivationPopup> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            L10n.getTranslatedText(context, 'Personalized insights ready'),
+                                            L10n.getTranslatedText(context,
+                                                'Personalized insights ready'),
                                             style: TextStyle(
                                               fontSize: 14,
                                               color: Colors.grey[600],
@@ -290,14 +304,17 @@ class MotivationPopupState extends State<MotivationPopup> {
                         child: TextField(
                           controller: _messageController,
                           decoration: InputDecoration(
-                            hintText: "${L10n.getTranslatedText(context, 'Ask follow-up')}...",
+                            hintText:
+                                "${L10n.getTranslatedText(context, 'Ask follow-up')}...",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
-                              borderSide: BorderSide(color: Colors.grey.shade300),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(25),
-                              borderSide: BorderSide(color: AcademeTheme.appColor),
+                              borderSide:
+                                  BorderSide(color: AcademeTheme.appColor),
                             ),
                             filled: true,
                             fillColor: Colors.grey.shade50,
@@ -375,7 +392,8 @@ class MotivationPopupState extends State<MotivationPopup> {
           ),
           const SizedBox(height: 12),
           Text(
-            L10n.getTranslatedText(context, 'Please check your connection and try again'),
+            L10n.getTranslatedText(
+                context, 'Please check your connection and try again'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[600],

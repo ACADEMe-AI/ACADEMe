@@ -14,11 +14,12 @@ class FullScreenImage extends StatelessWidget {
         backgroundColor: Colors.black,
         iconTheme: IconThemeData(color: Colors.white),
       ),
-      body: Center( // Keep the rounded corners
-          child: Image.file(
-            File(imagePath),
-            fit: BoxFit.contain,
-          ),
+      body: Center(
+        // Keep the rounded corners
+        child: Image.file(
+          File(imagePath),
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }

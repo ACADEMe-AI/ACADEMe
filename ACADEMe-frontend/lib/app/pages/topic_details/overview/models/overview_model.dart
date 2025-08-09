@@ -23,11 +23,16 @@ class OverviewModel {
     if (data.containsKey('title')) topicTitle = data['title'];
     if (data.containsKey('description')) topicDescription = data['description'];
     if (data.containsKey('isLoading')) isLoading = data['isLoading'];
-    if (data.containsKey('hasSubtopicData')) hasSubtopicData = data['hasSubtopicData'];
-    if (data.containsKey('userProgress')) userProgress = List<Map<String, dynamic>>.from(data['userProgress']);
-    if (data.containsKey('progressPercentage')) progressPercentage = data['progressPercentage'];
-    if (data.containsKey('completedSubtopics')) completedSubtopics = data['completedSubtopics'];
-    if (data.containsKey('totalSubtopics')) totalSubtopics = data['totalSubtopics'];
+    if (data.containsKey('hasSubtopicData'))
+      hasSubtopicData = data['hasSubtopicData'];
+    if (data.containsKey('userProgress'))
+      userProgress = List<Map<String, dynamic>>.from(data['userProgress']);
+    if (data.containsKey('progressPercentage'))
+      progressPercentage = data['progressPercentage'];
+    if (data.containsKey('completedSubtopics'))
+      completedSubtopics = data['completedSubtopics'];
+    if (data.containsKey('totalSubtopics'))
+      totalSubtopics = data['totalSubtopics'];
   }
 
   // Add the missing toMap method

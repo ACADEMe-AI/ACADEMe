@@ -53,14 +53,20 @@ class AskMeController extends ChangeNotifier {
       'bn': 'ওহ! কিছু ভুল হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।',
     },
     'connection_error': {
-      'en': 'Error connecting to the server. Please check your internet connection.',
-      'es': 'Error al conectar con el servidor. Por favor, revise su conexión a internet.',
-      'fr': 'Erreur de connexion au serveur. Veuillez vérifier votre connexion Internet.',
-      'de': 'Fehler beim Verbinden mit dem Server. Bitte überprüfen Sie Ihre Internetverbindung.',
-      'hi': 'सर्वर से कनेक्ट करने में त्रुटि। कृपया अपना इंटरनेट कनेक्शन जांचें।',
+      'en':
+          'Error connecting to the server. Please check your internet connection.',
+      'es':
+          'Error al conectar con el servidor. Por favor, revise su conexión a internet.',
+      'fr':
+          'Erreur de connexion au serveur. Veuillez vérifier votre connexion Internet.',
+      'de':
+          'Fehler beim Verbinden mit dem Server. Bitte überprüfen Sie Ihre Internetverbindung.',
+      'hi':
+          'सर्वर से कनेक्ट करने में त्रुटि। कृपया अपना इंटरनेट कनेक्शन जांचें।',
       'zh': '连接服务器出错。请检查您的互联网连接。',
       'ja': 'サーバーへの接続エラー。インターネット接続を確認してください。',
-      'bn': 'সার্ভারের সাথে সংযোগে ত্রুটি হয়েছে। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।',
+      'bn':
+          'সার্ভারের সাথে সংযোগে ত্রুটি হয়েছে। অনুগ্রহ করে আপনার ইন্টারনেট সংযোগ পরীক্ষা করুন।',
     },
   };
 
@@ -160,12 +166,14 @@ class AskMeController extends ChangeNotifier {
             ListTile(
               leading: const Icon(Icons.attach_file),
               title: Text(file.path.split('/').last),
-              subtitle: Text("${(file.lengthSync() / 1024).toStringAsFixed(1)}KB"),
+              subtitle:
+                  Text("${(file.lengthSync() / 1024).toStringAsFixed(1)}KB"),
             ),
             TextField(
               controller: promptController,
               decoration: InputDecoration(
-                hintText: L10n.getTranslatedText(context, 'Enter your prompt (optional)'),
+                hintText: L10n.getTranslatedText(
+                    context, 'Enter your prompt (optional)'),
                 border: const OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -202,7 +210,7 @@ class AskMeController extends ChangeNotifier {
     String fileFieldName = (fileType == 'Image') ? 'image' : 'file';
     String? mimeType = lookupMimeType(file.path);
     mimeType ??=
-    (fileType == 'Video') ? 'video/mp4' : 'application/octet-stream';
+        (fileType == 'Video') ? 'video/mp4' : 'application/octet-stream';
 
     request.files.add(await http.MultipartFile.fromPath(
       fileFieldName,
@@ -345,7 +353,8 @@ class AskMeController extends ChangeNotifier {
       request.fields.addAll({
         'prompt': 'इस ऑडियो को हिंदी में लिखो',
         'source_lang': 'auto', // Let the server detect the source language
-        'target_lang': selectedLanguage, // Send the selected language for the response
+        'target_lang':
+            selectedLanguage, // Send the selected language for the response
       });
 
       final mimeType = lookupMimeType(file.path) ?? "audio/flac";
@@ -386,7 +395,8 @@ class AskMeController extends ChangeNotifier {
 
         ScaffoldMessenger.of(Global.context).showSnackBar(
           SnackBar(
-            content: Text(L10n.getTranslatedText(Global.context, '❌ Something went wrong. Hugging Face may be down.')),
+            content: Text(L10n.getTranslatedText(Global.context,
+                '❌ Something went wrong. Hugging Face may be down.')),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -395,7 +405,8 @@ class AskMeController extends ChangeNotifier {
       debugPrint("❌ Error uploading audio: $e");
       ScaffoldMessenger.of(Global.context).showSnackBar(
         SnackBar(
-          content: Text(L10n.getTranslatedText(Global.context, '❌ Error uploading audio. Hugging Face may be down.')),
+          content: Text(L10n.getTranslatedText(Global.context,
+              '❌ Error uploading audio. Hugging Face may be down.')),
           backgroundColor: Colors.redAccent,
         ),
       );

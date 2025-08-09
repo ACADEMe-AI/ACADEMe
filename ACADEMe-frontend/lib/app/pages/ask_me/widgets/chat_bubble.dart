@@ -25,10 +25,10 @@ class ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isUser
               ? LinearGradient(
-            colors: [Colors.blueAccent.shade400, AcademeTheme.appColor],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
+                  colors: [Colors.blueAccent.shade400, AcademeTheme.appColor],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
               : null,
           color: isUser ? null : Colors.grey[200],
           borderRadius: BorderRadius.only(

@@ -24,7 +24,8 @@ class LessonsController {
 
     // Try cache first
     final cacheController = TopicCacheController();
-    final cached = cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
+    final cached =
+        cacheController.getCachedSubtopics(courseId, topicId, targetLanguage);
 
     if (cached != null) {
       log("✅ Using cached subtopics");
@@ -39,7 +40,8 @@ class LessonsController {
 
     try {
       final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsOrdered(courseId, topicId, targetLanguage)),
+        ApiEndpoints.getUri(ApiEndpoints.topicSubtopicsOrdered(
+            courseId, topicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -48,10 +50,12 @@ class LessonsController {
 
       if (response.statusCode == 200) {
         final String responseBody = utf8.decode(response.bodyBytes);
-        final List<Map<String, dynamic>> subtopics = List<Map<String, dynamic>>.from(jsonDecode(responseBody));
+        final List<Map<String, dynamic>> subtopics =
+            List<Map<String, dynamic>>.from(jsonDecode(responseBody));
 
         // Cache for future use
-        cacheController.cacheSubtopics(courseId, topicId, targetLanguage, subtopics);
+        cacheController.cacheSubtopics(
+            courseId, topicId, targetLanguage, subtopics);
 
         return subtopics;
       } else {
@@ -80,7 +84,8 @@ class LessonsController {
     try {
       // Fetch materials
       final materialsResponse = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsOrdered(courseId, topicId, subtopicId, targetLanguage)),
+        ApiEndpoints.getUri(ApiEndpoints.subtopicMaterialsOrdered(
+            courseId, topicId, subtopicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -90,13 +95,15 @@ class LessonsController {
       List<Map<String, dynamic>> materialsList = [];
       if (materialsResponse.statusCode == 200) {
         final String materialsBody = utf8.decode(materialsResponse.bodyBytes);
-        materialsList = List<Map<String, dynamic>>.from(jsonDecode(materialsBody));
+        materialsList =
+            List<Map<String, dynamic>>.from(jsonDecode(materialsBody));
       }
 
       // Fetch quizzes
       List<Map<String, dynamic>> quizzesList = [];
       final quizzesResponse = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesOrdered(courseId, topicId, subtopicId, targetLanguage)),
+        ApiEndpoints.getUri(ApiEndpoints.subtopicQuizzesOrdered(
+            courseId, topicId, subtopicId, targetLanguage)),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json; charset=UTF-8',
@@ -110,7 +117,8 @@ class LessonsController {
         for (var quiz in quizzesData) {
           final quizId = quiz["id"]?.toString() ?? "N/A";
           final questionsResponse = await http.get(
-            ApiEndpoints.getUri(ApiEndpoints.subtopicQuizQuestionsOrdered(courseId, topicId, subtopicId, quizId, targetLanguage)),
+            ApiEndpoints.getUri(ApiEndpoints.subtopicQuizQuestionsOrdered(
+                courseId, topicId, subtopicId, quizId, targetLanguage)),
             headers: {
               'Authorization': 'Bearer $token',
               'Content-Type': 'application/json; charset=UTF-8',
@@ -118,7 +126,8 @@ class LessonsController {
           );
 
           if (questionsResponse.statusCode == 200) {
-            final String questionsBody = utf8.decode(questionsResponse.bodyBytes);
+            final String questionsBody =
+                utf8.decode(questionsResponse.bodyBytes);
             List<dynamic> questionsData = jsonDecode(questionsBody);
             for (var question in questionsData) {
               quizzesList.add({
@@ -127,8 +136,11 @@ class LessonsController {
                 "title": quiz["title"] ?? "Untitled Quiz",
                 "difficulty": quiz["difficulty"] ?? "Unknown",
                 "question_count": questionsData.length.toString(),
-                "question_text": question["question_text"] ?? "No question text available",
-                "options": (question["options"] as List<dynamic>?)?.cast<String>() ?? ["No options available"],
+                "question_text":
+                    question["question_text"] ?? "No question text available",
+                "options":
+                    (question["options"] as List<dynamic>?)?.cast<String>() ??
+                        ["No options available"],
                 "correct_option": question["correct_option"] ?? 0,
                 "created_at": quiz["created_at"] ?? "",
               });

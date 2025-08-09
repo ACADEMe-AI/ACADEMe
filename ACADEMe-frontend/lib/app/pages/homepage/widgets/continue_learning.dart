@@ -28,8 +28,9 @@ class ContinueLearningSection extends StatelessWidget {
     required this.onSeeAllTap,
   });
 
-  List<Map<String, dynamic>> get ongoingCourses => courses.where((course) =>
-      course["progress"] > 0 && course["progress"] < 1).toList();
+  List<Map<String, dynamic>> get ongoingCourses => courses
+      .where((course) => course["progress"] > 0 && course["progress"] < 1)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -43,14 +44,15 @@ class ContinueLearningSection extends StatelessWidget {
         _buildSectionHeader(context),
         const SizedBox(height: _verticalSpacing),
         ...ongoingCourses.take(2).map((course) => Padding(
-          padding: const EdgeInsets.only(bottom: _cardSpacing),
-          child: _buildLearningCard(
-            context: context,
-            course: course,
-            color: _cardColors[ongoingCourses.indexOf(course) % _cardColors.length]
-                .withOpacity(_cardColorOpacity),
-          ),
-        )),
+              padding: const EdgeInsets.only(bottom: _cardSpacing),
+              child: _buildLearningCard(
+                context: context,
+                course: course,
+                color: _cardColors[
+                        ongoingCourses.indexOf(course) % _cardColors.length]
+                    .withOpacity(_cardColorOpacity),
+              ),
+            )),
       ],
     );
   }

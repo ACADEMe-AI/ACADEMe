@@ -35,7 +35,8 @@ class PerformanceGraph extends StatelessWidget {
           ? Center(
               child: Text(
                 L10n.getTranslatedText(context, 'No quiz data available'),
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
               ),
             )
           : SingleChildScrollView(
@@ -113,7 +114,8 @@ class PerformanceGraph extends StatelessWidget {
                         tooltipBgColor: Colors.black87,
                         getTooltipItem: (group, groupIndex, rod, rodIndex) {
                           final title = displayData[groupIndex]['title'] ?? '';
-                          final correct = displayData[groupIndex]['isCorrect'] == true;
+                          final correct =
+                              displayData[groupIndex]['isCorrect'] == true;
                           return BarTooltipItem(
                             '$title\n${correct ? 'Correct' : 'Incorrect'}',
                             const TextStyle(

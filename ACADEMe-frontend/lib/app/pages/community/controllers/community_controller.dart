@@ -23,7 +23,7 @@ class CommunityController extends ChangeNotifier {
   // Handle search functionality
   void searchCommunities(String query) {
     _searchQuery = query;
-    
+
     if (query.isEmpty) {
       _filteredCommunities = List.from(_communities);
     } else {
@@ -32,7 +32,7 @@ class CommunityController extends ChangeNotifier {
               community.title.toLowerCase().contains(query.toLowerCase()))
           .toList();
     }
-    
+
     notifyListeners();
   }
 

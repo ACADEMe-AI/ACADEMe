@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 // App lifecycle manager to track app state
 class AppLifecycleController extends WidgetsBindingObserver {
-  static final AppLifecycleController _instance = AppLifecycleController._internal();
+  static final AppLifecycleController _instance =
+      AppLifecycleController._internal();
   factory AppLifecycleController() => _instance;
   AppLifecycleController._internal();
 
@@ -27,7 +28,8 @@ class AppLifecycleController extends WidgetsBindingObserver {
         break;
       case AppLifecycleState.resumed:
         if (_lastPausedTime != null &&
-            DateTime.now().difference(_lastPausedTime!) > const Duration(minutes: 5)) {
+            DateTime.now().difference(_lastPausedTime!) >
+                const Duration(minutes: 5)) {
           _isAppJustOpened = true;
         }
         break;

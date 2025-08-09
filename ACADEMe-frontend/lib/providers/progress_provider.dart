@@ -25,11 +25,13 @@ class ProgressProvider with ChangeNotifier {
   final List<Map<String, dynamic>> _pendingUpdates = [];
   bool _isBatchProcessing = false;
 
-  List<Map<String, dynamic>> get progressList => List.unmodifiable(_progressList);
+  List<Map<String, dynamic>> get progressList =>
+      List.unmodifiable(_progressList);
   bool get isLoading => _isLoading;
 
   // Get cached progress for specific course/topic
-  List<Map<String, dynamic>> getCourseProgress(String courseId, String topicId) {
+  List<Map<String, dynamic>> getCourseProgress(
+      String courseId, String topicId) {
     final key = '${courseId}_$topicId';
     return _courseProgressCache[key] ?? [];
   }
@@ -141,14 +143,14 @@ class ProgressProvider with ChangeNotifier {
 
     if (activityType == 'quiz' && questionId != null) {
       return courseProgress.any((progress) =>
-      progress['course_id']?.toString() == courseId &&
+          progress['course_id']?.toString() == courseId &&
           progress['topic_id']?.toString() == topicId &&
           progress['quiz_id']?.toString() == activityId &&
           progress['question_id']?.toString() == questionId &&
           progress['status'] == 'completed');
     } else if (activityType == 'material') {
       return courseProgress.any((progress) =>
-      progress['course_id']?.toString() == courseId &&
+          progress['course_id']?.toString() == courseId &&
           progress['topic_id']?.toString() == topicId &&
           progress['material_id']?.toString() == activityId &&
           progress['status'] == 'completed');
@@ -163,22 +165,21 @@ class ProgressProvider with ChangeNotifier {
     required String courseId,
     required String topicId,
   }) {
-    final hasIncompleteMaterial = materials.any((material) =>
-    !isActivityCompleted(
-      courseId: courseId,
-      topicId: topicId,
-      activityId: material['id']?.toString() ?? '',
-      activityType: 'material',
-    ));
+    final hasIncompleteMaterial =
+        materials.any((material) => !isActivityCompleted(
+              courseId: courseId,
+              topicId: topicId,
+              activityId: material['id']?.toString() ?? '',
+              activityType: 'material',
+            ));
 
-    final hasIncompleteQuiz = quizzes.any((quiz) =>
-    !isActivityCompleted(
-      courseId: courseId,
-      topicId: topicId,
-      activityId: quiz['id']?.toString() ?? '',
-      activityType: 'quiz',
-      questionId: quiz['question_id']?.toString(),
-    ));
+    final hasIncompleteQuiz = quizzes.any((quiz) => !isActivityCompleted(
+          courseId: courseId,
+          topicId: topicId,
+          activityId: quiz['id']?.toString() ?? '',
+          activityType: 'quiz',
+          questionId: quiz['question_id']?.toString(),
+        ));
 
     return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
@@ -210,7 +211,8 @@ class ProgressProvider with ChangeNotifier {
       // Group updates by type to optimize API calls
       final Map<String, List<Map<String, dynamic>>> groupedUpdates = {};
       for (var update in updatesToProcess) {
-        final key = '${update['course_id']}_${update['topic_id']}_${update['activity_type']}';
+        final key =
+            '${update['course_id']}_${update['topic_id']}_${update['activity_type']}';
         groupedUpdates.putIfAbsent(key, () => []).add(update);
       }
 
@@ -227,7 +229,6 @@ class ProgressProvider with ChangeNotifier {
       // Update course cache
       _updateCourseCache();
       notifyListeners();
-
     } catch (e) {
       log("❌ Error processing batch updates: $e");
       // Re-queue failed updates
@@ -238,12 +239,12 @@ class ProgressProvider with ChangeNotifier {
   }
 
   // Send batch progress update
-  Future<void> _sendBatchProgressUpdate(List<Map<String, dynamic>> updates, String token) async {
+  Future<void> _sendBatchProgressUpdate(
+      List<Map<String, dynamic>> updates, String token) async {
     for (var progressData in updates) {
       // Check if progress already exists in cache
       final existingProgress = _progressList.firstWhere(
-            (progress) =>
-            _isSameProgress(progress, progressData),
+        (progress) => _isSameProgress(progress, progressData),
         orElse: () => {},
       );
 
@@ -302,19 +303,23 @@ class ProgressProvider with ChangeNotifier {
   }
 
   // Check if two progress records are the same
-  bool _isSameProgress(Map<String, dynamic> existing, Map<String, dynamic> new_) {
+  bool _isSameProgress(
+      Map<String, dynamic> existing, Map<String, dynamic> new_) {
     if (new_['quiz_id'] != null && new_['question_id'] != null) {
       return existing['quiz_id']?.toString() == new_['quiz_id']?.toString() &&
-          existing['question_id']?.toString() == new_['question_id']?.toString();
+          existing['question_id']?.toString() ==
+              new_['question_id']?.toString();
     } else if (new_['material_id'] != null) {
-      return existing['material_id']?.toString() == new_['material_id']?.toString();
+      return existing['material_id']?.toString() ==
+          new_['material_id']?.toString();
     }
     return false;
   }
 
   // Update local progress cache
   void _updateLocalProgress(Map<String, dynamic> progressData) {
-    final index = _progressList.indexWhere((progress) => _isSameProgress(progress, progressData));
+    final index = _progressList
+        .indexWhere((progress) => _isSameProgress(progress, progressData));
 
     if (index != -1) {
       // Update existing
@@ -330,22 +335,26 @@ class ProgressProvider with ChangeNotifier {
     final courseProgress = getCourseProgress(courseId, topicId);
 
     // Find last in-progress activity
-    Map<String, dynamic>? lastProgress = courseProgress.where((progress) =>
-    progress['course_id'] == courseId &&
-        progress['topic_id'] == topicId &&
-        progress['status'] == 'in-progress').isNotEmpty
+    Map<String, dynamic>? lastProgress = courseProgress
+            .where((progress) =>
+                progress['course_id'] == courseId &&
+                progress['topic_id'] == topicId &&
+                progress['status'] == 'in-progress')
+            .isNotEmpty
         ? courseProgress.lastWhere((progress) =>
-    progress['course_id'] == courseId &&
-        progress['topic_id'] == topicId &&
-        progress['status'] == 'in-progress')
+            progress['course_id'] == courseId &&
+            progress['topic_id'] == topicId &&
+            progress['status'] == 'in-progress')
         : null;
 
     // If no in-progress, find last completed activity
     if (lastProgress == null) {
-      final completedProgress = courseProgress.where((progress) =>
-      progress['course_id'] == courseId &&
-          progress['topic_id'] == topicId &&
-          progress['status'] == 'completed').toList();
+      final completedProgress = courseProgress
+          .where((progress) =>
+              progress['course_id'] == courseId &&
+              progress['topic_id'] == topicId &&
+              progress['status'] == 'completed')
+          .toList();
 
       if (completedProgress.isNotEmpty) {
         lastProgress = completedProgress.last;
@@ -373,10 +382,12 @@ class ProgressProvider with ChangeNotifier {
     for (final p in courseProgress) {
       if (p['status'] == 'completed' && p['subtopic_id'] != null) {
         // Check if subtopic is actually completed (all materials and quizzes)
-        final subtopicProgress = courseProgress.where((progress) =>
-        progress['subtopic_id'] == p['subtopic_id']).toList();
+        final subtopicProgress = courseProgress
+            .where((progress) => progress['subtopic_id'] == p['subtopic_id'])
+            .toList();
 
-        if (_isSubtopicCompletedFromProgress(subtopicProgress, p['subtopic_id'])) {
+        if (_isSubtopicCompletedFromProgress(
+            subtopicProgress, p['subtopic_id'])) {
           completedSubIds.add(p['subtopic_id']);
         }
       }
@@ -389,23 +400,25 @@ class ProgressProvider with ChangeNotifier {
   }
 
 // Helper method to check subtopic completion from progress data
-  bool _isSubtopicCompletedFromProgress(List<Map<String, dynamic>> progress, String subtopicId) {
+  bool _isSubtopicCompletedFromProgress(
+      List<Map<String, dynamic>> progress, String subtopicId) {
     final subtopicMaterials = progress.where((p) =>
-    p['subtopic_id'] == subtopicId && p['activity_type'] == 'reading');
-    final subtopicQuizzes = progress.where((p) =>
-    p['subtopic_id'] == subtopicId && p['activity_type'] == 'quiz');
+        p['subtopic_id'] == subtopicId && p['activity_type'] == 'reading');
+    final subtopicQuizzes = progress.where(
+        (p) => p['subtopic_id'] == subtopicId && p['activity_type'] == 'quiz');
 
-    final hasIncompleteMaterial = subtopicMaterials.any(
-            (material) => material['status'] != 'completed');
-    final hasIncompleteQuiz = subtopicQuizzes.any(
-            (quiz) => quiz['status'] != 'completed');
+    final hasIncompleteMaterial =
+        subtopicMaterials.any((material) => material['status'] != 'completed');
+    final hasIncompleteQuiz =
+        subtopicQuizzes.any((quiz) => quiz['status'] != 'completed');
 
     return !hasIncompleteMaterial && !hasIncompleteQuiz;
   }
 
   // Force refresh progress data
   Future<void> refreshProgress({String? courseId, String? topicId}) async {
-    await fetchProgress(courseId: courseId, topicId: topicId, forceRefresh: true);
+    await fetchProgress(
+        courseId: courseId, topicId: topicId, forceRefresh: true);
   }
 
   // Clear cache

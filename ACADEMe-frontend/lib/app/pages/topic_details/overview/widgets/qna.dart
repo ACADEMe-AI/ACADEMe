@@ -4,8 +4,7 @@ import 'package:ACADEMe/utils/constants/image_strings.dart';
 import 'package:flutter/material.dart';
 
 class QSection extends StatelessWidget {
-  final String userImage =
-      "https://via.placeholder.com/50";
+  final String userImage = "https://via.placeholder.com/50";
 
   const QSection({super.key}); // Replace with actual user image URL
 
@@ -30,16 +29,14 @@ class QSection extends StatelessWidget {
                           AImages.qnaUser,
                           23,
                           5,
-                          context
-                      ),
+                          context),
                       buildQAItem(
                           "Jenny Barry",
                           L10n.getTranslatedText(context, 'A day ago'),
                           "AImages.QnA_user",
                           23,
                           5,
-                          context
-                      ),
+                          context),
                     ],
                   ),
                 ),
@@ -84,7 +81,8 @@ class QSection extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    L10n.getTranslatedText(context, 'Q&A section will be available soon'),
+                    L10n.getTranslatedText(
+                        context, 'Q&A section will be available soon'),
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey[600],
@@ -126,13 +124,13 @@ class QSection extends StatelessWidget {
     );
   }
 
-  Widget buildQAItem(
-      String name, String time, String imageUrl, int likes, int comments, BuildContext context) {
+  Widget buildQAItem(String name, String time, String imageUrl, int likes,
+      int comments, BuildContext context) {
     return Card(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side:
-          BorderSide(color: Colors.grey[300]!), // Outline border color grey
+              BorderSide(color: Colors.grey[300]!), // Outline border color grey
         ),
         // elevation: 2,
         margin: EdgeInsets.only(bottom: 12),
@@ -164,7 +162,8 @@ class QSection extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  L10n.getTranslatedText(context, 'They deserve little; even our minimal effort brings pleasure — an exception among exceptions, small from small'),
+                  L10n.getTranslatedText(context,
+                      'They deserve little; even our minimal effort brings pleasure — an exception among exceptions, small from small'),
                   style: TextStyle(fontSize: 14, color: Colors.black87),
                 ),
                 SizedBox(height: 10),

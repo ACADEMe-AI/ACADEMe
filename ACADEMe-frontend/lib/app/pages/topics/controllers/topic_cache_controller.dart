@@ -3,7 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/topic_cache_data.dart';
 
 class TopicCacheController {
-  static final TopicCacheController _instance = TopicCacheController._internal();
+  static final TopicCacheController _instance =
+      TopicCacheController._internal();
   factory TopicCacheController() => _instance;
   TopicCacheController._internal();
 
@@ -13,7 +14,8 @@ class TopicCacheController {
   static const Duration _cacheExpiry = Duration(minutes: 15);
 
   // Existing methods...
-  void cacheTopics(String courseId, String languageCode, List<Map<String, dynamic>> topics) {
+  void cacheTopics(
+      String courseId, String languageCode, List<Map<String, dynamic>> topics) {
     final key = _getCacheKey(courseId, languageCode);
     _cache[key] = TopicCacheData(
       topics: List.from(topics),
@@ -21,7 +23,8 @@ class TopicCacheController {
     );
   }
 
-  List<Map<String, dynamic>>? getCachedTopics(String courseId, String languageCode) {
+  List<Map<String, dynamic>>? getCachedTopics(
+      String courseId, String languageCode) {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
 
@@ -36,7 +39,8 @@ class TopicCacheController {
   }
 
   // Cache topic details
-  void cacheTopicDetails(String courseId, String topicId, String languageCode, Map<String, dynamic> details) {
+  void cacheTopicDetails(String courseId, String topicId, String languageCode,
+      Map<String, dynamic> details) {
     final key = '${courseId}_${topicId}_$languageCode';
     _topicDetailsCache[key] = {
       ...details,
@@ -44,7 +48,8 @@ class TopicCacheController {
     };
   }
 
-  Map<String, dynamic>? getCachedTopicDetails(String courseId, String topicId, String languageCode) {
+  Map<String, dynamic>? getCachedTopicDetails(
+      String courseId, String topicId, String languageCode) {
     final key = '${courseId}_${topicId}_$languageCode';
     final cached = _topicDetailsCache[key];
 
@@ -60,18 +65,23 @@ class TopicCacheController {
   }
 
   // Cache subtopics
-  void cacheSubtopics(String courseId, String topicId, String languageCode, List<Map<String, dynamic>> subtopics) {
+  void cacheSubtopics(String courseId, String topicId, String languageCode,
+      List<Map<String, dynamic>> subtopics) {
     final key = '${courseId}_${topicId}_$languageCode';
     _subtopicsCache[key] = List.from(subtopics);
   }
 
-  List<Map<String, dynamic>>? getCachedSubtopics(String courseId, String topicId, String languageCode) {
+  List<Map<String, dynamic>>? getCachedSubtopics(
+      String courseId, String topicId, String languageCode) {
     final key = '${courseId}_${topicId}_$languageCode';
-    return _subtopicsCache[key] != null ? List.from(_subtopicsCache[key]!) : null;
+    return _subtopicsCache[key] != null
+        ? List.from(_subtopicsCache[key]!)
+        : null;
   }
 
   // Update cached topic progress without API calls
-  void updateCachedTopicProgress(String courseId, String topicId, String languageCode, double progressPercentage) {
+  void updateCachedTopicProgress(String courseId, String topicId,
+      String languageCode, double progressPercentage) {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
 
@@ -81,7 +91,8 @@ class TopicCacheController {
       final topicIndex = topics.indexWhere((topic) => topic['id'] == topicId);
 
       if (topicIndex != -1) {
-        topics[topicIndex]['progress'] = progressPercentage * 100; // Convert to percentage
+        topics[topicIndex]['progress'] =
+            progressPercentage * 100; // Convert to percentage
 
         // Update the cache with new data and refresh timestamp
         _cache[key] = TopicCacheData(
@@ -95,7 +106,8 @@ class TopicCacheController {
   }
 
   // Enhanced method to refresh cached data with latest progress AND module completion from SharedPreferences
-  Future<void> refreshCachedTopicsProgress(String courseId, String languageCode) async {
+  Future<void> refreshCachedTopicsProgress(
+      String courseId, String languageCode) async {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
 
@@ -105,13 +117,17 @@ class TopicCacheController {
       // Update progress for all cached topics
       for (var topic in cacheData.topics) {
         final topicId = topic['id'].toString();
-        final progress = prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
+        final progress =
+            prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
         topic['progress'] = progress * 100; // Convert to percentage
 
         // Also cache module completion data for immediate access
-        final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
-        final completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
-        
+        final totalSubtopics =
+            prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+        final completedSubtopics =
+            prefs.getStringList('completed_subtopics_${courseId}_$topicId') ??
+                [];
+
         // Store module completion info in the topic data for quick access
         topic['totalModules'] = totalSubtopics;
         topic['completedModules'] = completedSubtopics.length;
@@ -128,7 +144,8 @@ class TopicCacheController {
   }
 
   // NEW: Method to update module completion for a specific topic
-  Future<void> updateTopicModuleCompletion(String courseId, String topicId, String languageCode) async {
+  Future<void> updateTopicModuleCompletion(
+      String courseId, String topicId, String languageCode) async {
     final key = _getCacheKey(courseId, languageCode);
     final cacheData = _cache[key];
 
@@ -139,14 +156,18 @@ class TopicCacheController {
 
       if (topicIndex != -1) {
         // Update module completion data
-        final totalSubtopics = prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
-        final completedSubtopics = prefs.getStringList('completed_subtopics_${courseId}_$topicId') ?? [];
-        
+        final totalSubtopics =
+            prefs.getInt('total_subtopics_${courseId}_$topicId') ?? 0;
+        final completedSubtopics =
+            prefs.getStringList('completed_subtopics_${courseId}_$topicId') ??
+                [];
+
         topics[topicIndex]['totalModules'] = totalSubtopics;
         topics[topicIndex]['completedModules'] = completedSubtopics.length;
 
         // Also update progress if needed
-        final progress = prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
+        final progress =
+            prefs.getDouble('progress_${courseId}_$topicId') ?? 0.0;
         topics[topicIndex]['progress'] = progress * 100;
 
         // Update the cache
@@ -168,7 +189,8 @@ class TopicCacheController {
     if (cacheData == null) return true;
 
     // Check if cache is older than 2 minutes (shorter interval for progress updates)
-    return DateTime.now().difference(cacheData.timestamp) > const Duration(minutes: 2);
+    return DateTime.now().difference(cacheData.timestamp) >
+        const Duration(minutes: 2);
   }
 
   String _getCacheKey(String courseId, String languageCode) {
@@ -188,6 +210,7 @@ class TopicCacheController {
   void clearCacheForCourse(String courseId) {
     _cache.removeWhere((key, value) => key.startsWith('${courseId}_'));
     _subtopicsCache.removeWhere((key, value) => key.startsWith('${courseId}_'));
-    _topicDetailsCache.removeWhere((key, value) => key.startsWith('${courseId}_'));
+    _topicDetailsCache
+        .removeWhere((key, value) => key.startsWith('${courseId}_'));
   }
 }

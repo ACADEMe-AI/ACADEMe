@@ -32,7 +32,9 @@ class AdminRoles {
   /// Fetches admin emails from the API and updates the list.
   static Future<void> fetchAdminEmails() async {
     try {
-      final response = await http.get(ApiEndpoints.getUri(ApiEndpoints.adminEmails),);
+      final response = await http.get(
+        ApiEndpoints.getUri(ApiEndpoints.adminEmails),
+      );
 
       if (response.statusCode == 200) {
         List<dynamic> emails = json.decode(response.body);

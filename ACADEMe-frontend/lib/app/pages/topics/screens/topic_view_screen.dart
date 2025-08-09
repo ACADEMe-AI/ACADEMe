@@ -59,7 +59,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
   Future<void> _initializeTopics() async {
     if (!mounted) return;
 
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
     // Preload progress data once at the beginning
@@ -67,7 +68,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     await progressProvider.preloadProgress(courseId: widget.courseId);
 
     // Try to get cached data first
-    final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
+    final cachedTopics =
+        _cacheController.getCachedTopics(widget.courseId, targetLanguage);
 
     if (cachedTopics != null) {
       // Always show cached data first for instant loading
@@ -95,7 +97,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     _lifecycleController.markAsUsed();
   }
 
-  Future<void> _fetchTopicsFromBackend({bool showRefreshIndicator = false}) async {
+  Future<void> _fetchTopicsFromBackend(
+      {bool showRefreshIndicator = false}) async {
     if (!mounted) return;
 
     setState(() {
@@ -107,7 +110,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     });
 
     try {
-      final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+      final languageProvider =
+          Provider.of<LanguageProvider>(context, listen: false);
       final targetLanguage = languageProvider.locale.languageCode;
 
       final allTopics = await _apiController.fetchTopicsFromBackend(
@@ -125,14 +129,17 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     } catch (e) {
       log("Error fetching topics: $e");
       if (mounted) {
-        final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-        final cachedTopics = _cacheController.getCachedTopics(widget.courseId, languageProvider.locale.languageCode);
+        final languageProvider =
+            Provider.of<LanguageProvider>(context, listen: false);
+        final cachedTopics = _cacheController.getCachedTopics(
+            widget.courseId, languageProvider.locale.languageCode);
 
         if (cachedTopics == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               // content: Text("Error loading topics: ${e.toString()}"),
-              content: Text(L10n.getTranslatedText(context, 'Error loading topics, try again')),
+              content: Text(L10n.getTranslatedText(
+                  context, 'Error loading topics, try again')),
               action: SnackBarAction(
                 label: L10n.getTranslatedText(context, 'Retry'),
                 onPressed: () => _fetchTopicsFromBackend(),
@@ -142,7 +149,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(L10n.getTranslatedText(context, 'Failed to refresh. Showing cached data')),
+              content: Text(L10n.getTranslatedText(
+                  context, 'Failed to refresh. Showing cached data')),
               duration: Duration(seconds: 2),
             ),
           );
@@ -160,16 +168,20 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
   // Add this method to _TopicViewScreenState class
   Future<void> _refreshTopicsProgressOnly() async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final targetLanguage = languageProvider.locale.languageCode;
 
     // Check if we should refresh progress (based on time elapsed)
-    if (_cacheController.shouldRefreshProgress(widget.courseId, targetLanguage)) {
+    if (_cacheController.shouldRefreshProgress(
+        widget.courseId, targetLanguage)) {
       // Refresh cached progress without API call
-      await _cacheController.refreshCachedTopicsProgress(widget.courseId, targetLanguage);
+      await _cacheController.refreshCachedTopicsProgress(
+          widget.courseId, targetLanguage);
 
       // Update UI with refreshed cached data
-      final updatedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
+      final updatedTopics =
+          _cacheController.getCachedTopics(widget.courseId, targetLanguage);
       if (updatedTopics != null && mounted) {
         setState(() {
           _updateTopicsData(updatedTopics);
@@ -177,7 +189,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
       }
     } else {
       // Data is fresh enough, just update UI with existing cache
-      final cachedTopics = _cacheController.getCachedTopics(widget.courseId, targetLanguage);
+      final cachedTopics =
+          _cacheController.getCachedTopics(widget.courseId, targetLanguage);
       if (cachedTopics != null && mounted) {
         setState(() {
           _updateTopicsData(cachedTopics);
@@ -188,7 +201,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
   void _updateTopicsData(List<Map<String, dynamic>> allTopics) {
     topics = allTopics;
-    ongoingTopics = topics.where((t) => t["progress"] > 0 && t["progress"] < 100).toList();
+    ongoingTopics =
+        topics.where((t) => t["progress"] > 0 && t["progress"] < 100).toList();
     completedTopics = topics.where((t) => t["progress"] == 100).toList();
   }
 
@@ -198,7 +212,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     final language = languageProvider.locale.languageCode;
 
     return Scaffold(
@@ -275,7 +290,8 @@ class _TopicViewScreenState extends State<TopicViewScreen>
     );
   }
 
-  Widget _buildTopicList(List<Map<String, dynamic>> topicList, String language) {
+  Widget _buildTopicList(
+      List<Map<String, dynamic>> topicList, String language) {
     if (isLoading && topics.isEmpty) {
       return _buildShimmerLoadingList();
     }
@@ -336,16 +352,14 @@ class _TopicViewScreenState extends State<TopicViewScreen>
               ),
             ).then((_) async {
               // Update both progress and module completion for the specific topic
-              final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+              final languageProvider =
+                  Provider.of<LanguageProvider>(context, listen: false);
               final targetLanguage = languageProvider.locale.languageCode;
-              
+
               // Update module completion for the specific topic
               await _cacheController.updateTopicModuleCompletion(
-                widget.courseId, 
-                topicList[index]["id"], 
-                targetLanguage
-              );
-              
+                  widget.courseId, topicList[index]["id"], targetLanguage);
+
               // Then refresh all topics progress
               await _refreshTopicsProgressOnly();
             });

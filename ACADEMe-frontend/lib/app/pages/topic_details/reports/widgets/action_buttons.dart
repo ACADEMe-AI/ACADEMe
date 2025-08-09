@@ -32,7 +32,8 @@ class ActionButtons extends StatelessWidget {
             label: L10n.getTranslatedText(context, 'Download Report'),
             isLoading: isDownloading,
             onPressed: isDownloading || isSharing ? null : onDownloadReport,
-            backgroundColor: isDarkMode ? Colors.blueGrey[800] : Colors.blue[50],
+            backgroundColor:
+                isDarkMode ? Colors.blueGrey[800] : Colors.blue[50],
             iconColor: isDarkMode ? Colors.blue[200] : Colors.blue[800],
           ),
           _buildActionButton(
@@ -85,7 +86,8 @@ class ActionButtons extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12), // Reduced horizontal padding
+          padding: const EdgeInsets.symmetric(
+              horizontal: 8, vertical: 12), // Reduced horizontal padding
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(

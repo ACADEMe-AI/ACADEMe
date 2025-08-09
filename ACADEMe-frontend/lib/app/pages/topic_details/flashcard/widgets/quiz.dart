@@ -40,7 +40,7 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   bool isSubmitting = false;
   List<dynamic> _progressList = [];
   final FlutterSecureStorage _storage =
-  const FlutterSecureStorage(); // Add FlutterSecureStorage
+      const FlutterSecureStorage(); // Add FlutterSecureStorage
 
   // Animation variables
   late AnimationController _animationController;
@@ -117,7 +117,8 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
   Future<void> _fetchProgress() async {
     final progressProvider = ProgressProvider();
     setState(() {
-      _progressList = progressProvider.getCourseProgress(widget.courseId, widget.topicId);
+      _progressList =
+          progressProvider.getCourseProgress(widget.courseId, widget.topicId);
     });
 
     // Fetch fresh data only if cache is empty or expired
@@ -132,7 +133,8 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _sendProgress(bool isCorrect, String quizId, String questionId) async {
+  Future<void> _sendProgress(
+      bool isCorrect, String quizId, String questionId) async {
     // Calculate score per question
     final totalQuestions = widget.quizzes.length;
     final scorePerQuestion = totalQuestions > 0 ? (100 / totalQuestions) : 0;
@@ -159,17 +161,18 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
 
   // Store result in Shared Preferences
   Future<void> _storeQuizResult(bool isCorrect) async {
-    final String storageKey = 'quiz_results_${widget.courseId}_${widget.topicId}';
+    final String storageKey =
+        'quiz_results_${widget.courseId}_${widget.topicId}';
     String? existingResults = await _storage.read(key: storageKey);
 
     Map<String, dynamic> results = existingResults != null
         ? json.decode(existingResults)
         : {
-      'totalQuestions': 0,
-      'correctAnswers': 0,
-      'quizData': [],
-      'lastUpdated': DateTime.now().toIso8601String(),
-    };
+            'totalQuestions': 0,
+            'correctAnswers': 0,
+            'quizData': [],
+            'lastUpdated': DateTime.now().toIso8601String(),
+          };
 
     results['totalQuestions'] = (results['totalQuestions'] as int) + 1;
     if (isCorrect) {
@@ -242,92 +245,96 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                 ),
                 child: _scaleAnimation.value > 0.5
                     ? Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()..rotateY(3.14159),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      children: [
-                        // Main content - positioned to fill the container minus progress bar space
-                        Positioned.fill(
-                          bottom: 6, // Leave exact space for progress bar height
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Transform.scale(
-                                  scale: _pulseAnimation.value,
-                                  child: Icon(
-                                    _lastAnswerCorrect
-                                        ? Icons.verified_rounded
-                                        : Icons.error_outline_rounded,
-                                    color: Colors.white,
-                                    size: 50,
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()..rotateY(3.14159),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            children: [
+                              // Main content - positioned to fill the container minus progress bar space
+                              Positioned.fill(
+                                bottom:
+                                    6, // Leave exact space for progress bar height
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Transform.scale(
+                                        scale: _pulseAnimation.value,
+                                        child: Icon(
+                                          _lastAnswerCorrect
+                                              ? Icons.verified_rounded
+                                              : Icons.error_outline_rounded,
+                                          color: Colors.white,
+                                          size: 50,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        _lastAnswerCorrect
+                                            ? L10n.getTranslatedText(
+                                                context, 'Perfect!')
+                                            : L10n.getTranslatedText(
+                                                context, 'Oops!'),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (_lastAnswerCorrect)
+                                        const Text(
+                                          "Keep it up! 🚀",
+                                          style: TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      const SizedBox(height: 20),
+                                      Text(
+                                        L10n.getTranslatedText(
+                                            context, 'Saving progress...'),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _lastAnswerCorrect
-                                      ? L10n.getTranslatedText(context, 'Perfect!')
-                                      : L10n.getTranslatedText(context, 'Oops!'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              ),
+                              // Progress bar positioned at the bottom
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: AnimatedBuilder(
+                                  animation: _progressAnimation,
+                                  builder: (context, child) {
+                                    return Container(
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.3),
+                                      ),
+                                      child: FractionallySizedBox(
+                                        alignment: Alignment.centerLeft,
+                                        widthFactor: _progressAnimation.value,
+                                        child: Container(
+                                          decoration: const BoxDecoration(
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                if (_lastAnswerCorrect)
-                                  const Text(
-                                    "Keep it up! 🚀",
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  L10n.getTranslatedText(context, 'Saving progress...'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                        // Progress bar positioned at the bottom
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: AnimatedBuilder(
-                            animation: _progressAnimation,
-                            builder: (context, child) {
-                              return Container(
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                ),
-                                child: FractionallySizedBox(
-                                  alignment: Alignment.centerLeft,
-                                  widthFactor: _progressAnimation.value,
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
+                      )
                     : const SizedBox.shrink(),
               ),
             ),
@@ -337,8 +344,8 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
     );
   }
 
-
-  void _showResultPopup(bool isCorrect, String submittedQuizId, String questionId) async {
+  void _showResultPopup(
+      bool isCorrect, String submittedQuizId, String questionId) async {
     // Set animation state
     setState(() {
       _lastAnswerCorrect = isCorrect;
@@ -389,7 +396,6 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
           widget.onSwipeToNext!(); // Trigger swipe to next material
         } else {
           if (widget.onQuizComplete != null) {
-            
             widget.onQuizComplete!();
           }
         }
@@ -464,16 +470,18 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2, // Two options per row
                             crossAxisSpacing: 12, // Horizontal spacing
                             mainAxisSpacing: 12, // Vertical spacing
-                            childAspectRatio: 1.2, // Reduced from 1.5 to 1.2 for taller boxes
+                            childAspectRatio:
+                                1.2, // Reduced from 1.5 to 1.2 for taller boxes
                           ),
                           itemCount: options.length,
                           itemBuilder: (context, index) {
                             // Calculate text size based on content length
-                            double fontSize = _calculateFontSize(options[index]);
+                            double fontSize =
+                                _calculateFontSize(options[index]);
 
                             return GestureDetector(
                               onTap: () {
@@ -494,7 +502,8 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                padding: const EdgeInsets.all(12), // Reduced padding to fit more text
+                                padding: const EdgeInsets.all(
+                                    12), // Reduced padding to fit more text
                                 child: Center(
                                   child: Text(
                                     options[index],
@@ -530,42 +539,44 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                     onPressed: isSubmitting
                         ? null
                         : () {
-                      if (_selectedAnswer != null) {
-                        setState(() {
-                          isSubmitting = true;
-                        });
+                            if (_selectedAnswer != null) {
+                              setState(() {
+                                isSubmitting = true;
+                              });
 
-                        final submittedQuizId = quizId;
-                        final currentQuiz =
-                        widget.quizzes[_currentQuestionIndex];
-                        final questionId =
-                            currentQuiz["question_id"]?.toString() ??
-                                currentQuiz["id"]?.toString() ??
-                                "";
-                        final submittedQuestionIndex = _currentQuestionIndex;
-                        bool isCorrect = _selectedAnswer == correctOption;
+                              final submittedQuizId = quizId;
+                              final currentQuiz =
+                                  widget.quizzes[_currentQuestionIndex];
+                              final questionId =
+                                  currentQuiz["question_id"]?.toString() ??
+                                      currentQuiz["id"]?.toString() ??
+                                      "";
+                              final submittedQuestionIndex =
+                                  _currentQuestionIndex;
+                              bool isCorrect = _selectedAnswer == correctOption;
 
-                        _showResultPopup(
-                            isCorrect, submittedQuizId, questionId);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(L10n.getTranslatedText(
-                                  context, 'Please select an answer!'))),
-                        );
-                      }
-                    },
+                              _showResultPopup(
+                                  isCorrect, submittedQuizId, questionId);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(L10n.getTranslatedText(
+                                        context, 'Please select an answer!'))),
+                              );
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                      Colors.yellow, // Fixed color (won't change when disabled)
+                      backgroundColor: Colors
+                          .yellow, // Fixed color (won't change when disabled)
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                       // Ensures no overlay effect on disabled state
                       disabledBackgroundColor:
-                      Colors.yellow, // Keep the same as enabled state
-                      disabledForegroundColor: Colors.black, // Keep text color same
+                          Colors.yellow, // Keep the same as enabled state
+                      disabledForegroundColor:
+                          Colors.black, // Keep text color same
                     ),
                     child: Text(
                       L10n.getTranslatedText(

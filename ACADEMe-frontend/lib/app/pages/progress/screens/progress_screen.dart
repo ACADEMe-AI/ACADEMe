@@ -53,11 +53,7 @@ class ProgressScreen extends StatelessWidget {
                         children: [
                           Container(
                             margin: const EdgeInsets.only(
-                                top: 10,
-                                bottom: 0,
-                                right: 10,
-                                left: 10
-                            ),
+                                top: 10, bottom: 0, right: 10, left: 10),
                             child: StudyTimeCard(),
                           ),
                           const SizedBox(height: 8),
@@ -77,11 +73,7 @@ class ProgressScreen extends StatelessWidget {
                                 children: [
                                   Container(
                                     padding: EdgeInsets.only(
-                                        top: 8,
-                                        bottom: 4,
-                                        left: 8,
-                                        right: 8
-                                    ),
+                                        top: 8, bottom: 4, left: 8, right: 8),
                                     child: TabBar(
                                       labelColor: Colors.white,
                                       unselectedLabelColor: Colors.blueAccent,
@@ -101,7 +93,8 @@ class ProgressScreen extends StatelessWidget {
                                                 L10n.getTranslatedText(
                                                     context, 'Summary'),
                                                 style: TextStyle(
-                                                    fontWeight: FontWeight.bold),
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
                                             ),
                                           ),
@@ -114,7 +107,8 @@ class ProgressScreen extends StatelessWidget {
                                                 L10n.getTranslatedText(
                                                     context, 'Progress'),
                                                 style: TextStyle(
-                                                    fontWeight: FontWeight.bold),
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
                                             ),
                                           ),
@@ -127,7 +121,8 @@ class ProgressScreen extends StatelessWidget {
                                                 L10n.getTranslatedText(
                                                     context, 'Activity'),
                                                 style: TextStyle(
-                                                    fontWeight: FontWeight.bold),
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
                                             ),
                                           ),
@@ -151,7 +146,8 @@ class ProgressScreen extends StatelessWidget {
                                       ),
                                       child: TabBarView(
                                         children: [
-                                          SummarySection(controller: controller),
+                                          SummarySection(
+                                              controller: controller),
                                           CourseProgressSection(),
                                           ActivitySection(),
                                         ],

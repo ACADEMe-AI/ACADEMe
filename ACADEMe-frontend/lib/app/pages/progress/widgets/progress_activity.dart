@@ -60,7 +60,8 @@ class ActivitySection extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  L10n.getTranslatedText(context, 'Upgrade to Premium to view your activity'),
+                  L10n.getTranslatedText(
+                      context, 'Upgrade to Premium to view your activity'),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey[600],
@@ -142,13 +143,13 @@ class ActivitySection extends StatelessWidget {
         const SizedBox(height: 6),
         CircleAvatar(
           backgroundColor:
-          isActive ? Colors.black : const Color.fromARGB(136, 0, 0, 0),
+              isActive ? Colors.black : const Color.fromARGB(136, 0, 0, 0),
           child: isActive
               ? const Icon(
-            Icons.local_fire_department,
-            color: Colors.orange,
-            size: 30,
-          )
+                  Icons.local_fire_department,
+                  color: Colors.orange,
+                  size: 30,
+                )
               : null,
         ),
       ],
@@ -164,24 +165,36 @@ class ActivitySection extends StatelessWidget {
           style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Liner Algebra'),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Liner Algebra'),
             L10n.getTranslatedText(context, 'Mathematics'),
-            "${L10n.getTranslatedText(context, 'Module')} - 2", 3),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Liner Algebra'),
+            "${L10n.getTranslatedText(context, 'Module')} - 2",
+            3),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Liner Algebra'),
             L10n.getTranslatedText(context, 'Mathematics'),
-            "${L10n.getTranslatedText(context, 'Quiz')} - 2", 1),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Liner Algebra'),
+            "${L10n.getTranslatedText(context, 'Quiz')} - 2",
+            1),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Liner Algebra'),
             L10n.getTranslatedText(context, 'Mathematics'),
-            "${L10n.getTranslatedText(context, 'Module')} - 1", 3),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Daily Streak'),
+            "${L10n.getTranslatedText(context, 'Module')} - 1",
+            3),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Daily Streak'),
             L10n.getTranslatedText(context, 'Attendance'),
-            L10n.getTranslatedText(context, 'Profile'), 1),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Liner Algebra'),
+            L10n.getTranslatedText(context, 'Profile'),
+            1),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Liner Algebra'),
             L10n.getTranslatedText(context, 'Mathematics'),
-            "${L10n.getTranslatedText(context, 'Quiz')} - 2", 1),
-        _buildHistoryItem(L10n.getTranslatedText(context, 'Liner Algebra'),
+            "${L10n.getTranslatedText(context, 'Quiz')} - 2",
+            1),
+        _buildHistoryItem(
+            L10n.getTranslatedText(context, 'Liner Algebra'),
             L10n.getTranslatedText(context, 'Mathematics'),
-            "${L10n.getTranslatedText(context, 'Module')} - 1", 3),
+            "${L10n.getTranslatedText(context, 'Module')} - 1",
+            3),
       ],
     );
   }
@@ -211,7 +224,7 @@ class ActivitySection extends StatelessWidget {
               Text(
                 title,
                 style:
-                const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
               Text(
                 subtitle,

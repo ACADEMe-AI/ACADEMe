@@ -3,7 +3,6 @@ import 'package:ACADEMe/academe_theme.dart';
 
 /// **Modern text formatter class for recommendation display**
 class RecommendationTextFormatter {
-
   /// **Main method to format recommendation text**
   static Widget formatText(String text, BuildContext context) {
     List<Widget> formattedWidgets = [];
@@ -22,7 +21,8 @@ class RecommendationTextFormatter {
       if (part.trim().isEmpty) {
         // End current section if we have content
         if (currentSection.isNotEmpty && currentSectionTitle != null) {
-          formattedWidgets.add(_buildSection(currentSectionTitle, currentSection, context));
+          formattedWidgets
+              .add(_buildSection(currentSectionTitle, currentSection, context));
           currentSection = [];
           currentSectionTitle = null;
         }
@@ -33,7 +33,8 @@ class RecommendationTextFormatter {
       if (part.startsWith("# ")) {
         // Main heading - start new section
         if (currentSection.isNotEmpty && currentSectionTitle != null) {
-          formattedWidgets.add(_buildSection(currentSectionTitle, currentSection, context));
+          formattedWidgets
+              .add(_buildSection(currentSectionTitle, currentSection, context));
           currentSection = [];
         }
         currentSectionTitle = part.replaceFirst("# ", "");
@@ -51,10 +52,12 @@ class RecommendationTextFormatter {
         currentSection.add(_buildKeyValuePair(part.replaceAll("*", ""), ""));
       } else if (part.startsWith("- ")) {
         // Bullet points
-        currentSection.add(_buildModernBulletPoint(part.replaceFirst("- ", "")));
+        currentSection
+            .add(_buildModernBulletPoint(part.replaceFirst("- ", "")));
       } else if (part.startsWith(">")) {
         // Quote/highlight
-        currentSection.add(_buildHighlightBox(part.replaceFirst(">", "").trim()));
+        currentSection
+            .add(_buildHighlightBox(part.replaceFirst(">", "").trim()));
       } else if (part.startsWith("`") && part.endsWith("`")) {
         // Code/technical term
         currentSection.add(_buildCodeBlock(part.replaceAll("`", "")));
@@ -66,7 +69,8 @@ class RecommendationTextFormatter {
 
     // Add final section if exists
     if (currentSection.isNotEmpty && currentSectionTitle != null) {
-      formattedWidgets.add(_buildSection(currentSectionTitle, currentSection, context));
+      formattedWidgets
+          .add(_buildSection(currentSectionTitle, currentSection, context));
     } else if (currentSection.isNotEmpty) {
       // If no title, add content directly
       formattedWidgets.addAll(currentSection);
@@ -74,22 +78,28 @@ class RecommendationTextFormatter {
 
     // If no sections were created, show all content in one card
     if (formattedWidgets.isEmpty && parts.isNotEmpty) {
-      formattedWidgets.add(_buildSection("Your Analysis", [
-        _buildRegularText(text),
-      ], context));
+      formattedWidgets.add(_buildSection(
+          "Your Analysis",
+          [
+            _buildRegularText(text),
+          ],
+          context));
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: formattedWidgets.map((widget) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: widget,
-      )).toList(),
+      children: formattedWidgets
+          .map((widget) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: widget,
+              ))
+          .toList(),
     );
   }
 
   /// **Build a modern section card**
-  static Widget _buildSection(String title, List<Widget> content, BuildContext context) {
+  static Widget _buildSection(
+      String title, List<Widget> content, BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -170,10 +180,12 @@ class RecommendationTextFormatter {
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: content.map((widget) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: widget,
-              )).toList(),
+              children: content
+                  .map((widget) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: widget,
+                      ))
+                  .toList(),
             ),
           ),
         ],
@@ -186,13 +198,16 @@ class RecommendationTextFormatter {
     final lowerTitle = title.toLowerCase();
     if (lowerTitle.contains('progress') || lowerTitle.contains('analysis')) {
       return Icons.trending_up;
-    } else if (lowerTitle.contains('recommendation') || lowerTitle.contains('suggest')) {
+    } else if (lowerTitle.contains('recommendation') ||
+        lowerTitle.contains('suggest')) {
       return Icons.lightbulb_outline;
     } else if (lowerTitle.contains('strength') || lowerTitle.contains('good')) {
       return Icons.stars;
-    } else if (lowerTitle.contains('improvement') || lowerTitle.contains('weak')) {
+    } else if (lowerTitle.contains('improvement') ||
+        lowerTitle.contains('weak')) {
       return Icons.tablet;
-    } else if (lowerTitle.contains('goal') || lowerTitle.contains('objective')) {
+    } else if (lowerTitle.contains('goal') ||
+        lowerTitle.contains('objective')) {
       return Icons.flag_outlined;
     } else if (lowerTitle.contains('next') || lowerTitle.contains('action')) {
       return Icons.arrow_forward;

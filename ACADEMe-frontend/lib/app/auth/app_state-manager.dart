@@ -8,7 +8,8 @@ import 'package:ACADEMe/app/pages/homepage/controllers/home_controller.dart';
 import 'package:ACADEMe/app/pages/topics/controllers/topic_cache_controller.dart';
 
 class AppStateManager {
-  static final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static final FlutterSecureStorage _secureStorage =
+      const FlutterSecureStorage();
 
   static Future<void> resetAppState() async {
     try {
@@ -44,8 +45,14 @@ class AppStateManager {
       debugPrint("⚠️ Error clearing secure storage: $e");
       // Fallback: Delete known keys individually
       final knownKeys = [
-        'access_token', 'user_id', 'user_email', 'user_name',
-        'student_class', 'photo_url', 'email', 'password'
+        'access_token',
+        'user_id',
+        'user_email',
+        'user_name',
+        'student_class',
+        'photo_url',
+        'email',
+        'password'
       ];
       for (var key in knownKeys) {
         try {
@@ -90,8 +97,10 @@ class AppStateManager {
 
   static void _clearImageCache() {
     try {
-      PaintingBinding.instance.imageCache.clear(); // Removed await - returns void
-      PaintingBinding.instance.imageCache.clearLiveImages(); // Removed await - returns void  
+      PaintingBinding.instance.imageCache
+          .clear(); // Removed await - returns void
+      PaintingBinding.instance.imageCache
+          .clearLiveImages(); // Removed await - returns void
       debugPrint("✅ Image cache cleared");
     } catch (e) {
       debugPrint("⚠️ Error clearing image cache: $e");
