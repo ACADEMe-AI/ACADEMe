@@ -56,6 +56,7 @@ class TestReportScreenState extends State<TestReportScreen> {
     _pdfService = await PdfReportService.create(
       controller: _controller,
       logoAssetPath: 'assets/academe/academe_logo-modified.png',
+      getTranslatedText: (text) => L10n.getTranslatedText(context, text),
     );
   }
 
@@ -100,12 +101,10 @@ class TestReportScreenState extends State<TestReportScreen> {
 
   Future<void> _handleShareAction() async {
     if (_isSharingPdf) return;
-    
+
     setState(() => _isSharingPdf = true);
     try {
-      await _pdfService.shareScore(
-        getTranslatedText: (text) => L10n.getTranslatedText(context, text),
-      );
+      await _pdfService.shareScore();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
