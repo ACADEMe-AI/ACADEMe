@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           return HomeAppBar(
                             onProfileTap: widget.onProfileTap,
                             onHamburgerTap: () => scaffoldKey.currentState?.openDrawer(),
-                            name: 'Loading...',
+                            name: 'User',
                             photoUrl: 'https://www.w3schools.com/w3images/avatar2.png',
                           );
                         }
