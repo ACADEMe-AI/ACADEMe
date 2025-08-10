@@ -284,8 +284,8 @@ class QuizPageState extends State<QuizPage> with TickerProviderStateMixin {
                                         ),
                                       ),
                                       if (_lastAnswerCorrect)
-                                        const Text(
-                                          "Keep it up! 🚀",
+                                        Text(
+                                          "${L10n.getTranslatedText(context, 'Keep it up!')} 🚀",
                                           style: TextStyle(
                                             color: Colors.white70,
                                             fontSize: 14,
