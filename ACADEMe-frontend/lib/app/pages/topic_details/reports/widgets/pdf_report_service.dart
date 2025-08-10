@@ -415,6 +415,7 @@ class PdfReportService {
                     getTranslatedText('SCORE'),
                     style: pw.TextStyle(
                       fontSize: 8,
+                      font: _boldFont,
                       color: PdfColors.white,
                       letterSpacing: 1,
                     ),
@@ -570,6 +571,7 @@ class PdfReportService {
             percentage,
             style: pw.TextStyle(
               fontSize: 9,
+              font: _regularFont,
               color: PdfColors.white,
             ),
           ),
