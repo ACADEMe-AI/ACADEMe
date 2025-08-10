@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.academe.flutter"
+    namespace "com.academe.flutter_app"
 
     compileSdk 35
     ndkVersion flutter.ndkVersion
@@ -30,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.academe.flutter"
+        applicationId = "com.academe.flutter_app"
         minSdkVersion 23
         targetSdkVersion 35
         versionCode 2
