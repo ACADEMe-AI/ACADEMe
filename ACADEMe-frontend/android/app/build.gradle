@@ -33,8 +33,8 @@ android {
         applicationId = "com.academe.flutter_app"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.0.2"
     }
 
     // Signing config (only if key.properties exists)

@@ -13,6 +13,7 @@
         LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
           pkgs.libxcrypt-legacy
           pkgs.zlib
+          pkgs.stdenv.cc.cc
         ];
         nativeBuildInputs = [
           pkgs.pkg-config
