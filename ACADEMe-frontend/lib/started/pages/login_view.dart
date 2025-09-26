@@ -78,13 +78,14 @@ class _LogInViewState extends State<LogInView> {
         // Fetch user role
         await UserRoleManager().fetchUserRole(user.email);
         bool isAdmin = UserRoleManager().isAdmin;
+        bool isTeacher = UserRoleManager().isTeacher;
 
         if (!mounted) return;
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => BottomNav(isAdmin: isAdmin),
+            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
           ),
         );
       } else {

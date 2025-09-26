@@ -6,7 +6,7 @@ from utils.auth import get_current_user
 from services.auth_service import fetch_admin_ids, send_otp, send_reset_otp, reset_password
 from fastapi import APIRouter, Depends, HTTPException
 from services.progress_service import delete_user_progress
-from services.auth_service import register_user, login_user
+from services.auth_service import register_user, login_user, fetch_teacher_emails
 from models.user_model import UserCreate, UserLogin, TokenResponse, UserUpdateClass
 from pydantic import BaseModel, EmailStr
 

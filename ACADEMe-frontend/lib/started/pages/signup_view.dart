@@ -143,6 +143,7 @@ class _SignUpViewState extends State<SignUpView> {
       await UserRoleManager().fetchUserRole(_emailController.text.trim());
       if (!mounted) return;
       bool isAdmin = UserRoleManager().isAdmin;
+      bool isTeacher = UserRoleManager().isTeacher;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -155,7 +156,7 @@ class _SignUpViewState extends State<SignUpView> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => BottomNav(isAdmin: isAdmin),
+          builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
         ),
       );
     } else {

@@ -335,6 +335,29 @@ async def login_user(user: UserLogin):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+async def fetch_teacher_emails():
+    """Fetch all teacher email addresses for verification."""
+    try:
+        # Get teacher emails from teacher_profiles collection
+        teacher_profiles = db.collection("teacher_profiles").stream()
+        emails = []
+        
+        for teacher in teacher_profiles:
+            teacher_data = teacher.to_dict()
+            if teacher_data.get("email"):
+                emails.append(teacher_data["email"])
+        
+        # Also check users collection for teachers
+        teachers_in_users = db.collection("users").where("role", "==", "teacher").stream()
+        for teacher in teachers_in_users:
+            teacher_data = teacher.to_dict()
+            if teacher_data.get("email") and teacher_data["email"] not in emails:
+                emails.append(teacher_data["email"])
+        
+        return emails
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def fetch_admin_ids():
     """Fetch all document IDs from the 'admins' collection in Firestore."""

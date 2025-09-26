@@ -20,6 +20,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
   List<Map<String, dynamic>> courses = [];
   final _storage = FlutterSecureStorage();
   String? _targetLanguage;
+  bool isMenuOpen = false;
 
   @override
   void initState() {
@@ -151,6 +152,109 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
     );
   }
 
+  void _manageTeachers() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final TextEditingController emailController = TextEditingController();
+        List<String> teacherEmails = [];
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(L10n.getTranslatedText(context, 'Manage Teachers')),
+              content: Container(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: emailController,
+                      decoration: InputDecoration(
+                        labelText: L10n.getTranslatedText(context, 'Teacher Email'),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: () {
+                            if (emailController.text.isNotEmpty) {
+                              setDialogState(() {
+                                teacherEmails.add(emailController.text);
+                                emailController.clear();
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    if (teacherEmails.isNotEmpty)
+                      Container(
+                        height: 200,
+                        child: ListView.builder(
+                          itemCount: teacherEmails.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: Text(teacherEmails[index]),
+                              trailing: IconButton(
+                                icon: Icon(Icons.remove),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    teacherEmails.removeAt(index);
+                                  });
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(L10n.getTranslatedText(context, 'Cancel')),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _submitTeacherEmails(teacherEmails);
+                    if (!context.mounted) return;
+                    Navigator.pop(context);
+                  },
+                  child: Text(L10n.getTranslatedText(context, 'Save')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitTeacherEmails(List<String> emails) async {
+    String? token = await _storage.read(key: "access_token");
+    if (token == null) return;
+
+    try {
+      final response = await http.post(
+        ApiEndpoints.getUri('/api/admin/teachers/manage'),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json; charset=UTF-8",
+        },
+        body: json.encode({"teacher_emails": emails}),
+      );
+
+      if (response.statusCode == 200) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(L10n.getTranslatedText(context, 'Teachers updated successfully'))),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error updating teachers: $e");
+    }
+  }
+
   void _navigateToTopics(String courseId, String courseTitle) {
     Navigator.push(
       context,
@@ -158,6 +262,16 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
         builder: (context) =>
             TopicScreen(courseId: courseId, courseTitle: courseTitle),
       ),
+    );
+  }
+
+  Widget _buildMenuItem(String label, IconData icon, VoidCallback onTap) {
+    return FloatingActionButton.extended(
+      heroTag: label, // unique tag to prevent hero conflicts
+      onPressed: onTap,
+      icon: Icon(icon, color: Colors.white),
+      label: Text(label, style: TextStyle(color: Colors.white)),
+      backgroundColor: AcademeTheme.appColor,
     );
   }
 
@@ -208,10 +322,22 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addCourse,
-        backgroundColor: AcademeTheme.appColor,
-        child: Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (isMenuOpen) ...[
+            _buildMenuItem(L10n.getTranslatedText(context, 'Add Course'), Icons.add, _addCourse),
+            SizedBox(height: 10),
+            _buildMenuItem(L10n.getTranslatedText(context, 'Manage Teachers'), Icons.school, _manageTeachers),
+            SizedBox(height: 10),
+          ],
+          FloatingActionButton(
+            onPressed: () => setState(() => isMenuOpen = !isMenuOpen),
+            backgroundColor: AcademeTheme.appColor,
+            child: Icon(isMenuOpen ? Icons.close : Icons.add, color: Colors.white),
+          ),
+        ],
       ),
     );
   }

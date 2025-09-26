@@ -33,6 +33,7 @@ class AuthWrapperState extends State<AuthWrapper> {
       }
       await UserRoleManager().loadRole();
       isAdmin = UserRoleManager().isAdmin;
+      bool isTeacher = UserRoleManager().isTeacher;
       setState(() {
         isUserLoggedIn = true;
       });
@@ -50,7 +51,7 @@ class AuthWrapperState extends State<AuthWrapper> {
     }
 
     return isUserLoggedIn!
-        ? BottomNav(isAdmin: isAdmin ?? false) // ✅ Pass isAdmin correctly
-        : const AcademeScreen(); // ❌ Not logged in, show intro/login screen
+        ? BottomNav(isAdmin: isAdmin ?? false, isTeacher: UserRoleManager().isTeacher)
+        : const AcademeScreen();
   }
 }
