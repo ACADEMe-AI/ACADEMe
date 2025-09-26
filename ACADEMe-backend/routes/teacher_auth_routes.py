@@ -35,7 +35,7 @@ async def get_teacher_emails():
         if not emails:
             # Add default teacher emails for development (remove in production)
             default_teachers = [
-                "subhajit.roy.adtu@gmail.com"
+                
             ]
             emails.extend(default_teachers)
         

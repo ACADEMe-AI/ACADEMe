@@ -23,7 +23,7 @@ else:
 
 # Now import FastAPI and routes
 from fastapi import FastAPI, File, UploadFile, Form
-from routes import users, courses, topics, quizzes, student_progress, ai_recommendations, progress_visuals
+from routes import users, courses, topics, quizzes, student_progress, ai_recommendations, progress_visuals, admin_teacher_routes, teacher_exam_routes
 from routes.teacher_routes import router as teacher_router
 from routes.teacher_auth_routes import router as teacher_auth_router
 from routes.admin_teacher_routes import router as admin_teacher_router
@@ -47,6 +47,8 @@ app.include_router(progress_visuals.router, prefix="/api")
 app.include_router(teacher_router, prefix="/api")
 app.include_router(teacher_auth_router, prefix="/api")
 app.include_router(admin_teacher_router, prefix="/api")
+app.include_router(admin_teacher_routes.router, prefix="/api")
+app.include_router(teacher_exam_routes.router, prefix="/api")
 
 def process_and_translate(response, target_language):
     # Ensure that errors are not processed further
