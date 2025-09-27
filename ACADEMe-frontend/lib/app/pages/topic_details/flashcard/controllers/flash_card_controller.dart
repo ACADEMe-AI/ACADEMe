@@ -54,10 +54,13 @@ class FlashCardController with ChangeNotifier {
   final SwiperController _swiperController = SwiperController();
   bool _isDisposed = false;
   String _selectedQuality = 'auto';
-  final List<String> _availableQualities = ['144p', '240p', '360p', '480p', '720p', '1080p', 'auto'];
+  final List<String> _availableQualities = ['auto', '144p', '240p', '360p', '480p', '720p', '1080p', '1440p', '2160p'];
   String _adaptiveQuality = '480p';
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   Timer? _networkTestTimer;
+  Duration _lastVideoPosition = Duration.zero;
+  bool _isChangingQuality = false;
+  bool _wasPlayingBeforeQualityChange = false;
 
   FlashCardController({
     required this.materials,
@@ -124,6 +127,7 @@ class FlashCardController with ChangeNotifier {
   String get selectedQuality => _selectedQuality;
   List<String> get availableQualities => _availableQualities;
   String get currentAdaptiveQuality => _adaptiveQuality;
+  bool get isChangingQuality => _isChangingQuality;
 
   void initializeAnimations(TickerProvider vsync) {
     if (_isDisposed) return;
@@ -291,9 +295,17 @@ class FlashCardController with ChangeNotifier {
     }
   }
 
-  // Add this entire method
   void setVideoQuality(String quality) async {
-    if (_selectedQuality != quality) {
+    if (_selectedQuality != quality && !_isChangingQuality) {
+      _isChangingQuality = true;
+      notifyListeners();
+
+      // Save current state
+      if (_videoController != null && _videoController!.value.isInitialized) {
+        _lastVideoPosition = _videoController!.value.position;
+        _wasPlayingBeforeQualityChange = _videoController!.value.isPlaying;
+      }
+
       _selectedQuality = quality;
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('video_quality', quality);
@@ -303,11 +315,11 @@ class FlashCardController with ChangeNotifier {
         await _setupVideoController();
       }
 
+      _isChangingQuality = false;
       notifyListeners();
     }
   }
 
-// Add this entire method
   Future<void> _loadQualitySettings() async {
     final prefs = await SharedPreferences.getInstance();
     _selectedQuality = prefs.getString('video_quality') ?? 'auto';
@@ -320,8 +332,8 @@ class FlashCardController with ChangeNotifier {
     // Use adaptive quality when auto is selected
     String targetQuality = quality == 'auto' ? _adaptiveQuality : quality;
 
-    if (targetQuality == '1080p' && quality == 'auto') {
-      return originalUrl; // Return original for auto-detected high quality
+    if (targetQuality == '2160p' && quality == 'auto') {
+      return originalUrl; // Return original for auto-detected 4K quality
     }
 
     // For Cloudinary URLs, add quality transformation
@@ -347,6 +359,12 @@ class FlashCardController with ChangeNotifier {
             break;
           case '1080p':
             qualityParam = 'q_auto:good,h_1080,c_limit,br_4000k';
+            break;
+          case '1440p':
+            qualityParam = 'q_auto:good,h_1440,c_limit,br_8000k';
+            break;
+          case '2160p':
+            qualityParam = 'q_auto:good,h_2160,c_limit,br_15000k';
             break;
           default:
             return originalUrl;
@@ -378,7 +396,6 @@ class FlashCardController with ChangeNotifier {
     _testNetworkSpeed();
   }
 
-// Add this entire method
   Future<void> _testNetworkSpeed() async {
     if (_selectedQuality != 'auto' || _isDisposed) return;
 
@@ -403,8 +420,10 @@ class FlashCardController with ChangeNotifier {
           _adaptiveQuality = newQuality;
           debugPrint('Network speed: ${speedKbps.toStringAsFixed(1)} Kbps - Selected: $newQuality');
 
-          // Reload video if currently playing one
-          if (_currentPage < materials.length && materials[_currentPage]["type"] == "video") {
+          // Save current position before reloading video
+          if (_videoController != null && _videoController!.value.isInitialized &&
+              _currentPage < materials.length && materials[_currentPage]["type"] == "video") {
+            _lastVideoPosition = _videoController!.value.position;
             await _setupVideoController();
           }
 
@@ -425,7 +444,6 @@ class FlashCardController with ChangeNotifier {
     }
   }
 
-// Add this entire method
   String _determineQualityFromSpeed(double speedKbps) {
     if (speedKbps < 500) {
       return '144p'; // Very slow connection
@@ -440,6 +458,92 @@ class FlashCardController with ChangeNotifier {
     } else {
       return '1080p'; // Very fast connection
     }
+  }
+
+  void _showQualityDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Video Quality'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: _availableQualities.length,
+              itemBuilder: (context, index) {
+                final quality = _availableQualities[index];
+                final isSelected = _selectedQuality == quality;
+
+                return ListTile(
+                  leading: isSelected
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : const Icon(Icons.radio_button_unchecked, color: Colors.grey),
+                  title: Text(
+                    quality == 'auto'
+                        ? 'Auto (${_adaptiveQuality.toUpperCase()})'
+                        : quality.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  subtitle: Text(_getQualityDescription(quality)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (!isSelected) {
+                      setVideoQuality(quality);
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _getQualityDescription(String quality) {
+    switch (quality) {
+      case 'auto': return 'Adapts to network speed';
+      case '144p': return 'Data saver';
+      case '240p': return 'Low bandwidth';
+      case '360p': return 'Standard definition';
+      case '480p': return 'Enhanced definition';
+      case '720p': return 'High definition';
+      case '1080p': return 'Full HD';
+      case '1440p': return 'Quad HD';
+      case '2160p': return '4K Ultra HD';
+      default: return '';
+    }
+  }
+
+  ChewieController _createChewieController(VideoPlayerController videoController) {
+    return ChewieController(
+      videoPlayerController: videoController,
+      autoPlay: true,
+      looping: false,
+      allowMuting: true,
+      allowFullScreen: true,
+      allowPlaybackSpeedChanging: true,
+      showOptions: true,
+      showControlsOnInitialize: true,
+      hideControlsTimer: const Duration(seconds: 3),
+      additionalOptions: (context) {
+        return <OptionItem>[
+          OptionItem(
+            onTap: (context) {
+              Navigator.pop(context);
+              _showQualityDialog(context);
+            },
+            iconData: Icons.video_settings,
+            title: _selectedQuality == 'auto'
+                ? 'Quality: Auto (${_adaptiveQuality.toUpperCase()})'
+                : 'Quality: ${_selectedQuality.toUpperCase()}',
+          ),
+        ];
+      },
+    );
   }
 
   Future<void> _loadSwipeHintState() async {
@@ -515,64 +619,64 @@ class FlashCardController with ChangeNotifier {
   Future<void> _setupVideoController() async {
     if (_isDisposed) return;
 
+    // Properly dispose controllers
     if (_videoController != null) {
       _videoController!.removeListener(_videoListener);
+      _videoController?.pause();
+      if (!_isChangingQuality) {
+        _videoController?.dispose();
+      }
     }
-    _videoController?.pause();
-    _videoController?.dispose();
-    _chewieController?.pause();
-    _chewieController?.dispose();
+    if (_chewieController != null) {
+      _chewieController?.pause();
+      if (!_isChangingQuality) {
+        _chewieController?.dispose();
+        _chewieController = null;
+      }
+    }
 
     if (_currentPage < materials.length &&
         materials[_currentPage]["type"] == "video") {
       final originalUrl = materials[_currentPage]["content"]!;
-      final qualityUrl = _getQualityUrl(originalUrl, _selectedQuality); // Modified this line
+      final qualityUrl = _getQualityUrl(originalUrl, _selectedQuality);
 
-      if (_preloadedControllers.containsKey(_currentPage)) {
-        _videoController = _preloadedControllers[_currentPage];
-        _chewieController = _preloadedChewieControllers[_currentPage];
-        _preloadedControllers.remove(_currentPage);
-        _preloadedChewieControllers.remove(_currentPage);
-        _videoController!.play();
-        _videoController!.addListener(_videoListener);
-      } else if (_cachedVideos.containsKey(_currentPage)) {
-        final videoFile = _cachedVideos[_currentPage]!;
-        _videoController = VideoPlayerController.file(videoFile);
-        await _videoController!.initialize();
-        if (_isDisposed) {
-          _videoController?.dispose();
-          return;
-        }
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
-          autoPlay: true,
-          looping: false,
-          allowMuting: true,
-          allowFullScreen: true,
-          allowPlaybackSpeedChanging: true,
-        );
-        _videoController!.addListener(_videoListener);
-      } else {
+      try {
+        // Always create new controller for quality changes
         _videoController = VideoPlayerController.network(qualityUrl);
         await _videoController!.initialize();
+
         if (_isDisposed) {
           _videoController?.dispose();
           return;
         }
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController!,
-          autoPlay: true,
-          looping: false,
-          allowMuting: true,
-          allowFullScreen: true,
-          allowPlaybackSpeedChanging: true,
-        );
+
+        // Create new Chewie controller
+        _chewieController?.dispose();
+        _chewieController = _createChewieController(_videoController!);
+
+        // Restore position if available
+        if (_lastVideoPosition != Duration.zero) {
+          await _videoController!.seekTo(_lastVideoPosition);
+          if (_wasPlayingBeforeQualityChange && !_isChangingQuality) {
+            await _videoController!.play();
+          }
+          if (!_isChangingQuality) {
+            _lastVideoPosition = Duration.zero;
+            _wasPlayingBeforeQualityChange = false;
+          }
+        }
+
         _videoController!.addListener(_videoListener);
+
+      } catch (e) {
+        debugPrint('Error setting up video controller: $e');
+        _isChangingQuality = false;
       }
     } else {
       _videoController = null;
       _chewieController = null;
     }
+
     if (!_isDisposed) {
       notifyListeners();
     }
@@ -581,11 +685,9 @@ class FlashCardController with ChangeNotifier {
   void _videoListener() {
     if (_isDisposed || _videoController == null) return;
 
-    if (_videoController!.value.isInitialized &&
-        !_videoController!.value.isPlaying &&
-        _videoController!.value.position >= _videoController!.value.duration) {
-      _videoController!.seekTo(Duration.zero);
-      _videoController!.pause();
+    // Don't auto-reset when video completes - let Chewie handle it
+    if (_videoController!.value.isInitialized) {
+      notifyListeners();
     }
   }
 
