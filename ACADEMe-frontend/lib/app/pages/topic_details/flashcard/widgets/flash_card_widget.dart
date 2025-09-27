@@ -667,31 +667,47 @@ class VideoContentWidget extends StatelessWidget {
       context,
       Column(
         children: [
+          // Quality selector row
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  controller.selectedQuality == 'auto'
+                      ? 'Auto (${controller.currentAdaptiveQuality.toUpperCase()})'  // Modified this line
+                      : 'Quality: ${controller.selectedQuality.toUpperCase()}',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                VideoQualitySelector(controller: controller),
+              ],
+            ),
+          ),
           Expanded(
             child: Container(
               margin: const EdgeInsets.all(0),
               child: controller.chewieController == null ||
-                      controller.videoController == null ||
-                      !controller.videoController!.value.isInitialized
+                  controller.videoController == null ||
+                  !controller.videoController!.value.isInitialized
                   ? SizedBox.expand(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            "Loading video...",
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Loading video...",
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontSize: 16,
                       ),
-                    )
-                  : SizedBox.expand(
-                      child: Chewie(controller: controller.chewieController!),
                     ),
+                  ],
+                ),
+              )
+                  : SizedBox.expand(
+                child: Chewie(controller: controller.chewieController!),
+              ),
             ),
           ),
           if (controller.quizzes.isEmpty &&
@@ -896,6 +912,35 @@ class QuizContentWidget extends StatelessWidget {
         hasNextMaterial: index <
             (controller.materials.length + controller.quizzes.length - 1),
       ),
+    );
+  }
+}
+
+class VideoQualitySelector extends StatelessWidget {
+  final FlashCardController controller;
+
+  const VideoQualitySelector({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.settings, color: Colors.white),
+      onSelected: (String quality) {
+        controller.setVideoQuality(quality);
+      },
+      itemBuilder: (BuildContext context) => controller.availableQualities
+          .map((String quality) => PopupMenuItem<String>(
+        value: quality,
+        child: Row(
+          children: [
+            if (controller.selectedQuality == quality)
+              const Icon(Icons.check, size: 16, color: Colors.green),
+            const SizedBox(width: 8),
+            Text(quality.toUpperCase()),
+          ],
+        ),
+      ))
+          .toList(),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
@@ -52,6 +53,11 @@ class FlashCardController with ChangeNotifier {
   Animation<double>? _rotateAnimation;
   final SwiperController _swiperController = SwiperController();
   bool _isDisposed = false;
+  String _selectedQuality = 'auto';
+  final List<String> _availableQualities = ['144p', '240p', '360p', '480p', '720p', '1080p', 'auto'];
+  String _adaptiveQuality = '480p';
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  Timer? _networkTestTimer;
 
   FlashCardController({
     required this.materials,
@@ -65,6 +71,8 @@ class FlashCardController with ChangeNotifier {
     this.language,
   }) : _currentPage = initialIndex {
     _loadSwipeHintState();
+    _loadQualitySettings();
+    _startNetworkMonitoring();
     fetchTopicDetails();
 
     if (materials.isEmpty && quizzes.isEmpty) {
@@ -113,6 +121,9 @@ class FlashCardController with ChangeNotifier {
   Animation<double>? get pulseAnimation => _pulseAnimation;
   Animation<double>? get rotateAnimation => _rotateAnimation;
   bool get animationsInitialized => _celebrationController != null;
+  String get selectedQuality => _selectedQuality;
+  List<String> get availableQualities => _availableQualities;
+  String get currentAdaptiveQuality => _adaptiveQuality;
 
   void initializeAnimations(TickerProvider vsync) {
     if (_isDisposed) return;
@@ -232,7 +243,8 @@ class FlashCardController with ChangeNotifier {
 
   Future<void> _preloadAndInitializeVideo(int index, String url) async {
     try {
-      final file = await _cacheManager.getSingleFile(url);
+      final qualityUrl = _getQualityUrl(url, _selectedQuality); // Modified this line
+      final file = await _cacheManager.getSingleFile(qualityUrl); // Modified this line
       if (_isDisposed) return;
 
       _cachedVideos[index] = file;
@@ -276,6 +288,157 @@ class FlashCardController with ChangeNotifier {
     } catch (e) {
       debugPrint("Error preloading file: $e");
       return null;
+    }
+  }
+
+  // Add this entire method
+  void setVideoQuality(String quality) async {
+    if (_selectedQuality != quality) {
+      _selectedQuality = quality;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('video_quality', quality);
+
+      // Restart video with new quality if currently playing video
+      if (_currentPage < materials.length && materials[_currentPage]["type"] == "video") {
+        await _setupVideoController();
+      }
+
+      notifyListeners();
+    }
+  }
+
+// Add this entire method
+  Future<void> _loadQualitySettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _selectedQuality = prefs.getString('video_quality') ?? 'auto';
+    if (!_isDisposed) {
+      notifyListeners();
+    }
+  }
+
+  String _getQualityUrl(String originalUrl, String quality) {
+    // Use adaptive quality when auto is selected
+    String targetQuality = quality == 'auto' ? _adaptiveQuality : quality;
+
+    if (targetQuality == '1080p' && quality == 'auto') {
+      return originalUrl; // Return original for auto-detected high quality
+    }
+
+    // For Cloudinary URLs, add quality transformation
+    if (originalUrl.contains('cloudinary.com')) {
+      final urlParts = originalUrl.split('/upload/');
+      if (urlParts.length == 2) {
+        String qualityParam;
+        switch (targetQuality) {
+          case '144p':
+            qualityParam = 'q_auto:low,h_144,c_limit,br_150k';
+            break;
+          case '240p':
+            qualityParam = 'q_auto:low,h_240,c_limit,br_300k';
+            break;
+          case '360p':
+            qualityParam = 'q_auto:good,h_360,c_limit,br_600k';
+            break;
+          case '480p':
+            qualityParam = 'q_auto:good,h_480,c_limit,br_1000k';
+            break;
+          case '720p':
+            qualityParam = 'q_auto:good,h_720,c_limit,br_2000k';
+            break;
+          case '1080p':
+            qualityParam = 'q_auto:good,h_1080,c_limit,br_4000k';
+            break;
+          default:
+            return originalUrl;
+        }
+        return '${urlParts[0]}/upload/$qualityParam/${urlParts[1]}';
+      }
+    }
+
+    return originalUrl; // Return original if not Cloudinary or parsing fails
+  }
+
+  // Add this entire method
+  void _startNetworkMonitoring() {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      // Handle the list of connectivity results
+      if (results.isNotEmpty) {
+        _testNetworkSpeed();
+      }
+    });
+
+    // Test network speed periodically when in auto mode
+    _networkTestTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (_selectedQuality == 'auto' && !_isDisposed) {
+        _testNetworkSpeed();
+      }
+    });
+
+    // Initial network test
+    _testNetworkSpeed();
+  }
+
+// Add this entire method
+  Future<void> _testNetworkSpeed() async {
+    if (_selectedQuality != 'auto' || _isDisposed) return;
+
+    try {
+      final stopwatch = Stopwatch()..start();
+
+      // Test with a small image from Cloudinary (about 50KB)
+      final response = await http.get(
+        Uri.parse('https://res.cloudinary.com/demo/image/upload/w_500,h_500,c_limit/sample.jpg'),
+      ).timeout(const Duration(seconds: 10));
+
+      stopwatch.stop();
+
+      if (response.statusCode == 200) {
+        final bytes = response.contentLength ?? response.bodyBytes.length;
+        final seconds = stopwatch.elapsedMilliseconds / 1000.0;
+        final speedKbps = (bytes * 8) / (seconds * 1000); // Convert to Kbps
+
+        String newQuality = _determineQualityFromSpeed(speedKbps);
+
+        if (newQuality != _adaptiveQuality) {
+          _adaptiveQuality = newQuality;
+          debugPrint('Network speed: ${speedKbps.toStringAsFixed(1)} Kbps - Selected: $newQuality');
+
+          // Reload video if currently playing one
+          if (_currentPage < materials.length && materials[_currentPage]["type"] == "video") {
+            await _setupVideoController();
+          }
+
+          if (!_isDisposed) {
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Network speed test failed: $e');
+      // Fallback to 360p on error
+      if (_adaptiveQuality != '360p') {
+        _adaptiveQuality = '360p';
+        if (!_isDisposed) {
+          notifyListeners();
+        }
+      }
+    }
+  }
+
+// Add this entire method
+  String _determineQualityFromSpeed(double speedKbps) {
+    if (speedKbps < 500) {
+      return '144p'; // Very slow connection
+    } else if (speedKbps < 1000) {
+      return '240p'; // Slow connection
+    } else if (speedKbps < 2000) {
+      return '360p'; // Medium connection
+    } else if (speedKbps < 5000) {
+      return '480p'; // Good connection
+    } else if (speedKbps < 10000) {
+      return '720p'; // Fast connection
+    } else {
+      return '1080p'; // Very fast connection
     }
   }
 
@@ -362,6 +525,9 @@ class FlashCardController with ChangeNotifier {
 
     if (_currentPage < materials.length &&
         materials[_currentPage]["type"] == "video") {
+      final originalUrl = materials[_currentPage]["content"]!;
+      final qualityUrl = _getQualityUrl(originalUrl, _selectedQuality); // Modified this line
+
       if (_preloadedControllers.containsKey(_currentPage)) {
         _videoController = _preloadedControllers[_currentPage];
         _chewieController = _preloadedChewieControllers[_currentPage];
@@ -387,8 +553,7 @@ class FlashCardController with ChangeNotifier {
         );
         _videoController!.addListener(_videoListener);
       } else {
-        final videoUrl = materials[_currentPage]["content"]!;
-        _videoController = VideoPlayerController.network(videoUrl);
+        _videoController = VideoPlayerController.network(qualityUrl);
         await _videoController!.initialize();
         if (_isDisposed) {
           _videoController?.dispose();
@@ -539,6 +704,10 @@ class FlashCardController with ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _showSwipeHint = false;
+
+    // Cancel network monitoring
+    _connectivitySubscription?.cancel(); // Add this
+    _networkTestTimer?.cancel(); // Add this
 
     // Pause and dispose video controllers
     _videoController?.pause();
