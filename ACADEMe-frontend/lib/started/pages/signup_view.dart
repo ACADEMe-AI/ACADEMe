@@ -267,15 +267,66 @@ class _SignUpViewState extends State<SignUpView> {
   Future<void> _signUpWithGoogle() async {
     setState(() => _isGoogleLoading = true);
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(L10n.getTranslatedText(context,
-            'Google Sign-Up is turned off for now. Please sign up manually')),
-      ),
-    );
+    try {
+      final (user, errorMessage) = await AuthService().signInWithGoogle();
 
-    setState(() => _isGoogleLoading = false);
+      if (!mounted) return;
+
+      if (errorMessage != null) {
+        String userFriendlyMessage = _getUserFriendlyErrorMessage(errorMessage);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFriendlyMessage), backgroundColor: Colors.red),
+        );
+        return;
+      }
+
+      if (user != null) {
+        // Store email in secure storage
+        await _secureStorage.write(key: 'email', value: user.email);
+
+        // Force refresh HomeController user details
+        final homeController = HomeController();
+        await homeController.forceRefreshUserDetails();
+
+        await UserRoleManager().fetchUserRole(user.email);
+        if (!mounted) return;
+        bool isAdmin = UserRoleManager().isAdmin;
+        bool isTeacher = UserRoleManager().isTeacher;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10n.getTranslatedText(context, 'Account created successfully!')),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10n.getTranslatedText(context, 'Google Sign-Up failed. Please try again')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(userFriendlyMessage), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
+      }
+    }
   }
 
   @override

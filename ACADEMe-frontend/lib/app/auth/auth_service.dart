@@ -195,7 +195,7 @@ class AuthService {
     }
   }
 
-  /// Sign in existing user via backend
+  /// Sign in existing user via backend & store access token
   Future<(AppUser?, String?)> signIn(String email, String password) async {
     try {
       debugPrint("Starting sign-in process for: $email");
@@ -248,7 +248,7 @@ class AuthService {
         // Authenticate with Firebase for Realtime Database access
         debugPrint("Starting Firebase authentication...");
         final bool firebaseAuthSuccess = await _firebaseAuthService.authenticateWithFirebase();
-        
+
         if (firebaseAuthSuccess) {
           debugPrint("Firebase authentication successful");
         } else {
@@ -260,14 +260,14 @@ class AuthService {
 
         // Return the AppUser object
         return (
-          AppUser(
-            id: userId,
-            name: name,
-            email: userEmail,
-            studentClass: studentClass,
-            photoUrl: photoUrl,
-          ),
-          null
+        AppUser(
+          id: userId,
+          name: name,
+          email: userEmail,
+          studentClass: studentClass,
+          photoUrl: photoUrl,
+        ),
+        null
         );
       } else {
         final errorData = jsonDecode(response.body);
@@ -281,136 +281,98 @@ class AuthService {
     }
   }
 
-  /// Google Sign-In (Using Backend WITHOUT OTP)
+  /// Google Sign-In (Using Backend API)
   Future<(AppUser?, String?)> signInWithGoogle() async {
     try {
+      // Get Google user account
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return (null, 'Google Sign-In canceled');
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final firebase_auth.AuthCredential credential =
-          firebase_auth.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final firebase_auth.UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
-      final firebase_auth.User? firebaseUser = userCredential.user;
-
-      if (firebaseUser == null) return (null, 'Google authentication failed');
-
-      final String email = firebaseUser.email ?? "";
-      final String name = firebaseUser.displayName ?? "Google User";
-      final String photoUrl = firebaseUser.photoURL ??
+      // Extract user information
+      final String email = googleUser.email;
+      final String name = googleUser.displayName ?? "Google User";
+      final String photoUrl = googleUser.photoUrl ??
           "https://www.w3schools.com/w3images/avatar2.png";
 
       if (email.isEmpty) {
         return (null, 'Google authentication failed: Email not found');
       }
 
-      const String defaultPassword = "GOOGLE_AUTH_ACADEMe";
-      const String defaultClass = "SELECT";
+      debugPrint("Google Sign-In: Authenticating $email with backend");
 
-      // Check if user exists in backend
-      final bool userExists = await checkIfUserExists(email);
-
-      if (!userExists) {
-        // Register user using backend WITHOUT OTP
-        final (_, String? signupError) = await signUpWithoutOTP(
-            email, defaultPassword, name, defaultClass, photoUrl);
-        if (signupError != null) return (null, "Signup failed: $signupError");
-      }
-
-      // Log in the user using backend
-      final (AppUser? user, String? loginError) = await signIn(email, defaultPassword);
-      if (loginError != null) return (null, "Login failed: $loginError");
-
-      return (user, null);
-    } catch (e) {
-      return (null, "An unexpected error occurred: $e");
-    }
-  }
-
-  /// Sign up user via backend WITHOUT OTP (for Google Sign-In)
-  Future<(AppUser?, String?)> signUpWithoutOTP(String email, String password,
-      String name, String studentClass, String photoUrl) async {
-    try {
+      // Call backend Google Sign-In API
       final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.signup),
+        ApiEndpoints.getUri(ApiEndpoints.googleSignin),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           "email": email,
-          "password": password,
           "name": name,
-          "student_class": studentClass,
           "photo_url": photoUrl,
-          "otp": "GOOGLE_AUTH",
         }),
       );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // Extract and store token securely
-        final String accessToken = responseData["access_token"] ?? "";
-        if (accessToken.isNotEmpty) {
-          await _secureStorage.write(key: "access_token", value: accessToken);
-        }
-
-        // Store user details - now backend returns ID directly
         final String userId = responseData["id"]?.toString() ?? "";
+        final String accessToken = responseData["access_token"] ?? "";
         final String userName = responseData["name"] ?? name;
         final String userEmail = responseData["email"] ?? email;
-        final String userClass = responseData["student_class"] ?? studentClass;
+        final String studentClass = responseData["student_class"] ?? "SELECT";
         final String userPhotoUrl = responseData["photo_url"] ?? photoUrl;
 
+        // Validate user ID
         if (userId.isEmpty) {
+          debugPrint("Empty user ID received from backend");
           return (null, "Invalid user ID received from server");
         }
 
+        // Store token securely
+        if (accessToken.isNotEmpty) {
+          await _secureStorage.write(key: "access_token", value: accessToken);
+          debugPrint("Access token stored");
+        } else {
+          debugPrint("Empty access token received");
+          return (null, "No access token received from server");
+        }
+
+        // Store user details securely
         await _secureStorage.write(key: "user_id", value: userId);
         await _secureStorage.write(key: "user_name", value: userName);
         await _secureStorage.write(key: "user_email", value: userEmail);
-        await _secureStorage.write(key: "student_class", value: userClass);
+        await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
 
         debugPrint("Google user credentials stored - User ID: $userId");
 
-        // Create AppUser object
-        AppUser user = AppUser(
+        // Authenticate with Firebase for Realtime Database access
+        debugPrint("Starting Firebase authentication...");
+        final bool firebaseAuthSuccess = await _firebaseAuthService.authenticateWithFirebase();
+
+        if (firebaseAuthSuccess) {
+          debugPrint("Firebase authentication successful");
+        } else {
+          debugPrint("Firebase authentication failed, but user is logged in to backend");
+        }
+
+        // Return the AppUser object
+        return (
+        AppUser(
           id: userId,
-          email: userEmail,
           name: userName,
-          studentClass: userClass,
+          email: userEmail,
+          studentClass: studentClass,
           photoUrl: userPhotoUrl,
+        ),
+        null
         );
-        return (user, null);
       } else {
         final errorData = jsonDecode(response.body);
-        return (null, errorData["detail"]?.toString() ?? "Signup failed");
+        return (null, errorData["detail"]?.toString() ?? "Google Sign-In failed");
       }
     } catch (e) {
+      debugPrint("Google Sign-In error: $e");
       return (null, "An unexpected error occurred: $e");
-    }
-  }
-
-  /// Check if user exists via backend
-  Future<bool> checkIfUserExists(String email) async {
-    try {
-      final response = await http.get(
-        ApiEndpoints.getUri(ApiEndpoints.userExists(email)),
-        headers: {'Content-Type': 'application/json'},
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        return responseData["exists"] ?? false;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      return false;
     }
   }
 
@@ -458,7 +420,7 @@ class AuthService {
       try {
         final prefs = await SharedPreferences.getInstance();
         final authKeys = [
-          'isAdmin', 'isTeacher', 'userRole', 'cached_admin_emails', 
+          'isAdmin', 'isTeacher', 'userRole', 'cached_admin_emails',
           'cached_teacher_emails', 'user_role', 'is_admin', 'is_teacher'
         ];
         for (String key in authKeys) {
@@ -595,7 +557,7 @@ class AuthService {
       final String? userId = await _secureStorage.read(key: "user_id");
       final String? token = await _secureStorage.read(key: "access_token");
       final String? email = await _secureStorage.read(key: "user_email");
-      
+
       debugPrint("User ID: '${userId ?? 'NULL'}'");
       debugPrint("Access Token: '${token != null ? 'EXISTS' : 'NULL'}'");
       debugPrint("Email: '${email ?? 'NULL'}'");

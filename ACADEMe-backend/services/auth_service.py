@@ -371,3 +371,89 @@ async def fetch_admin_ids():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def google_signin_or_signup(user_data: dict):
+    """Handle Google Sign-In: check if user exists, if not create account automatically."""
+    try:
+        email = user_data.get("email")
+        name = user_data.get("name", "Google User")
+        photo_url = user_data.get("photo_url", "https://www.w3schools.com/w3images/avatar2.png")
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        # Check if user already exists
+        user_docs = list(db.collection("users").where("email", "==", email).limit(1).stream())
+
+        if user_docs:
+            # User exists, return login token
+            user_data_db = user_docs[0].to_dict()
+
+            token = create_jwt_token({
+                "id": user_data_db["id"],
+                "email": email,
+                "student_class": user_data_db["student_class"],
+                "name": user_data_db.get("name", name),
+                "photo_url": user_data_db.get("photo_url", photo_url),
+            })
+
+            return TokenResponse(
+                access_token=token,
+                token_type="bearer",
+                expires_in=TOKEN_EXPIRY,
+                created_at=datetime.datetime.utcnow().isoformat(),
+                email=email,
+                student_class=user_data_db["student_class"],
+                name=user_data_db["name"],
+                photo_url=user_data_db.get("photo_url", photo_url)
+            )
+        else:
+            # User doesn't exist, create new account
+            import secrets
+            import string
+
+            # Generate a strong random password
+            alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+            password = ''.join(secrets.choice(alphabet) for i in range(16))
+            hashed_password = hash_password(password)
+
+            # Create user in Firebase Auth
+            user_record = auth.create_user(email=email, password=password)
+
+            # Prepare user data
+            new_user_data = {
+                "id": user_record.uid,
+                "name": name,
+                "email": email,
+                "student_class": "SELECT",
+                "password": hashed_password,
+                "photo_url": photo_url
+            }
+
+            # Store user in Firestore
+            db.collection("users").document(user_record.uid).set(new_user_data)
+
+            # Generate JWT token
+            token = create_jwt_token({
+                "id": user_record.uid,
+                "email": email,
+                "student_class": "SELECT",
+                "name": name,
+                "photo_url": photo_url,
+            })
+
+            return TokenResponse(
+                access_token=token,
+                token_type="bearer",
+                expires_in=TOKEN_EXPIRY,
+                created_at=datetime.datetime.utcnow().isoformat(),
+                email=email,
+                student_class="SELECT",
+                name=name,
+                photo_url=photo_url
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

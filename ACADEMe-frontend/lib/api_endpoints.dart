@@ -17,6 +17,7 @@ class ApiEndpoints {
   static String get userDetails => '$baseUrl/api/users/me';
   static String get updateClass => '$baseUrl/api/users/update_class/';
   static String get adminEmails => '$baseUrl/api/users/admins';
+  static String get googleSignin => '$baseUrl/api/users/google-signin';
 
   // Firebase Custom Token Endpoint
   static String get firebaseToken => '$baseUrl/api/users/firebase-token';

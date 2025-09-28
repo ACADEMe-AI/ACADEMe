@@ -6,9 +6,10 @@ from utils.auth import get_current_user
 from services.auth_service import fetch_admin_ids, send_otp, send_reset_otp, reset_password
 from fastapi import APIRouter, Depends, HTTPException
 from services.progress_service import delete_user_progress
-from services.auth_service import register_user, login_user, fetch_teacher_emails
+from services.auth_service import register_user, login_user, fetch_teacher_emails, google_signin_or_signup
 from models.user_model import UserCreate, UserLogin, TokenResponse, UserUpdateClass
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 router = APIRouter(prefix="/users", tags=["Users & Authentication"])
 
@@ -139,5 +140,26 @@ async def get_admin_ids():
     try:
         admin_ids = await fetch_admin_ids()
         return admin_ids
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class GoogleSignInRequest(BaseModel):
+    email: EmailStr
+    name: str
+    photo_url: Optional[str] = "https://www.w3schools.com/w3images/avatar2.png"
+
+@router.post("/google-signin", response_model=TokenResponse)
+async def google_signin_endpoint(request: GoogleSignInRequest):
+    """Handle Google Sign-In or Sign-Up automatically."""
+    try:
+        user_data = {
+            "email": request.email,
+            "name": request.name,
+            "photo_url": request.photo_url
+        }
+        result = await google_signin_or_signup(user_data)
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

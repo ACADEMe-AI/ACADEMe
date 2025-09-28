@@ -227,8 +227,52 @@ class _LogInViewState extends State<LogInView> {
     setState(() => _isGoogleLoading = true);
 
     try {
-      _showSnackBar(L10n.getTranslatedText(context,
-          'Google Sign-In is turned off for now. Please log in manually'));
+      final (user, errorMessage) = await AuthService().signInWithGoogle();
+
+      if (!mounted) return;
+
+      if (errorMessage != null) {
+        String userFriendlyMessage = _getUserFriendlyErrorMessage(errorMessage);
+        _showSnackBar(userFriendlyMessage);
+        return;
+      }
+
+      if (user != null) {
+        // Store credentials (email only, no password for Google users)
+        await _secureStorage.write(key: 'email', value: user.email);
+
+        // Force refresh HomeController user details
+        final homeController = HomeController();
+        await homeController.forceRefreshUserDetails();
+
+        if (mounted) {
+          _showSnackBar(L10n.getTranslatedText(context, 'Login successful!'));
+        }
+
+        // Fetch user role
+        await UserRoleManager().fetchUserRole(user.email);
+        bool isAdmin = UserRoleManager().isAdmin;
+        bool isTeacher = UserRoleManager().isTeacher;
+
+        if (!mounted) return;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
+          ),
+        );
+      } else {
+        if (mounted) {
+          _showSnackBar(L10n.getTranslatedText(
+              context, 'Google Sign-In failed. Please try again.'));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());
+        _showSnackBar(userFriendlyMessage);
+      }
     } finally {
       if (mounted) {
         setState(() => _isGoogleLoading = false);
