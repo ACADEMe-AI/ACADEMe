@@ -4,6 +4,8 @@ import 'dart:convert';
 import '../../../academe_theme.dart';
 import '../../../api_endpoints.dart';
 import '../auth/auth_service.dart';
+import 'package:ACADEMe/started/pages/login_view.dart';
+
 
 class TeacherProfileScreen extends StatefulWidget {
   const TeacherProfileScreen({super.key});
@@ -16,7 +18,7 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   Map<String, dynamic>? teacherProfile;
   bool isLoading = true;
   bool isEditing = false;
-  
+
   // Controllers for editing
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
@@ -159,13 +161,28 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 CircleAvatar(
                   radius: 50,
                   backgroundColor: AcademeTheme.appColor.withOpacity(0.1),
-                  backgroundImage: (isEditing ? _photoUrlController.text : teacherProfile?['photo_url']) != null && 
-                      (isEditing ? _photoUrlController.text : teacherProfile!['photo_url']).isNotEmpty
-                      ? NetworkImage(isEditing ? _photoUrlController.text : teacherProfile!['photo_url'])
+                  backgroundImage: (isEditing
+                                  ? _photoUrlController.text
+                                  : teacherProfile?['photo_url']) !=
+                              null &&
+                          (isEditing
+                                  ? _photoUrlController.text
+                                  : teacherProfile!['photo_url'])
+                              .isNotEmpty
+                      ? NetworkImage(isEditing
+                          ? _photoUrlController.text
+                          : teacherProfile!['photo_url'])
                       : null,
-                  child: (isEditing ? _photoUrlController.text : teacherProfile?['photo_url']) == null || 
-                      (isEditing ? _photoUrlController.text : teacherProfile!['photo_url']).isEmpty
-                      ? Icon(Icons.person, color: AcademeTheme.appColor, size: 50)
+                  child: (isEditing
+                                  ? _photoUrlController.text
+                                  : teacherProfile?['photo_url']) ==
+                              null ||
+                          (isEditing
+                                  ? _photoUrlController.text
+                                  : teacherProfile!['photo_url'])
+                              .isEmpty
+                      ? Icon(Icons.person,
+                          color: AcademeTheme.appColor, size: 50)
                       : null,
                 ),
                 if (isEditing)
@@ -176,7 +193,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                       radius: 18,
                       backgroundColor: AcademeTheme.appColor,
                       child: IconButton(
-                        icon: Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                        icon: Icon(Icons.camera_alt,
+                            color: Colors.white, size: 18),
                         onPressed: _showPhotoUrlDialog,
                       ),
                     ),
@@ -237,7 +255,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
               ),
             ),
             SizedBox(height: 16),
-            _buildInfoRow('Subject', _subjectController, teacherProfile?['subject']),
+            _buildInfoRow(
+                'Subject', _subjectController, teacherProfile?['subject']),
             SizedBox(height: 16),
             _buildBioSection(),
           ],
@@ -246,7 +265,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, TextEditingController controller, String? value) {
+  Widget _buildInfoRow(
+      String label, TextEditingController controller, String? value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -320,7 +340,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   }
 
   Widget _buildPreferences() {
-    final notificationsEnabled = teacherProfile?['notifications_enabled'] ?? true;
+    final notificationsEnabled =
+        teacherProfile?['notifications_enabled'] ?? true;
     final emailNotifications = teacherProfile?['email_notifications'] ?? true;
     final autoRecord = teacherProfile?['auto_record'] ?? false;
 
@@ -388,7 +409,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   }
 
   Widget _buildAllottedClasses() {
-    final allottedClasses = teacherProfile?['allotted_classes'] as List<dynamic>? ?? [];
+    final allottedClasses =
+        teacherProfile?['allotted_classes'] as List<dynamic>? ?? [];
 
     return Card(
       elevation: 2,
@@ -495,7 +517,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+      String label, String value, IconData icon, Color color) {
     return Container(
       padding: EdgeInsets.all(12),
       child: Column(
@@ -592,7 +615,8 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
               Navigator.pop(context);
               setState(() {}); // Refresh to show new image
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AcademeTheme.appColor),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AcademeTheme.appColor),
             child: Text('Update'),
           ),
         ],
@@ -696,31 +720,50 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   }
 
   void _logout() {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('Logout'),
-      content: Text('Are you sure you want to logout?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {  // Add async here
-            Navigator.pop(context);
-            // Implementation for logout
-            await authService.signOut();
-            Navigator.of(context).pushNamedAndRemoveUntil(
-              '/login',
-              (route) => false,
-            );
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-          child: Text('Logout'),
-        ),
-      ],
-    ),
-  );
-}
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Logout'),
+        content: Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              try {
+                await authService.signOut();
+
+                if (!mounted) return;
+
+                // Navigate to login screen - same pattern as ProfilePage
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LogInView()),
+                  (route) => false,
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('You have been logged out')),
+                );
+              } catch (e) {
+                debugPrint('❌ Error during logout: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error logging out'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
 }
