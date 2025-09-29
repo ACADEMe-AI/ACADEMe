@@ -25,6 +25,24 @@ class _LogInViewState extends State<LogInView> {
   bool _isLoading = false;
   bool _isGoogleLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchRoleLists();
+  }
+
+  /// Fetch admin and teacher email lists on initialization
+  Future<void> _fetchRoleLists() async {
+    try {
+      await Future.wait([
+        AdminRoles.fetchAdminEmails(),
+        TeacherRoles.fetchTeacherEmails(),
+      ]);
+    } catch (e) {
+      debugPrint("Error fetching role lists: $e");
+    }
+  }
+
   /// Shows a snackbar message
   void _showSnackBar(String message) {
     if (!mounted) return;
@@ -54,6 +72,7 @@ class _LogInViewState extends State<LogInView> {
       if (!mounted) {
         return; // Ensure widget is still active before using context
       }
+
       if (errorMessage != null) {
         String userFriendlyMessage = _getUserFriendlyErrorMessage(errorMessage);
         _showSnackBar(userFriendlyMessage);
@@ -75,19 +94,53 @@ class _LogInViewState extends State<LogInView> {
           _showSnackBar(L10n.getTranslatedText(context, '✅ Login successful!'));
         }
 
-        // Fetch user role
-        await UserRoleManager().fetchUserRole(user.email);
-        bool isAdmin = UserRoleManager().isAdmin;
-        bool isTeacher = UserRoleManager().isTeacher;
+        // **CRITICAL FIX: Fetch roles AFTER successful login**
+        try {
+          // First fetch the role lists from API
+          debugPrint("Fetching role lists for user: ${user.email}");
+          await Future.wait([
+            AdminRoles.fetchAdminEmails(),
+            TeacherRoles.fetchTeacherEmails(),
+          ]).timeout(const Duration(seconds: 15));
 
-        if (!mounted) return;
+          // Then determine user role
+          final roleManager = UserRoleManager();
+          await roleManager.fetchUserRole(user.email);
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
-          ),
-        );
+          // Get the updated role values
+          bool isAdmin = roleManager.isAdmin;
+          bool isTeacher = roleManager.isTeacher;
+
+          debugPrint(
+              "Login - Role determined: Admin=$isAdmin, Teacher=$isTeacher");
+
+          if (!mounted) return;
+
+          // Navigate to appropriate bottom nav based on role
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BottomNav(
+                isAdmin: isAdmin,
+                isTeacher: isTeacher,
+              ),
+            ),
+          );
+        } catch (roleError) {
+          debugPrint("Error fetching roles: $roleError");
+          // Fallback to default navigation if role fetch fails
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BottomNav(
+                  isAdmin: false,
+                  isTeacher: false,
+                ),
+              ),
+            );
+          }
+        }
       } else {
         if (mounted) {
           _showSnackBar(L10n.getTranslatedText(
@@ -95,6 +148,7 @@ class _LogInViewState extends State<LogInView> {
         }
       }
     } catch (e) {
+      debugPrint("Login error: $e");
       // Catch any unexpected errors and show user-friendly message
       if (mounted) {
         String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());

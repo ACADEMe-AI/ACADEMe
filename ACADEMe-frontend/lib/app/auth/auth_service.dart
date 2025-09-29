@@ -11,6 +11,7 @@ import '../pages/homepage/controllers/home_controller.dart';
 import '../pages/profile/controllers/profile_controller.dart';
 import '../pages/topics/controllers/topic_cache_controller.dart' as topic;
 import '../pages/courses/models/course_model.dart';
+import './role.dart';
 
 class AppUser {
   final String id;
@@ -92,6 +93,30 @@ class AuthService {
       }
     } catch (e) {
       return (false, "An unexpected error occurred: $e");
+    }
+  }
+
+  Future<bool> isTokenValid() async {
+    try {
+      String? token = await getAccessToken();
+      if (token == null || token.isEmpty) {
+        return false;
+      }
+
+      // Test the token by making a request to user details
+      final response = await http.get(
+        ApiEndpoints.getUri(ApiEndpoints.userDetails),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      // Token is valid if we get a successful response
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint("Token validation failed: $e");
+      return false;
     }
   }
 
@@ -379,7 +404,7 @@ class AuthService {
     try {
       debugPrint("🔄 Starting complete logout process...");
 
-      // 1. Sign out from Firebase & Google
+      // 1. Sign out from Firebase & Google (with individual error handling)
       try {
         await _auth.signOut();
         debugPrint("✅ Firebase Auth signed out");
@@ -394,8 +419,78 @@ class AuthService {
         debugPrint("⚠️ Google signout error: $e");
       }
 
-      // 2. Clear home controller cache first
+      // 2. Clear role data FIRST before other cleanup
       try {
+        final roleManager = UserRoleManager();
+        await roleManager.clearRole();
+
+        // Force clear role lists
+        AdminRoles.adminEmails.clear();
+        TeacherRoles.teacherEmails.clear();
+        AdminRoles.lastFetched = null;
+        TeacherRoles.lastFetched = null;
+
+        debugPrint("✅ User roles cleared");
+      } catch (e) {
+        debugPrint("⚠️ Role clear error: $e");
+      }
+
+      // 3. Clear FlutterSecureStorage with retry mechanism
+      try {
+        await _secureStorage.deleteAll();
+        debugPrint("✅ FlutterSecureStorage cleared");
+      } catch (e) {
+        debugPrint(
+            "⚠️ SecureStorage deleteAll error: $e, trying individual deletion");
+        // Try to clear individual keys if deleteAll fails
+        try {
+          final keys = [
+            'access_token',
+            'user_id',
+            'user_name',
+            'user_email',
+            'student_class',
+            'photo_url',
+            'email',
+            'password'
+          ];
+          for (String key in keys) {
+            await _secureStorage.delete(key: key);
+          }
+          debugPrint("✅ FlutterSecureStorage cleared individually");
+        } catch (e2) {
+          debugPrint("❌ Failed to clear SecureStorage completely: $e2");
+        }
+      }
+
+      // 4. Clear SharedPreferences with specific keys
+      try {
+        final prefs = await SharedPreferences.getInstance();
+
+        // Clear authentication-related keys
+        final authKeys = [
+          'isAdmin',
+          'isTeacher',
+          'userRole',
+          'cached_admin_emails',
+          'cached_teacher_emails',
+          'user_role',
+          'is_admin',
+          'is_teacher'
+        ];
+
+        for (String key in authKeys) {
+          await prefs.remove(key);
+        }
+
+        debugPrint("✅ Authentication SharedPreferences cleared");
+      } catch (e) {
+        debugPrint("⚠️ SharedPreferences clear error: $e");
+      }
+
+      // 5. Clear application caches
+      try {
+        // Clear home controller cache if available
         final homeController = HomeController();
         homeController.clearCache();
         homeController.clearUserCache();
@@ -404,34 +499,7 @@ class AuthService {
         debugPrint("⚠️ HomeController clear error: $e");
       }
 
-      // 3. Clear ALL FlutterSecureStorage data
-      try {
-        await _secureStorage.deleteAll();
-        debugPrint("✅ FlutterSecureStorage cleared");
-      } catch (e) {
-        debugPrint("⚠️ SecureStorage clear error: $e");
-        // Try to clear individual known keys if deleteAll fails
-        try {
-          final allKeys = await _secureStorage.readAll();
-          for (String key in allKeys.keys) {
-            await _secureStorage.delete(key: key);
-          }
-          debugPrint("✅ FlutterSecureStorage cleared individually");
-        } catch (e2) {
-          debugPrint("❌ Failed to clear SecureStorage: $e2");
-        }
-      }
-
-      // 4. Clear ALL SharedPreferences data
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.clear();
-        debugPrint("✅ SharedPreferences cleared");
-      } catch (e) {
-        debugPrint("⚠️ SharedPreferences clear error: $e");
-      }
-
-      // 5. Clear all application caches
+      // Clear other caches
       try {
         CourseDataCache().clearCache();
         debugPrint("✅ CourseDataCache cleared");
@@ -446,7 +514,6 @@ class AuthService {
         debugPrint("⚠️ TopicCacheController clear error: $e");
       }
 
-      // 6. Clear ProfileController cache
       try {
         ProfileController.clearCache();
         debugPrint("✅ ProfileController cache cleared");
@@ -454,7 +521,7 @@ class AuthService {
         debugPrint("⚠️ ProfileController clear error: $e");
       }
 
-      // 7. Clear additional Flutter caches
+      // 6. Clear Flutter image cache
       try {
         PaintingBinding.instance.imageCache.clear();
         PaintingBinding.instance.imageCache.clearLiveImages();
@@ -463,20 +530,15 @@ class AuthService {
         debugPrint("⚠️ Image cache clear error: $e");
       }
 
-      // 8. Clear temporary directory cache
-      try {
-        final tempDir = await getTemporaryDirectory();
-        if (tempDir.existsSync()) {
-          await tempDir.delete(recursive: true);
-          debugPrint("✅ Temporary directory cleared");
-        }
-      } catch (e) {
-        debugPrint("⚠️ Temp directory clear error: $e");
-      }
-
-      debugPrint("🎉 Complete logout process finished successfully");
+      debugPrint("🎉 Complete logout process finished");
     } catch (e) {
       debugPrint("❌ Critical logout error: $e");
+      // Even if logout fails, clear what we can
+      try {
+        await _secureStorage.deleteAll();
+      } catch (e2) {
+        debugPrint("❌ Final cleanup failed: $e2");
+      }
       throw Exception("Logout failed: $e");
     }
   }
@@ -488,8 +550,26 @@ class AuthService {
 
   /// ✅ Check if user is logged in
   Future<bool> isUserLoggedIn() async {
-    String? token = await getAccessToken();
-    return token != null && token.isNotEmpty;
+    try {
+      String? token = await getAccessToken();
+      if (token == null || token.isEmpty) {
+        debugPrint("No access token found");
+        return false;
+      }
+
+      // CRITICAL: Validate token with backend
+      bool isValid = await isTokenValid();
+      if (!isValid) {
+        debugPrint("Token is invalid or expired, clearing auth data");
+        await signOut();
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      debugPrint("Error checking login status: $e");
+      return false;
+    }
   }
 
   /// ✅ Send password reset email (Firebase method - kept for compatibility)
@@ -504,7 +584,10 @@ class AuthService {
   /// ✅ Fetch user details from backend
   Future<Map<String, dynamic>?> getUserDetails() async {
     String? token = await getAccessToken();
-    if (token == null || token.isEmpty) return null;
+    if (token == null || token.isEmpty) {
+      debugPrint("No access token available for getUserDetails");
+      return null;
+    }
 
     try {
       final response = await http.get(
@@ -513,14 +596,20 @@ class AuthService {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
+      } else if (response.statusCode == 401) {
+        debugPrint("Token expired (401), clearing auth data");
+        await signOut();
+        return null;
       } else {
+        debugPrint("getUserDetails failed with status: ${response.statusCode}");
         return null;
       }
     } catch (e) {
+      debugPrint("Error in getUserDetails: $e");
       return null;
     }
   }
