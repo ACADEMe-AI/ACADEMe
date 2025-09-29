@@ -3,9 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../academe_theme.dart';
-import '../../api_endpoints.dart';
-import '../../localization/l10n.dart';
+import '../../../academe_theme.dart';
+import '../../../api_endpoints.dart';
+import '../../../localization/l10n.dart';
 
 class StudentAnalytics extends StatefulWidget {
   const StudentAnalytics({super.key});

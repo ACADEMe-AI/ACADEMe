@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../../academe_theme.dart';
-import '../../api_endpoints.dart';
-import '../../localization/l10n.dart';
+import '../../../academe_theme.dart';
+import '../../../api_endpoints.dart';
+import '../../../localization/l10n.dart';
 
 class TeacherSettings extends StatefulWidget {
   const TeacherSettings({super.key});

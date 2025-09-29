@@ -5,10 +5,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:provider/provider.dart';
-import '../../academe_theme.dart';
-import '../../api_endpoints.dart';
-import '../../localization/l10n.dart';
-import '../../localization/language_provider.dart';
+import '../../../academe_theme.dart';
+import '../../../api_endpoints.dart';
+import '../../../localization/l10n.dart';
+import '../../../localization/language_provider.dart';
 
 class TeacherContent extends StatefulWidget {
   const TeacherContent({super.key});

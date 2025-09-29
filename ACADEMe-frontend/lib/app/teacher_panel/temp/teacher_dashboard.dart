@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../academe_theme.dart';
-import '../../localization/l10n.dart';
-import '../../localization/language_provider.dart';
+import '../../../academe_theme.dart';
+import '../../../localization/l10n.dart';
+import '../../../localization/language_provider.dart';
 import 'student_analytics.dart';
 import 'teacher_content.dart';
 import 'live_classes.dart';
