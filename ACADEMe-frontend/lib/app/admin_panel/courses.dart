@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../academe_theme.dart';
 import '../../api_endpoints.dart';
 import '../../localization/l10n.dart';
+import 'manage_teachers.dart';
 import 'topic.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,21 +51,21 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
       headers: {
         "Authorization": "Bearer $token",
         "Content-Type":
-            "application/json; charset=UTF-8", // Ensure UTF-8 encoding
+        "application/json; charset=UTF-8", // Ensure UTF-8 encoding
       },
     );
 
     if (response.statusCode == 200) {
       List<dynamic> data =
-          json.decode(utf8.decode(response.bodyBytes)); // Decode with UTF-8
+      json.decode(utf8.decode(response.bodyBytes)); // Decode with UTF-8
       setState(() {
         courses = data
             .map((item) => {
-                  "id": item["id"].toString(),
-                  "title": item["title"],
-                  "class_name": item["class_name"],
-                  "description": item["description"],
-                })
+          "id": item["id"].toString(),
+          "title": item["title"],
+          "class_name": item["class_name"],
+          "description": item["description"],
+        })
             .toList();
       });
     } else {
@@ -79,7 +80,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
         final TextEditingController titleController = TextEditingController();
         final TextEditingController classController = TextEditingController();
         final TextEditingController descriptionController =
-            TextEditingController();
+        TextEditingController();
 
         return AlertDialog(
           title: Text(L10n.getTranslatedText(context, 'Add Course')),
@@ -122,7 +123,7 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
                   headers: {
                     "Authorization": "Bearer $token",
                     "Content-Type":
-                        "application/json; charset=UTF-8", // Ensure UTF-8 encoding
+                    "application/json; charset=UTF-8", // Ensure UTF-8 encoding
                   },
                   body: json.encode({
                     "title": titleController.text,
@@ -171,7 +172,8 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
                     TextField(
                       controller: emailController,
                       decoration: InputDecoration(
-                        labelText: L10n.getTranslatedText(context, 'Teacher Email'),
+                        labelText:
+                        L10n.getTranslatedText(context, 'Teacher Email'),
                         suffixIcon: IconButton(
                           icon: Icon(Icons.add),
                           onPressed: () {
@@ -247,7 +249,9 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
       if (response.statusCode == 200) {
         if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(L10n.getTranslatedText(context, 'Teachers updated successfully'))),
+          SnackBar(
+              content: Text(L10n.getTranslatedText(
+                  context, 'Teachers updated successfully'))),
         );
       }
     } catch (e) {
@@ -275,69 +279,124 @@ class CourseManagementScreenState extends State<CourseManagementScreen> {
     );
   }
 
+
+  // Updated main widget with tabs
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AcademeTheme.appColor,
-        title: Text(L10n.getTranslatedText(context, 'Admin Panel'),
-            style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: AcademeTheme.appColor,
+          title: Text(
+            L10n.getTranslatedText(context, 'Admin Panel'),
+            style: TextStyle(color: Colors.white),
+          ),
+          centerTitle: true,
+          // ❌ remove TabBar from here
+        ),
+        body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  L10n.getTranslatedText(context, 'Course List'),
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+            // ✅ TabBar BELOW AppBar
+            Material(
+              color: Colors.white,
+              child: TabBar(
+                indicatorColor: AcademeTheme.appColor,
+                labelColor: AcademeTheme.appColor,
+                unselectedLabelColor: Colors.black38,
+                tabs: [
+                  Tab(
+                    icon: Icon(Icons.book),
+                    text:
+                    L10n.getTranslatedText(context, 'Self Study Material'),
+                  ),
+                  Tab(
+                    icon: Icon(Icons.school),
+                    text:
+                    L10n.getTranslatedText(context, 'Manage Teachers'),
+                  ),
+                ],
               ),
             ),
+            // ✅ TabBarView takes the remaining space
             Expanded(
-              child: courses.isEmpty
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: AcademeTheme.appColor, // Custom color
-                      ),
-                    )
-                  : ListView(
-                      children: courses
-                          .map((course) => Card(
+              child: TabBarView(
+                children: [
+                  // Self Study Material Tab
+                  Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 10.0),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              L10n.getTranslatedText(context, 'Course List'),
+                              style: TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: courses.isEmpty
+                              ? Center(
+                            child: CircularProgressIndicator(
+                              color: AcademeTheme.appColor,
+                            ),
+                          )
+                              : ListView(
+                            children: courses
+                                .map(
+                                  (course) => Card(
+                                color: Colors.white,
                                 margin: EdgeInsets.only(bottom: 10),
                                 child: ListTile(
                                   title: Text(course["title"]!),
-                                  subtitle: Text(course["description"]!),
+                                  subtitle:
+                                  Text(course["description"]!),
                                   onTap: () => _navigateToTopics(
-                                      course["id"]!, course["title"]!),
+                                      course["id"]!,
+                                      course["title"]!),
                                 ),
-                              ))
-                          .toList(),
+                              ),
+                            )
+                                .toList(),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  // Manage Teachers Tab
+                  ManageTeachersTab(),
+                ],
+              ),
             ),
           ],
         ),
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (isMenuOpen) ...[
-            _buildMenuItem(L10n.getTranslatedText(context, 'Add Course'), Icons.add, _addCourse),
-            SizedBox(height: 10),
-            _buildMenuItem(L10n.getTranslatedText(context, 'Manage Teachers'), Icons.school, _manageTeachers),
-            SizedBox(height: 10),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (isMenuOpen) ...[
+              _buildMenuItem(
+                L10n.getTranslatedText(context, 'Add Course'),
+                Icons.add,
+                _addCourse,
+              ),
+              SizedBox(height: 10),
+            ],
+            FloatingActionButton(
+              onPressed: () => setState(() => isMenuOpen = !isMenuOpen),
+              backgroundColor: AcademeTheme.appColor,
+              child: Icon(
+                isMenuOpen ? Icons.close : Icons.add,
+                color: Colors.white,
+              ),
+            ),
           ],
-          FloatingActionButton(
-            onPressed: () => setState(() => isMenuOpen = !isMenuOpen),
-            backgroundColor: AcademeTheme.appColor,
-            child: Icon(isMenuOpen ? Icons.close : Icons.add, color: Colors.white),
-          ),
-        ],
+        ),
       ),
     );
   }

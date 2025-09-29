@@ -122,6 +122,9 @@ class ApiEndpoints {
   static String updateTeacherProfile = '$baseUrl/api/teacher/profile/update';
   static String updateTeacherPreferences = '$baseUrl/api/teacher/preferences/update';
 
+  //Admin Teacher Management
+  static String removeTeacher = '$baseUrl/api/admin/teachers/remove';
+
   static String teacherClassProgress(String className) => '$baseUrl/api/teacher/progress/$className';
   static String teacherClassProgressSummary(String className) => '$baseUrl/api/teacher/classes/$className/students/progress-summary';
 }
