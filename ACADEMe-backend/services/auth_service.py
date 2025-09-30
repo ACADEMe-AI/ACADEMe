@@ -280,11 +280,12 @@ async def register_user(user: UserCreate, otp: str):
             access_token=token,
             token_type="bearer",
             expires_in=TOKEN_EXPIRY,
-            created_at=datetime.datetime.utcnow().isoformat(),
-            email=user.email,
-            student_class=user.student_class,
-            name=user.name,
-            photo_url=user.photo_url
+            created_at=datetime.datetime.utcnow(),
+            id=user_data_db["id"],
+            email=email,
+            student_class=user_data_db["student_class"],
+            name=user_data_db["name"],
+            photo_url=user_data_db.get("photo_url", photo_url)
         )
 
     except auth.EmailAlreadyExistsError:
@@ -325,7 +326,7 @@ async def login_user(user: UserLogin):
             token_type="bearer",
             expires_in=TOKEN_EXPIRY,
             created_at=datetime.datetime.utcnow(),
-            id=user_id,  # ✅ ADD THIS LINE
+            id=user_id,
             email=user.email,
             student_class=user_data["student_class"],
             name=user_data["name"],
@@ -401,7 +402,8 @@ async def google_signin_or_signup(user_data: dict):
                 access_token=token,
                 token_type="bearer",
                 expires_in=TOKEN_EXPIRY,
-                created_at=datetime.datetime.utcnow().isoformat(),
+                created_at=datetime.datetime.utcnow(),
+                id=user_data_db["id"],
                 email=email,
                 student_class=user_data_db["student_class"],
                 name=user_data_db["name"],
@@ -446,7 +448,8 @@ async def google_signin_or_signup(user_data: dict):
                 access_token=token,
                 token_type="bearer",
                 expires_in=TOKEN_EXPIRY,
-                created_at=datetime.datetime.utcnow().isoformat(),
+                created_at=datetime.datetime.utcnow(),
+                id=user_record.uid,
                 email=email,
                 student_class="SELECT",
                 name=name,
