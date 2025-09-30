@@ -18,6 +18,9 @@ class ApiEndpoints {
   static String get updateClass => '$baseUrl/api/users/update_class/';
   static String get adminEmails => '$baseUrl/api/users/admins';
 
+  // Firebase Custom Token Endpoint
+  static String get firebaseToken => '$baseUrl/api/users/firebase-token';
+
   // Course Endpoints with Language Parameters
   static String courses(String language) =>
       '$baseUrl/api/courses/?target_language=$language';
@@ -102,29 +105,46 @@ class ApiEndpoints {
   // Helper to get full URL
   static Uri getUri(String endpoint) => Uri.parse(endpoint);
 
+  // User Management for Chat - ADD THIS
+  static String get allUsers => '$baseUrl/api/users/all';
+  static String getUserById(String userId) => '$baseUrl/api/users/$userId';
+
   // Teachers
   static String teacherEmails = '$baseUrl/api/auth/teacher-emails';
-  static String teacherAllottedClasses = '$baseUrl/api/teacher/allotted-classes';
-  static String studentsByClass(String className) => '$baseUrl/api/teacher/students/$className';
-  static String classAnalytics(String className) => '$baseUrl/api/teacher/analytics/$className';
+  static String teacherAllottedClasses =
+      '$baseUrl/api/teacher/allotted-classes';
+  static String studentsByClass(String className) =>
+      '$baseUrl/api/teacher/students/$className';
+  static String classAnalytics(String className) =>
+      '$baseUrl/api/teacher/analytics/$className';
   static String teacherCourses = '$baseUrl/api/teacher/courses';
   static String teacherCoursesCreate = '$baseUrl/api/teacher/courses/create';
-  static String teacherCourseTopics(String courseId) => '$baseUrl/api/teacher/courses/$courseId/topics';
-  static String teacherCourseTopicsCreate(String courseId) => '$baseUrl/api/teacher/courses/$courseId/topics/create';
-  static String teacherTopicMaterials(String courseId, String topicId) => '$baseUrl/api/teacher/courses/$courseId/topics/$topicId/materials';
-  static String teacherTopicMaterialsCreate(String courseId, String topicId) => '$baseUrl/api/teacher/courses/$courseId/topics/$topicId/materials/create';
-  static String teacherUpcomingClasses = '$baseUrl/api/teacher/classes/upcoming';
-  static String teacherRecordedClasses = '$baseUrl/api/teacher/classes/recorded';
+  static String teacherCourseTopics(String courseId) =>
+      '$baseUrl/api/teacher/courses/$courseId/topics';
+  static String teacherCourseTopicsCreate(String courseId) =>
+      '$baseUrl/api/teacher/courses/$courseId/topics/create';
+  static String teacherTopicMaterials(String courseId, String topicId) =>
+      '$baseUrl/api/teacher/courses/$courseId/topics/$topicId/materials';
+  static String teacherTopicMaterialsCreate(String courseId, String topicId) =>
+      '$baseUrl/api/teacher/courses/$courseId/topics/$topicId/materials/create';
+  static String teacherUpcomingClasses =
+      '$baseUrl/api/teacher/classes/upcoming';
+  static String teacherRecordedClasses =
+      '$baseUrl/api/teacher/classes/recorded';
   static String scheduleClass = '$baseUrl/api/teacher/classes/schedule';
-  static String startClass(String classId) => '$baseUrl/api/teacher/classes/$classId/start';
+  static String startClass(String classId) =>
+      '$baseUrl/api/teacher/classes/$classId/start';
   static String shareRecording = '$baseUrl/api/teacher/recordings/share';
   static String teacherProfile = '$baseUrl/api/teacher/profile';
   static String updateTeacherProfile = '$baseUrl/api/teacher/profile/update';
-  static String updateTeacherPreferences = '$baseUrl/api/teacher/preferences/update';
+  static String updateTeacherPreferences =
+      '$baseUrl/api/teacher/preferences/update';
 
   //Admin Teacher Management
   static String removeTeacher = '$baseUrl/api/admin/teachers/remove';
 
-  static String teacherClassProgress(String className) => '$baseUrl/api/teacher/progress/$className';
-  static String teacherClassProgressSummary(String className) => '$baseUrl/api/teacher/classes/$className/students/progress-summary';
+  static String teacherClassProgress(String className) =>
+      '$baseUrl/api/teacher/progress/$className';
+  static String teacherClassProgressSummary(String className) =>
+      '$baseUrl/api/teacher/classes/$className/students/progress-summary';
 }

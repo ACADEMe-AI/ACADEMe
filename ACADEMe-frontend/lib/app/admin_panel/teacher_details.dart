@@ -1,4 +1,3 @@
-import 'package:ACADEMe/app/admin_panel/widgets/edit_teacher_dialogbox.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:http/http.dart' as http;
@@ -7,7 +6,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../academe_theme.dart';
 import '../../api_endpoints.dart';
-import 'controllers/teacher_operations.dart';
 import 'manage_teachers.dart';
 
 class TeacherDetailsScreen extends StatefulWidget {
