@@ -222,7 +222,6 @@ class _LogInViewState extends State<LogInView> {
         context, '❌ Something went wrong. Please try again');
   }
 
-  /// Handles Google Sign-In
   Future<void> _signInWithGoogle() async {
     setState(() => _isGoogleLoading = true);
 
@@ -232,6 +231,7 @@ class _LogInViewState extends State<LogInView> {
       if (!mounted) return;
 
       if (errorMessage != null) {
+        print('Google Sign-In Error: $errorMessage'); // Debug print
         String userFriendlyMessage = _getUserFriendlyErrorMessage(errorMessage);
         _showSnackBar(userFriendlyMessage);
         return;
@@ -264,14 +264,13 @@ class _LogInViewState extends State<LogInView> {
         );
       } else {
         if (mounted) {
-          _showSnackBar(L10n.getTranslatedText(
-              context, 'Google Sign-In failed. Please try again.'));
+          _showSnackBar('Google Sign-In returned no user data. Please try again.');
         }
       }
     } catch (e) {
+      print('Google Sign-In Exception: $e'); // Debug print
       if (mounted) {
-        String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());
-        _showSnackBar(userFriendlyMessage);
+        _showSnackBar('Google Sign-In failed. Please check your internet connection and try again.');
       }
     } finally {
       if (mounted) {

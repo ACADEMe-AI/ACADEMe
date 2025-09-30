@@ -263,7 +263,6 @@ class _SignUpViewState extends State<SignUpView> {
         context, '❌ Something went wrong during signup. Please try again');
   }
 
-  /// Handles Google Sign-Up
   Future<void> _signUpWithGoogle() async {
     setState(() => _isGoogleLoading = true);
 
@@ -273,9 +272,9 @@ class _SignUpViewState extends State<SignUpView> {
       if (!mounted) return;
 
       if (errorMessage != null) {
-        String userFriendlyMessage = _getUserFriendlyErrorMessage(errorMessage);
+        print('Google Sign-Up Error: $errorMessage'); // Debug print
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(userFriendlyMessage), backgroundColor: Colors.red),
+          SnackBar(content: Text('Google Sign-Up failed: $errorMessage'), backgroundColor: Colors.red),
         );
         return;
       }
@@ -310,16 +309,16 @@ class _SignUpViewState extends State<SignUpView> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(L10n.getTranslatedText(context, 'Google Sign-Up failed. Please try again')),
+            content: Text('Google Sign-Up returned no user data. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } catch (e) {
+      print('Google Sign-Up Exception: $e'); // Debug print
       if (mounted) {
-        String userFriendlyMessage = _getUserFriendlyErrorMessage(e.toString());
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(userFriendlyMessage), backgroundColor: Colors.red),
+          SnackBar(content: Text('Google Sign-Up failed. Please check your internet connection and try again.'), backgroundColor: Colors.red),
         );
       }
     } finally {

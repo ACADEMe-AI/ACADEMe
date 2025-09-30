@@ -1,4 +1,6 @@
 // auth_service.dart
+import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/cupertino.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -281,12 +283,21 @@ class AuthService {
     }
   }
 
-  /// Google Sign-In (Using Backend API)
   Future<(AppUser?, String?)> signInWithGoogle() async {
     try {
+      print('🔍 Starting Google Sign-In process...');
+
+      // Sign out first to ensure clean state
+      await _googleSignIn.signOut();
+
       // Get Google user account
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return (null, 'Google Sign-In canceled');
+      if (googleUser == null) {
+        print('❌ User canceled Google Sign-In');
+        return (null, 'Google Sign-In was canceled');
+      }
+
+      print('✅ Google user signed in: ${googleUser.email}');
 
       // Extract user information
       final String email = googleUser.email;
@@ -300,16 +311,28 @@ class AuthService {
 
       debugPrint("Google Sign-In: Authenticating $email with backend");
 
+      final requestBody = {
+        "email": email,
+        "name": name,
+        "photo_url": photoUrl,
+      };
+
+      final uri = ApiEndpoints.getUri(ApiEndpoints.googleSignin);
+      print('🌐 Backend URL: $uri');
+      print('📤 Request body: ${jsonEncode(requestBody)}');
+
       // Call backend Google Sign-In API
       final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.googleSignin),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "email": email,
-          "name": name,
-          "photo_url": photoUrl,
-        }),
-      );
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode(requestBody),
+      ).timeout(Duration(seconds: 30));
+
+      print('📡 Response status: ${response.statusCode}');
+      print('📥 Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -321,8 +344,24 @@ class AuthService {
         final String studentClass = responseData["student_class"] ?? "SELECT";
         final String userPhotoUrl = responseData["photo_url"] ?? photoUrl;
 
-        // Validate user ID
-        if (userId.isEmpty) {
+        // Validate user ID - try backend response first, then decode JWT
+        String finalUserId = userId;
+        if (finalUserId.isEmpty && accessToken.isNotEmpty) {
+          try {
+            final parts = accessToken.split('.');
+            if (parts.length == 3) {
+              final payload = parts[1];
+              final normalized = base64Url.normalize(payload);
+              final decoded = utf8.decode(base64Url.decode(normalized));
+              final payloadMap = jsonDecode(decoded);
+              finalUserId = payloadMap["id"]?.toString() ?? "";
+            }
+          } catch (e) {
+            print('Error decoding JWT: $e');
+          }
+        }
+
+        if (finalUserId.isEmpty) {
           debugPrint("Empty user ID received from backend");
           return (null, "Invalid user ID received from server");
         }
@@ -337,13 +376,14 @@ class AuthService {
         }
 
         // Store user details securely
-        await _secureStorage.write(key: "user_id", value: userId);
+        await _secureStorage.write(key: "user_id", value: finalUserId);
         await _secureStorage.write(key: "user_name", value: userName);
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
 
-        debugPrint("Google user credentials stored - User ID: $userId");
+        debugPrint("Google user credentials stored - User ID: $finalUserId");
+        print('✅ User data stored successfully');
 
         // Authenticate with Firebase for Realtime Database access
         debugPrint("Starting Firebase authentication...");
@@ -358,7 +398,7 @@ class AuthService {
         // Return the AppUser object
         return (
         AppUser(
-          id: userId,
+          id: finalUserId,
           name: userName,
           email: userEmail,
           studentClass: studentClass,
@@ -366,13 +406,31 @@ class AuthService {
         ),
         null
         );
+      } else if (response.statusCode == 404) {
+        return (null, 'Google Sign-In endpoint not found. Please contact support.');
+      } else if (response.statusCode >= 500) {
+        return (null, 'Server error occurred. Please try again later.');
       } else {
         final errorData = jsonDecode(response.body);
-        return (null, errorData["detail"]?.toString() ?? "Google Sign-In failed");
+        String errorMessage = errorData["detail"]?.toString() ?? "Google Sign-In failed";
+        return (null, errorMessage);
       }
+    } on TimeoutException {
+      print('⏰ Request timed out');
+      return (null, 'Request timed out. Please check your internet connection.');
+    } on SocketException {
+      print('🔌 No internet connection');
+      return (null, 'No internet connection. Please check your network settings.');
+    } on HttpException {
+      print('🌐 HTTP error occurred');
+      return (null, 'Network error occurred. Please try again.');
+    } on FormatException {
+      print('📝 Invalid response format');
+      return (null, 'Invalid response from server. Please try again.');
     } catch (e) {
       debugPrint("Google Sign-In error: $e");
-      return (null, "An unexpected error occurred: $e");
+      print('💥 Unexpected error: $e');
+      return (null, 'An unexpected error occurred: ${e.toString()}');
     }
   }
 
