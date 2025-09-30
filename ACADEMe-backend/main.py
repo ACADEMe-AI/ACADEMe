@@ -10,20 +10,24 @@ FIREBASE_CREDENTIALS_PATH = Path("firebase/firebase_service_account.json")
 if os.getenv("RAILWAY_ENVIRONMENT"):
     encoded_creds = os.getenv("FIREBASE_CREDENTIALS_BASE64")
     if not encoded_creds:
-        raise ValueError("🚨 Missing FIREBASE_CREDENTIALS_BASE64 environment variable")
+        raise ValueError("Missing FIREBASE_CREDENTIALS_BASE64 environment variable")
 
     # Decode and write credentials file
     decoded_creds = base64.b64decode(encoded_creds)
     FIREBASE_CREDENTIALS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(FIREBASE_CREDENTIALS_PATH, "wb") as creds_file:
         creds_file.write(decoded_creds)
-    print("✅ Firebase credentials file created successfully")
+    print("Firebase credentials file created successfully")
 else:
     load_dotenv()
 
 # Now import FastAPI and routes
 from fastapi import FastAPI, File, UploadFile, Form
-from routes import users, courses, topics, quizzes, student_progress, ai_recommendations, progress_visuals, admin_teacher_routes, teacher_exam_routes
+from routes import (
+    users, courses, topics, quizzes, student_progress, 
+    ai_recommendations, progress_visuals, admin_teacher_routes, 
+    teacher_exam_routes, firebase_auth
+)
 from routes.teacher_routes import router as teacher_router
 from routes.teacher_auth_routes import router as teacher_auth_router
 from routes.admin_teacher_routes import router as admin_teacher_router
@@ -37,6 +41,7 @@ from agents.stt_agent import process_stt
 
 app = FastAPI(title="ACADEMe API", version="1.0")
 
+# Include all routers
 app.include_router(users.router, prefix="/api")
 app.include_router(courses.router, prefix="/api")
 app.include_router(topics.router, prefix="/api")
@@ -49,6 +54,7 @@ app.include_router(teacher_auth_router, prefix="/api")
 app.include_router(admin_teacher_router, prefix="/api")
 app.include_router(admin_teacher_routes.router, prefix="/api")
 app.include_router(teacher_exam_routes.router, prefix="/api")
+app.include_router(firebase_auth.router, prefix="/api")  # NEW: Firebase Auth router
 
 def process_and_translate(response, target_language):
     # Ensure that errors are not processed further
@@ -87,7 +93,7 @@ async def process_text_api(
 async def process_stt_api(file: UploadFile = File(...)):
     response = await process_stt(file)
 
-    # ✅ Ensure errors are returned properly
+    # Ensure errors are returned properly
     if isinstance(response, dict) and "error" in response:
         return {"error": response["error"]}
 
@@ -106,9 +112,9 @@ async def process_document_api(
 ):
     response = await process_document(file, prompt)
 
-    print(f"🔍 Debug: Response from process_document -> {response}")  # Debugging Log
+    print(f"Debug: Response from process_document -> {response}")
 
-    # ✅ If response contains an error, return it directly
+    # If response contains an error, return it directly
     if isinstance(response, dict) and "error" in response:
         return {"error": response["error"]}
 
@@ -132,7 +138,7 @@ async def process_image_endpoint(
     image_data = await image.read()
     response = await process_image(image_data, prompt, source_lang, target_lang)
     
-    # ✅ Error handling and translation
+    # Error handling and translation
     if isinstance(response, dict) and "error" in response:
         return {"error": response["error"]}
 
@@ -151,7 +157,7 @@ async def process_audio_api(
 ):
     response = await process_audio(file, prompt)
 
-    # ✅ Ensure errors are returned properly
+    # Ensure errors are returned properly
     if isinstance(response, dict) and "error" in response:
         return {"error": response["error"]}
 
@@ -172,7 +178,7 @@ async def process_video_api(
 
     response = await process_video(file, prompt)
 
-    # ✅ Ensure errors are returned properly
+    # Ensure errors are returned properly
     if isinstance(response, dict) and "error" in response:
         return {"error": response["error"]}
 

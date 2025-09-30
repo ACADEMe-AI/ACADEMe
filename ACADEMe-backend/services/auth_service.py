@@ -295,6 +295,7 @@ async def register_user(user: UserCreate, otp: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# In services/user_service.py - login_user function
 async def login_user(user: UserLogin):
     """Verifies user login credentials and returns a JWT token."""
     try:
@@ -304,15 +305,14 @@ async def login_user(user: UserLogin):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
         user_data = user_docs[0].to_dict()
+        user_id = user_docs[0].id
 
-        # ✅ Verify password correctly
         if not verify_password(user.password, user_data["password"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        # ✅ Generate JWT token (Include photo_url)
         token = create_jwt_token(
             {
-                "id": user_data["id"],
+                "id": user_id,
                 "email": user.email,
                 "student_class": user_data["student_class"],
                 "name": user_data.get("name", ""),
@@ -324,7 +324,8 @@ async def login_user(user: UserLogin):
             access_token=token,
             token_type="bearer",
             expires_in=TOKEN_EXPIRY,
-            created_at=datetime.datetime.utcnow().isoformat(),
+            created_at=datetime.datetime.utcnow(),
+            id=user_id,  # ✅ ADD THIS LINE
             email=user.email,
             student_class=user_data["student_class"],
             name=user_data["name"],

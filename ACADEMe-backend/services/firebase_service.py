@@ -1,10 +1,11 @@
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, auth
 from typing import List, Dict, Any
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
+import logging
 
 class FirebaseService:
     def __init__(self):
@@ -146,6 +147,39 @@ class FirebaseService:
         
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(self.executor, fetch_batch)
+    
+    # NEW METHODS FOR FIREBASE AUTH
+    
+    async def create_custom_token(self, user_id: str, additional_claims: Dict[str, Any] = None) -> str:
+        """
+        Create a custom Firebase Auth token for a user.
+        
+        Args:
+            user_id: The unique user identifier from your database
+            additional_claims: Optional dict of additional claims to include in the token
+        
+        Returns:
+            Custom token as string (JWT format)
+        """
+        def generate_token():
+            try:
+                # Create custom token with optional additional claims
+                if additional_claims:
+                    custom_token = auth.create_custom_token(user_id, additional_claims)
+                else:
+                    custom_token = auth.create_custom_token(user_id)
+                
+                # Decode bytes to string
+                token_str = custom_token.decode('utf-8') if isinstance(custom_token, bytes) else custom_token
+                logging.info(f"Successfully created custom token for user: {user_id}")
+                return token_str
+            except Exception as e:
+                logging.error(f"Error creating custom token for user {user_id}: {e}")
+                raise Exception(f"Failed to create Firebase custom token: {str(e)}")
+        
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self.executor, generate_token)
+    
     
     def close(self):
         """
