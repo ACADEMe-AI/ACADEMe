@@ -21,8 +21,6 @@ from utils.auth import (
 
 db = firestore.client()
 
-TOKEN_EXPIRY = 10**9  # 30+ years in seconds (practically never expires)
-
 # Email configuration - replace with your SMTP settings
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
@@ -238,12 +236,12 @@ async def reset_password(email: str, otp: str, new_password: str):
 async def register_user(user: UserCreate, otp: str):
     """Registers a user after OTP verification."""
     try:
-        # Verify OTP
+        # Verify OTP first
         if user.email not in otp_storage:
             raise HTTPException(status_code=400, detail="OTP not found. Please request a new OTP.")
-        
+
         stored_otp_data = otp_storage[user.email]
-        
+
         if datetime.datetime.utcnow() > stored_otp_data["expires_at"]:
             del otp_storage[user.email]
             raise HTTPException(status_code=400, detail="OTP has expired. Please request a new OTP.")
@@ -251,11 +249,23 @@ async def register_user(user: UserCreate, otp: str):
         if otp != stored_otp_data["otp"]:
             raise HTTPException(status_code=400, detail="Invalid OTP")
 
+        # OTP is valid - now check if user already exists
+        try:
+            existing_user = auth.get_user_by_email(user.email)
+            # If we get here, user already exists
+            raise HTTPException(status_code=400, detail="Email already exists")
+        except auth.UserNotFoundError:
+            # User doesn't exist, proceed with registration
+            pass
+
         # Hash password
         hashed_password = hash_password(user.password)
 
         # Create user in Firebase Auth
-        user_record = auth.create_user(email=user.email, password=user.password)
+        try:
+            user_record = auth.create_user(email=user.email, password=user.password)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to create user: {str(e)}")
 
         # Determine role
         role = await determine_user_role(user.email, user_record.uid)
@@ -274,8 +284,9 @@ async def register_user(user: UserCreate, otp: str):
         # Store in Firestore
         db.collection("users").document(user_record.uid).set(user_data)
 
-        # Clean up OTP
-        del otp_storage[user.email]
+        # Clean up OTP after successful registration
+        if user.email in otp_storage:
+            del otp_storage[user.email]
 
         # Generate tokens
         access_token = create_access_token({
@@ -291,7 +302,7 @@ async def register_user(user: UserCreate, otp: str):
 
         # Decode refresh token to get token_id and expiry
         import jwt
-        refresh_payload = jwt.decode(refresh_token, verify=False)
+        refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False})
         await store_refresh_token(
             user_record.uid,
             refresh_payload["token_id"],
@@ -312,13 +323,13 @@ async def register_user(user: UserCreate, otp: str):
             role=role
         )
 
-    except auth.EmailAlreadyExistsError:
-        raise HTTPException(status_code=400, detail="Email already exists")
     except HTTPException:
         raise
     except Exception as e:
+        # Clean up OTP on any error
+        if user.email in otp_storage:
+            del otp_storage[user.email]
         raise HTTPException(status_code=400, detail=str(e))
-
 
 async def login_user(user: UserLogin):
     """Verifies user login credentials and returns tokens."""
@@ -524,4 +535,3 @@ async def google_signin_or_signup(user_data: dict):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-        

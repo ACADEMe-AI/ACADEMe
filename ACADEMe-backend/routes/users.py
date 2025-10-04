@@ -10,6 +10,7 @@ from services.auth_service import register_user, login_user, fetch_teacher_email
 from models.user_model import UserCreate, UserLogin, TokenResponse, UserUpdateClass, RefreshTokenRequest
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+from datetime import datetime
 
 router = APIRouter(prefix="/users", tags=["Users & Authentication"])
 
