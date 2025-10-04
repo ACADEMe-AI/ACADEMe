@@ -17,12 +17,24 @@ class TeacherService:
     def get_teacher_allotted_classes(teacher_id: str) -> List[str]:
         """Get allotted classes for a teacher."""
         try:
-            teacher_ref = db.collection("teacher_profiles").document(teacher_id)
+            # Get user email first
+            user_ref = db.collection("users").document(teacher_id)
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            email = user_doc.to_dict().get("email")
+            if not email:
+                raise HTTPException(status_code=400, detail="User email not found")
+
+            # Get teacher profile using email as document ID
+            teacher_ref = db.collection("teacher_profiles").document(email)
             teacher_doc = teacher_ref.get()
-            
+
             if not teacher_doc.exists:
                 raise HTTPException(status_code=404, detail="Teacher profile not found")
-            
+
             teacher_data = teacher_doc.to_dict()
             return teacher_data.get("allotted_classes", [])
         except Exception as e:
@@ -248,23 +260,29 @@ class TeacherService:
     def get_teacher_profile(teacher_id: str) -> TeacherProfileResponse:
         """Get teacher profile."""
         try:
-            teacher_ref = db.collection("teacher_profiles").document(teacher_id)
+            # First get user to find their email
+            user_ref = db.collection("users").document(teacher_id)
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            user_data = user_doc.to_dict()
+            email = user_data.get("email")
+
+            if not email:
+                raise HTTPException(status_code=400, detail="User email not found")
+
+            # Get teacher profile using email as document ID
+            teacher_ref = db.collection("teacher_profiles").document(email)
             teacher_doc = teacher_ref.get()
-            
+
             if not teacher_doc.exists:
                 # Create default profile if doesn't exist
-                user_ref = db.collection("users").document(teacher_id)
-                user_doc = user_ref.get()
-                
-                if not user_doc.exists:
-                    raise HTTPException(status_code=404, detail="User not found")
-                
-                user_data = user_doc.to_dict()
-                
                 default_profile = {
                     "user_id": teacher_id,
                     "name": user_data.get("name", ""),
-                    "email": user_data.get("email", ""),
+                    "email": email,
                     "bio": "",
                     "subject": "",
                     "photo_url": user_data.get("photo_url"),
@@ -279,11 +297,13 @@ class TeacherService:
                         "average_rating": 0.0
                     }
                 }
-                
+
                 teacher_ref.set(default_profile)
                 return TeacherProfileResponse(**default_profile)
-            
+
             teacher_data = teacher_doc.to_dict()
+            # Add email to response since it's not in the document
+            teacher_data["email"] = email
             return TeacherProfileResponse(**teacher_data)
         except HTTPException:
             raise
@@ -294,18 +314,29 @@ class TeacherService:
     def update_teacher_profile(teacher_id: str, profile_data: TeacherProfileUpdate) -> Dict[str, Any]:
         """Update teacher profile."""
         try:
-            teacher_ref = db.collection("teacher_profiles").document(teacher_id)
-            
+            # Get user email first
+            user_ref = db.collection("users").document(teacher_id)
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            email = user_doc.to_dict().get("email")
+            if not email:
+                raise HTTPException(status_code=400, detail="User email not found")
+
+            teacher_ref = db.collection("teacher_profiles").document(email)
+
             # Get current profile or create if doesn't exist
             teacher_doc = teacher_ref.get()
             if not teacher_doc.exists:
                 TeacherService.get_teacher_profile(teacher_id)  # This will create default profile
-            
+
             # Update only provided fields
             update_data = profile_data.dict(exclude_unset=True)
             if update_data:
                 teacher_ref.update(update_data)
-            
+
             return {"message": "Profile updated successfully"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error updating profile: {str(e)}")
@@ -314,13 +345,24 @@ class TeacherService:
     def update_teacher_preferences(teacher_id: str, preferences: TeacherPreferencesUpdate) -> Dict[str, Any]:
         """Update teacher preferences."""
         try:
-            teacher_ref = db.collection("teacher_profiles").document(teacher_id)
-            
+            # Get user email first
+            user_ref = db.collection("users").document(teacher_id)
+            user_doc = user_ref.get()
+
+            if not user_doc.exists:
+                raise HTTPException(status_code=404, detail="User not found")
+
+            email = user_doc.to_dict().get("email")
+            if not email:
+                raise HTTPException(status_code=400, detail="User email not found")
+
+            teacher_ref = db.collection("teacher_profiles").document(email)
+
             # Update only provided fields
             update_data = preferences.dict(exclude_unset=True)
             if update_data:
                 teacher_ref.update(update_data)
-            
+
             return {"message": "Preferences updated successfully"}
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error updating preferences: {str(e)}")

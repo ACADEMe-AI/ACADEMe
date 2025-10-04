@@ -18,10 +18,9 @@ async def get_teacher_emails():
         teacher_profiles = db.collection("teacher_profiles").stream()
         emails = []
         
-        for teacher in teacher_profiles:
-            teacher_data = teacher.to_dict()
-            if teacher_data.get("email"):
-                emails.append(teacher_data["email"])
+        for teacher_doc in teacher_profiles:
+            # Document ID is the email
+            emails.append(teacher_doc.id)
         
         # Also check for teachers in users collection with role = "teacher"
         teachers_in_users = db.collection("users").where("role", "==", "teacher").stream()
