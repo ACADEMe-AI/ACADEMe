@@ -183,22 +183,62 @@ class HomepageDrawer extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(L10n.getTranslatedText(context, 'Logout')),
+        content: Text(L10n.getTranslatedText(context, 'Are you sure you want to logout?')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(L10n.getTranslatedText(context, 'Cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text(L10n.getTranslatedText(context, 'Logout')),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true || !context.mounted) return;
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+
     try {
       await AuthService().signOut();
-      if (context.mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const LogInView()),
-        );
-      }
+
+      if (!context.mounted) return;
+
+      // Navigate to login and clear all routes
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LogInView()),
+            (route) => false,
+      );
     } catch (e) {
-      // Error handling without print statements
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '${L10n.getTranslatedText(context, 'Logout failed')}: ${e.toString()}')),
-        );
-      }
+      if (!context.mounted) return;
+
+      // Close loading dialog
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${L10n.getTranslatedText(context, 'Logout failed')}: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

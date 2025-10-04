@@ -732,48 +732,40 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog first
+              // Close confirmation dialog
+              Navigator.pop(context);
 
-              try {
-                // Show loading indicator
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => Center(
+              // Show loading dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => WillPopScope(
+                  onWillPop: () async => false,
+                  child: Center(
                     child: CircularProgressIndicator(
                       color: AcademeTheme.appColor,
                     ),
                   ),
-                );
+                ),
+              );
 
+              try {
                 // Perform logout
                 await authService.signOut();
 
-                // Close loading indicator
-                if (mounted) Navigator.pop(context);
-
-                if (!mounted) return;
-
-                // Navigate to login screen and clear navigation stack
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LogInView()),
-                      (route) => false,
-                );
-
-                // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Successfully logged out'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                // Close loading dialog and navigate in one go
+                if (mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const LogInView()),
+                        (route) => false,
+                  );
+                }
               } catch (e) {
                 debugPrint('Error during logout: $e');
 
-                // Close loading indicator if still showing
+                // Close loading dialog
                 if (mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pop(context);
                 }
 
                 if (!mounted) return;
