@@ -7,7 +7,17 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import HTTPException
 from firebase_admin import auth, firestore
 from models.user_model import UserCreate, UserLogin, TokenResponse
-from utils.auth import create_jwt_token, verify_password, hash_password
+from utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    verify_refresh_token,
+    revoke_refresh_token,
+    determine_user_role,
+    hash_password,
+    verify_password,
+    store_refresh_token,
+    ACCESS_TOKEN_EXPIRY
+)
 
 db = firestore.client()
 
@@ -234,20 +244,21 @@ async def register_user(user: UserCreate, otp: str):
         
         stored_otp_data = otp_storage[user.email]
         
-        # Check if OTP has expired
         if datetime.datetime.utcnow() > stored_otp_data["expires_at"]:
-            del otp_storage[user.email]  # Clean up expired OTP
+            del otp_storage[user.email]
             raise HTTPException(status_code=400, detail="OTP has expired. Please request a new OTP.")
-        
-        # Verify OTP
+
         if otp != stored_otp_data["otp"]:
             raise HTTPException(status_code=400, detail="Invalid OTP")
-        
-        # OTP verified, proceed with registration
+
+        # Hash password
         hashed_password = hash_password(user.password)
 
         # Create user in Firebase Auth
         user_record = auth.create_user(email=user.email, password=user.password)
+
+        # Determine role
+        role = await determine_user_role(user.email, user_record.uid)
 
         # Prepare user data
         user_data = {
@@ -256,36 +267,49 @@ async def register_user(user: UserCreate, otp: str):
             "email": user.email,
             "student_class": user.student_class,
             "password": hashed_password,
-            "photo_url": user.photo_url
+            "photo_url": user.photo_url,
+            "role": role
         }
 
-        # Store user in Firestore
+        # Store in Firestore
         db.collection("users").document(user_record.uid).set(user_data)
 
-        # Clean up OTP after successful registration
+        # Clean up OTP
         del otp_storage[user.email]
 
-        # Generate JWT token
-        token = create_jwt_token(
-            {
-                "id": user_record.uid,
-                "email": user.email,
-                "student_class": user.student_class,
-                "name": user.name,
-                "photo_url": user.photo_url,
-            }
+        # Generate tokens
+        access_token = create_access_token({
+            "id": user_record.uid,
+            "email": user.email,
+            "student_class": user.student_class,
+            "name": user.name,
+            "photo_url": user.photo_url,
+            "role": role
+        })
+
+        refresh_token = create_refresh_token(user_record.uid)
+
+        # Decode refresh token to get token_id and expiry
+        import jwt
+        refresh_payload = jwt.decode(refresh_token, verify=False)
+        await store_refresh_token(
+            user_record.uid,
+            refresh_payload["token_id"],
+            datetime.datetime.fromtimestamp(refresh_payload["exp"])
         )
 
         return TokenResponse(
-            access_token=token,
+            access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=TOKEN_EXPIRY,
+            expires_in=ACCESS_TOKEN_EXPIRY,
             created_at=datetime.datetime.utcnow(),
-            id=user_data_db["id"],
-            email=email,
-            student_class=user_data_db["student_class"],
-            name=user_data_db["name"],
-            photo_url=user_data_db.get("photo_url", photo_url)
+            id=user_record.uid,
+            email=user.email,
+            student_class=user.student_class,
+            name=user.name,
+            photo_url=user.photo_url,
+            role=role
         )
 
     except auth.EmailAlreadyExistsError:
@@ -296,9 +320,8 @@ async def register_user(user: UserCreate, otp: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# In services/user_service.py - login_user function
 async def login_user(user: UserLogin):
-    """Verifies user login credentials and returns a JWT token."""
+    """Verifies user login credentials and returns tokens."""
     try:
         user_docs = list(db.collection("users").where("email", "==", user.email).limit(1).stream())
 
@@ -311,26 +334,42 @@ async def login_user(user: UserLogin):
         if not verify_password(user.password, user_data["password"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        token = create_jwt_token(
-            {
-                "id": user_id,
-                "email": user.email,
-                "student_class": user_data["student_class"],
-                "name": user_data.get("name", ""),
-                "photo_url": user_data.get("photo_url", None),
-            }
+        # Determine role
+        role = await determine_user_role(user.email, user_id)
+
+        # Generate tokens
+        access_token = create_access_token({
+            "id": user_id,
+            "email": user.email,
+            "student_class": user_data["student_class"],
+            "name": user_data.get("name", ""),
+            "photo_url": user_data.get("photo_url", None),
+            "role": role
+        })
+
+        refresh_token = create_refresh_token(user_id)
+
+        # Store refresh token metadata
+        import jwt
+        refresh_payload = jwt.decode(refresh_token, verify=False)
+        await store_refresh_token(
+            user_id,
+            refresh_payload["token_id"],
+            datetime.datetime.fromtimestamp(refresh_payload["exp"])
         )
 
         return TokenResponse(
-            access_token=token,
+            access_token=access_token,
+            refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=TOKEN_EXPIRY,
+            expires_in=ACCESS_TOKEN_EXPIRY,
             created_at=datetime.datetime.utcnow(),
             id=user_id,
             email=user.email,
             student_class=user_data["student_class"],
             name=user_data["name"],
             photo_url=user_data.get("photo_url", None),
+            role=role
         )
 
     except HTTPException:
@@ -374,7 +413,7 @@ async def fetch_admin_ids():
         raise HTTPException(status_code=500, detail=str(e))
 
 async def google_signin_or_signup(user_data: dict):
-    """Handle Google Sign-In: check if user exists, if not create account automatically."""
+    """Handle Google Sign-In with tokens."""
     try:
         email = user_data.get("email")
         name = user_data.get("name", "Google User")
@@ -383,80 +422,106 @@ async def google_signin_or_signup(user_data: dict):
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
 
-        # Check if user already exists
+        # Check if user exists
         user_docs = list(db.collection("users").where("email", "==", email).limit(1).stream())
 
         if user_docs:
-            # User exists, return login token
+            # Existing user
             user_data_db = user_docs[0].to_dict()
+            user_id = user_data_db["id"]
+            role = await determine_user_role(email, user_id)
 
-            token = create_jwt_token({
-                "id": user_data_db["id"],
+            access_token = create_access_token({
+                "id": user_id,
                 "email": email,
                 "student_class": user_data_db["student_class"],
                 "name": user_data_db.get("name", name),
                 "photo_url": user_data_db.get("photo_url", photo_url),
+                "role": role
             })
 
+            refresh_token = create_refresh_token(user_id)
+
+            import jwt
+            refresh_payload = jwt.decode(refresh_token, verify=False)
+            await store_refresh_token(
+                user_id,
+                refresh_payload["token_id"],
+                datetime.datetime.fromtimestamp(refresh_payload["exp"])
+            )
+
             return TokenResponse(
-                access_token=token,
+                access_token=access_token,
+                refresh_token=refresh_token,
                 token_type="bearer",
-                expires_in=TOKEN_EXPIRY,
+                expires_in=ACCESS_TOKEN_EXPIRY,
                 created_at=datetime.datetime.utcnow(),
-                id=user_data_db["id"],
+                id=user_id,
                 email=email,
                 student_class=user_data_db["student_class"],
                 name=user_data_db["name"],
-                photo_url=user_data_db.get("photo_url", photo_url)
+                photo_url=user_data_db.get("photo_url", photo_url),
+                role=role
             )
         else:
-            # User doesn't exist, create new account
+            # New user
             import secrets
             import string
 
-            # Generate a strong random password
             alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
             password = ''.join(secrets.choice(alphabet) for i in range(16))
             hashed_password = hash_password(password)
 
-            # Create user in Firebase Auth
             user_record = auth.create_user(email=email, password=password)
+            role = await determine_user_role(email, user_record.uid)
 
-            # Prepare user data
             new_user_data = {
                 "id": user_record.uid,
                 "name": name,
                 "email": email,
                 "student_class": "SELECT",
                 "password": hashed_password,
-                "photo_url": photo_url
+                "photo_url": photo_url,
+                "role": role
             }
 
-            # Store user in Firestore
             db.collection("users").document(user_record.uid).set(new_user_data)
 
-            # Generate JWT token
-            token = create_jwt_token({
+            access_token = create_access_token({
                 "id": user_record.uid,
                 "email": email,
                 "student_class": "SELECT",
                 "name": name,
                 "photo_url": photo_url,
+                "role": role
             })
 
+            refresh_token = create_refresh_token(user_record.uid)
+
+            import jwt
+            refresh_payload = jwt.decode(refresh_token, verify=False)
+            await store_refresh_token(
+                user_record.uid,
+                refresh_payload["token_id"],
+                datetime.datetime.fromtimestamp(refresh_payload["exp"])
+            )
+
             return TokenResponse(
-                access_token=token,
+                access_token=access_token,
+                refresh_token=refresh_token,
                 token_type="bearer",
-                expires_in=TOKEN_EXPIRY,
+                expires_in=ACCESS_TOKEN_EXPIRY,
                 created_at=datetime.datetime.utcnow(),
                 id=user_record.uid,
                 email=email,
                 student_class="SELECT",
                 name=name,
-                photo_url=photo_url
+                photo_url=photo_url,
+                role=role
             )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+        

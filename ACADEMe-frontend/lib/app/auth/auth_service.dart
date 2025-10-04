@@ -47,6 +47,7 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   final FirebaseAuthService _firebaseAuthService = FirebaseAuthService();
+  String? _refreshToken;
 
   /// Send OTP to email for registration
   Future<(bool, String?)> sendOTP(String email) async {
@@ -105,10 +106,19 @@ class AuthService {
         },
       ).timeout(const Duration(seconds: 10));
 
-      return response.statusCode == 200;
+      if (response.statusCode == 200) {
+        return true;
+      } else if (response.statusCode == 401) {
+        // Try refreshing token
+        debugPrint("Access token invalid, attempting refresh");
+        return await refreshAccessToken();
+      }
+
+      return false;
     } catch (e) {
       debugPrint("Token validation failed: $e");
-      return false;
+      // Try refreshing on error
+      return await refreshAccessToken();
     }
   }
 
@@ -158,34 +168,35 @@ class AuthService {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
-        // Extract and store token securely
         final String accessToken = responseData["access_token"] ?? "";
-        if (accessToken.isNotEmpty) {
-          await _secureStorage.write(key: "access_token", value: accessToken);
-        }
-
-        // Store user details - now backend returns ID directly
+        final String refreshToken = responseData["refresh_token"] ?? "";  // NEW
         final String userId = responseData["id"]?.toString() ?? "";
         final String userName = responseData["name"] ?? "";
         final String userEmail = responseData["email"] ?? "";
         final String userClass = responseData["student_class"] ?? "SELECT";
-        final String userPhotoUrl = responseData["photo_url"] ??
-            "https://www.w3schools.com/w3images/avatar2.png";
+        final String userPhotoUrl = responseData["photo_url"] ?? "https://www.w3schools.com/w3images/avatar2.png";
+        final String role = responseData["role"] ?? "student";  // NEW
 
-        // Validate user ID
         if (userId.isEmpty) {
           return (null, "Invalid user ID received from server");
         }
 
+        // Store tokens
+        await _secureStorage.write(key: "access_token", value: accessToken);
+        if (refreshToken.isNotEmpty) {
+          await _secureStorage.write(key: "refresh_token", value: refreshToken);
+        }
+
+        // Store user details
         await _secureStorage.write(key: "user_id", value: userId);
         await _secureStorage.write(key: "user_name", value: userName);
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: userClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
+        await _secureStorage.write(key: "user_role", value: role);  // NEW
 
-        debugPrint("User credentials stored - User ID: $userId");
+        debugPrint("User credentials stored - User ID: $userId, Role: $role");
 
-        // Create AppUser object
         AppUser user = AppUser.fromJson(responseData);
         return (user, null);
       } else {
@@ -214,14 +225,14 @@ class AuthService {
         final responseData = jsonDecode(response.body);
 
         final String accessToken = responseData["access_token"] ?? "";
+        final String refreshToken = responseData["refresh_token"] ?? "";  // NEW
         final String userId = responseData["id"]?.toString() ?? "";
         final String name = responseData["name"] ?? "Unknown";
         final String userEmail = responseData["email"] ?? "";
         final String studentClass = responseData["student_class"] ?? "SELECT";
-        final String photoUrl = responseData["photo_url"] ??
-            "https://www.w3schools.com/w3images/avatar2.png";
+        final String photoUrl = responseData["photo_url"] ?? "https://www.w3schools.com/w3images/avatar2.png";
+        final String role = responseData["role"] ?? "student";  // NEW
 
-        // Validate user ID
         if (userId.isEmpty) {
           debugPrint("Empty user ID received from backend");
           return (null, "Invalid user ID received from server");
@@ -229,7 +240,7 @@ class AuthService {
 
         debugPrint("User ID from backend: $userId");
 
-        // Store token securely
+        // Store tokens
         if (accessToken.isNotEmpty) {
           await _secureStorage.write(key: "access_token", value: accessToken);
           debugPrint("Access token stored");
@@ -238,16 +249,24 @@ class AuthService {
           return (null, "No access token received from server");
         }
 
-        // Store user details securely
+        // Store refresh token - NEW
+        if (refreshToken.isNotEmpty) {
+          await _secureStorage.write(key: "refresh_token", value: refreshToken);
+          _refreshToken = refreshToken;
+          debugPrint("Refresh token stored");
+        }
+
+        // Store user details
         await _secureStorage.write(key: "user_id", value: userId);
         await _secureStorage.write(key: "user_name", value: name);
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: photoUrl);
+        await _secureStorage.write(key: "user_role", value: role);  // NEW
 
-        debugPrint("User credentials stored successfully - User ID: $userId");
+        debugPrint("User credentials stored successfully - User ID: $userId, Role: $role");
 
-        // Authenticate with Firebase for Realtime Database access
+        // Authenticate with Firebase
         debugPrint("Starting Firebase authentication...");
         final bool firebaseAuthSuccess = await _firebaseAuthService.authenticateWithFirebase();
 
@@ -257,10 +276,8 @@ class AuthService {
           debugPrint("Firebase authentication failed, but user is logged in to backend");
         }
 
-        // Debug storage contents
         await _firebaseAuthService.debugStorageContents();
 
-        // Return the AppUser object
         return (
         AppUser(
           id: userId,
@@ -283,27 +300,68 @@ class AuthService {
     }
   }
 
+// NEW: Add refresh token method
+  Future<bool> refreshAccessToken() async {
+    try {
+      String? refreshToken = await _secureStorage.read(key: "refresh_token");
+
+      if (refreshToken == null || refreshToken.isEmpty) {
+        debugPrint("No refresh token available");
+        return false;
+      }
+
+      debugPrint("Refreshing access token...");
+
+      final response = await http.post(
+        ApiEndpoints.getUri(ApiEndpoints.refreshToken),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({"refresh_token": refreshToken}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        final String newAccessToken = responseData["access_token"] ?? "";
+        final String role = responseData["role"] ?? "student";
+
+        if (newAccessToken.isNotEmpty) {
+          await _secureStorage.write(key: "access_token", value: newAccessToken);
+          await _secureStorage.write(key: "user_role", value: role);
+          debugPrint("Access token refreshed successfully");
+          return true;
+        }
+      } else if (response.statusCode == 401) {
+        debugPrint("Refresh token expired, clearing auth");
+        await signOut();
+        return false;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint("Error refreshing token: $e");
+      return false;
+    }
+  }
+
+
+
   Future<(AppUser?, String?)> signInWithGoogle() async {
     try {
-      print('🔍 Starting Google Sign-In process...');
+      print('Starting Google Sign-In process...');
 
-      // Sign out first to ensure clean state
       await _googleSignIn.signOut();
 
-      // Get Google user account
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        print('❌ User canceled Google Sign-In');
+        print('User canceled Google Sign-In');
         return (null, 'Google Sign-In was canceled');
       }
 
-      print('✅ Google user signed in: ${googleUser.email}');
+      print('Google user signed in: ${googleUser.email}');
 
-      // Extract user information
       final String email = googleUser.email;
       final String name = googleUser.displayName ?? "Google User";
-      final String photoUrl = googleUser.photoUrl ??
-          "https://www.w3schools.com/w3images/avatar2.png";
+      final String photoUrl = googleUser.photoUrl ?? "https://www.w3schools.com/w3images/avatar2.png";
 
       if (email.isEmpty) {
         return (null, 'Google authentication failed: Email not found');
@@ -318,10 +376,7 @@ class AuthService {
       };
 
       final uri = ApiEndpoints.getUri(ApiEndpoints.googleSignin);
-      print('🌐 Backend URL: $uri');
-      print('📤 Request body: ${jsonEncode(requestBody)}');
 
-      // Call backend Google Sign-In API
       final response = await http.post(
         uri,
         headers: {
@@ -331,20 +386,18 @@ class AuthService {
         body: jsonEncode(requestBody),
       ).timeout(Duration(seconds: 30));
 
-      print('📡 Response status: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
 
         final String userId = responseData["id"]?.toString() ?? "";
         final String accessToken = responseData["access_token"] ?? "";
+        final String refreshToken = responseData["refresh_token"] ?? "";  // NEW
         final String userName = responseData["name"] ?? name;
         final String userEmail = responseData["email"] ?? email;
         final String studentClass = responseData["student_class"] ?? "SELECT";
         final String userPhotoUrl = responseData["photo_url"] ?? photoUrl;
+        final String role = responseData["role"] ?? "student";  // NEW
 
-        // Validate user ID - try backend response first, then decode JWT
         String finalUserId = userId;
         if (finalUserId.isEmpty && accessToken.isNotEmpty) {
           try {
@@ -366,7 +419,7 @@ class AuthService {
           return (null, "Invalid user ID received from server");
         }
 
-        // Store token securely
+        // Store tokens
         if (accessToken.isNotEmpty) {
           await _secureStorage.write(key: "access_token", value: accessToken);
           debugPrint("Access token stored");
@@ -375,17 +428,21 @@ class AuthService {
           return (null, "No access token received from server");
         }
 
-        // Store user details securely
+        if (refreshToken.isNotEmpty) {
+          await _secureStorage.write(key: "refresh_token", value: refreshToken);
+          debugPrint("Refresh token stored");
+        }
+
+        // Store user details
         await _secureStorage.write(key: "user_id", value: finalUserId);
         await _secureStorage.write(key: "user_name", value: userName);
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
+        await _secureStorage.write(key: "user_role", value: role);  // NEW
 
-        debugPrint("Google user credentials stored - User ID: $finalUserId");
-        print('✅ User data stored successfully');
+        debugPrint("Google user credentials stored - User ID: $finalUserId, Role: $role");
 
-        // Authenticate with Firebase for Realtime Database access
         debugPrint("Starting Firebase authentication...");
         final bool firebaseAuthSuccess = await _firebaseAuthService.authenticateWithFirebase();
 
@@ -395,7 +452,6 @@ class AuthService {
           debugPrint("Firebase authentication failed, but user is logged in to backend");
         }
 
-        // Return the AppUser object
         return (
         AppUser(
           id: finalUserId,
@@ -416,20 +472,20 @@ class AuthService {
         return (null, errorMessage);
       }
     } on TimeoutException {
-      print('⏰ Request timed out');
+      print('Request timed out');
       return (null, 'Request timed out. Please check your internet connection.');
     } on SocketException {
-      print('🔌 No internet connection');
+      print('No internet connection');
       return (null, 'No internet connection. Please check your network settings.');
     } on HttpException {
-      print('🌐 HTTP error occurred');
+      print('HTTP error occurred');
       return (null, 'Network error occurred. Please try again.');
     } on FormatException {
-      print('📝 Invalid response format');
+      print('Invalid response format');
       return (null, 'Invalid response from server. Please try again.');
     } catch (e) {
       debugPrint("Google Sign-In error: $e");
-      print('💥 Unexpected error: $e');
+      print('Unexpected error: $e');
       return (null, 'An unexpected error occurred: ${e.toString()}');
     }
   }
@@ -437,6 +493,27 @@ class AuthService {
   Future<void> signOut() async {
     try {
       debugPrint("Starting complete logout process...");
+
+      // Get refresh token before clearing
+      String? refreshToken = await _secureStorage.read(key: "refresh_token");
+      String? accessToken = await getAccessToken();
+
+      // Call backend logout endpoint
+      if (refreshToken != null && accessToken != null) {
+        try {
+          await http.post(
+            ApiEndpoints.getUri(ApiEndpoints.logout),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $accessToken',
+            },
+            body: jsonEncode({"refresh_token": refreshToken}),
+          ).timeout(const Duration(seconds: 5));
+          debugPrint("Backend logout successful");
+        } catch (e) {
+          debugPrint("Backend logout error: $e");
+        }
+      }
 
       // Sign out from Firebase & Google
       try {
@@ -453,7 +530,7 @@ class AuthService {
         debugPrint("Google signout error: $e");
       }
 
-      // Clear role data
+      // Clear role data (keep if you still need UserRoleManager)
       try {
         final roleManager = UserRoleManager();
         await roleManager.clearRole();

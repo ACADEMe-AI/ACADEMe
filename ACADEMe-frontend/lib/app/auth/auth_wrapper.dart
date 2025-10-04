@@ -32,22 +32,11 @@ class AuthWrapperState extends State<AuthWrapper> {
     try {
       setState(() => isLoading = true);
 
-      // CRITICAL FIX 1: Validate token with backend before proceeding
+      // Check if we have a valid token
       String? accessToken = await _authService.getAccessToken();
-      bool hasValidToken = false;
-      
-      if (accessToken != null && accessToken.isNotEmpty) {
-        // Verify token is still valid by making a test API call
-        final userDetails = await _authService.getUserDetails();
-        hasValidToken = userDetails != null;
-        
-        if (!hasValidToken) {
-          debugPrint("Token expired or invalid, clearing all auth data");
-          await _authService.signOut();
-        }
-      }
-      
-      if (!hasValidToken) {
+
+      if (accessToken == null || accessToken.isEmpty) {
+        // No token, user not logged in
         setState(() {
           isUserLoggedIn = false;
           isAdmin = false;
@@ -57,67 +46,54 @@ class AuthWrapperState extends State<AuthWrapper> {
         return;
       }
 
-      // Get stored user email - with fallback to backend
-      String? userEmail = await _secureStorage.read(key: "user_email");
-      
-      if (userEmail == null || userEmail.isEmpty) {
-        final userDetails = await _authService.getUserDetails();
-        if (userDetails != null && userDetails['email'] != null) {
-          userEmail = userDetails['email'];
-          await _secureStorage.write(key: "user_email", value: userEmail);
-        } else {
-          debugPrint("Cannot determine user email, signing out");
-          await _authService.signOut();
-          setState(() {
-            isUserLoggedIn = false;
-            isAdmin = false;
-            isTeacher = false;
-            isLoading = false;
-          });
-          return;
-        }
+      // Validate token (will auto-refresh if expired)
+      bool hasValidToken = await _authService.isTokenValid();
+
+      if (!hasValidToken) {
+        debugPrint("Token validation failed, clearing auth");
+        await _authService.signOut();
+        setState(() {
+          isUserLoggedIn = false;
+          isAdmin = false;
+          isTeacher = false;
+          isLoading = false;
+        });
+        return;
       }
 
-      // CRITICAL FIX 2: Always fetch fresh role lists for current session
-      debugPrint("Fetching fresh role lists for user: $userEmail");
-      try {
-        // Clear existing role lists to force fresh fetch
-        AdminRoles.adminEmails.clear();
-        TeacherRoles.teacherEmails.clear();
-        AdminRoles.lastFetched = null;
-        TeacherRoles.lastFetched = null;
-        
-        await Future.wait([
-          AdminRoles.fetchAdminEmails(),
-          TeacherRoles.fetchTeacherEmails(),
-        ]).timeout(const Duration(seconds: 15));
-        
-        debugPrint("Role lists fetched - Admins: ${AdminRoles.adminEmails.length}, Teachers: ${TeacherRoles.teacherEmails.length}");
-      } catch (e) {
-        debugPrint("Warning: Failed to fetch role lists from API: $e");
-        // Try loading from cache as fallback
-        await _loadRolesFromCache();
+      // Get user details from backend (includes role)
+      final userDetails = await _authService.getUserDetails();
+
+      if (userDetails == null) {
+        debugPrint("Cannot get user details, signing out");
+        await _authService.signOut();
+        setState(() {
+          isUserLoggedIn = false;
+          isAdmin = false;
+          isTeacher = false;
+          isLoading = false;
+        });
+        return;
       }
-      
-      // CRITICAL FIX 3: Force fresh role determination
-      final roleManager = UserRoleManager();
-      // Clear any cached role data
-      await roleManager.clearRole();
-      // Fetch fresh role for current user
-      await roleManager.fetchUserRole(userEmail!);
-      
+
+      // Get role from backend response
+      final String role = userDetails['role'] ?? 'student';
+      debugPrint("User role from backend: $role");
+
+      // Store role locally
+      await _secureStorage.write(key: "user_role", value: role);
+
       setState(() {
         isUserLoggedIn = true;
-        isAdmin = roleManager.isAdmin;
-        isTeacher = roleManager.isTeacher;
+        isAdmin = (role == 'admin');
+        isTeacher = (role == 'teacher');
         isLoading = false;
       });
-      
-      debugPrint("Auth initialized - User: $userEmail, Admin: $isAdmin, Teacher: $isTeacher");
-      
+
+      debugPrint("Auth initialized - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
+
     } catch (e) {
       debugPrint("Error initializing auth: $e");
-      // On any error, clear auth state
       await _authService.signOut();
       setState(() {
         isUserLoggedIn = false;

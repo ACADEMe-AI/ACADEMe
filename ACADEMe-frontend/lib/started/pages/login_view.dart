@@ -80,38 +80,30 @@ class _LogInViewState extends State<LogInView> {
 
     if (user != null) {
       // Store credentials
-      await _secureStorage.write(
-          key: 'email', value: _emailController.text.trim());
-      await _secureStorage.write(
-          key: 'password', value: _passwordController.text.trim());
+      await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+      await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
 
-      // Force refresh HomeController user details
+      // Force refresh HomeController
       final homeController = HomeController();
       await homeController.forceRefreshUserDetails();
 
       if (mounted) {
-        _showSnackBar(L10n.getTranslatedText(context, '✅ Login successful!'));
+        _showSnackBar(L10n.getTranslatedText(context, 'Login successful!'));
       }
 
-      // Initialize Firebase Auth for Realtime Database
+      // Initialize Firebase Auth
       final firebaseAuthService = FirebaseAuthService();
       await firebaseAuthService.authenticateWithFirebase();
 
-      // **CRITICAL FIX: Fetch roles AFTER successful login**
+      // Get role from stored value (already stored during login)
       try {
-        debugPrint("Fetching role lists for user: ${user.email}");
-        await Future.wait([
-          AdminRoles.fetchAdminEmails(),
-          TeacherRoles.fetchTeacherEmails(),
-        ]).timeout(const Duration(seconds: 15));
+        String? role = await _secureStorage.read(key: 'user_role');
+        role = role ?? 'student';
 
-        final roleManager = UserRoleManager();
-        await roleManager.fetchUserRole(user.email);
+        bool isAdmin = (role == 'admin');
+        bool isTeacher = (role == 'teacher');
 
-        bool isAdmin = roleManager.isAdmin;
-        bool isTeacher = roleManager.isTeacher;
-
-        debugPrint("Login - Role determined: Admin=$isAdmin, Teacher=$isTeacher");
+        debugPrint("Login - Role: $role, Admin=$isAdmin, Teacher=$isTeacher");
 
         if (!mounted) return;
 
@@ -125,15 +117,12 @@ class _LogInViewState extends State<LogInView> {
           ),
         );
       } catch (roleError) {
-        debugPrint("Error fetching roles: $roleError");
+        debugPrint("Error getting role: $roleError");
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => BottomNav(
-                isAdmin: false,
-                isTeacher: false,
-              ),
+              builder: (context) => BottomNav(isAdmin: false, isTeacher: false),
             ),
           );
         }
@@ -238,10 +227,11 @@ class _LogInViewState extends State<LogInView> {
       }
 
       if (user != null) {
-        // Store credentials (email only, no password for Google users)
-        await _secureStorage.write(key: 'email', value: user.email);
+        // Store credentials
+        await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+        await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
 
-        // Force refresh HomeController user details
+        // Force refresh HomeController
         final homeController = HomeController();
         await homeController.forceRefreshUserDetails();
 
@@ -249,19 +239,42 @@ class _LogInViewState extends State<LogInView> {
           _showSnackBar(L10n.getTranslatedText(context, 'Login successful!'));
         }
 
-        // Fetch user role
-        await UserRoleManager().fetchUserRole(user.email);
-        bool isAdmin = UserRoleManager().isAdmin;
-        bool isTeacher = UserRoleManager().isTeacher;
+        // Initialize Firebase Auth
+        final firebaseAuthService = FirebaseAuthService();
+        await firebaseAuthService.authenticateWithFirebase();
 
-        if (!mounted) return;
+        // Get role from stored value (already stored during login)
+        try {
+          String? role = await _secureStorage.read(key: 'user_role');
+          role = role ?? 'student';
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
-          ),
-        );
+          bool isAdmin = (role == 'admin');
+          bool isTeacher = (role == 'teacher');
+
+          debugPrint("Login - Role: $role, Admin=$isAdmin, Teacher=$isTeacher");
+
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BottomNav(
+                isAdmin: isAdmin,
+                isTeacher: isTeacher,
+              ),
+            ),
+          );
+        } catch (roleError) {
+          debugPrint("Error getting role: $roleError");
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BottomNav(isAdmin: false, isTeacher: false),
+              ),
+            );
+          }
+        }
       } else {
         if (mounted) {
           _showSnackBar('Google Sign-In returned no user data. Please try again.');

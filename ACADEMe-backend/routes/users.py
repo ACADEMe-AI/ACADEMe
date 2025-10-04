@@ -2,12 +2,12 @@ import asyncio
 from typing import List
 import firebase_admin
 from firebase_admin import firestore
-from utils.auth import get_current_user
+from utils.auth import get_current_user, verify_refresh_token, create_access_token, revoke_refresh_token, determine_user_role, ACCESS_TOKEN_EXPIRY
 from services.auth_service import fetch_admin_ids, send_otp, send_reset_otp, reset_password
 from fastapi import APIRouter, Depends, HTTPException
 from services.progress_service import delete_user_progress
 from services.auth_service import register_user, login_user, fetch_teacher_emails, google_signin_or_signup
-from models.user_model import UserCreate, UserLogin, TokenResponse, UserUpdateClass
+from models.user_model import UserCreate, UserLogin, TokenResponse, UserUpdateClass, RefreshTokenRequest
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 
@@ -102,17 +102,77 @@ async def login(user: UserLogin):
 
 @router.get("/me")
 async def get_current_user_details(user: dict = Depends(get_current_user)):
-    """Fetches the currently authenticated user's details."""
-    if not user:  # Ensure user is not None or an empty dict
+    """Fetches the currently authenticated user's details with role."""
+    if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
 
     return {
-        "id": user.get("id"),  # Use .get() to avoid KeyError
+        "id": user.get("id"),
         "name": user.get("name"),
         "email": user.get("email"),
         "student_class": user.get("student_class"),
-        "photo_url": user.get("photo_url", None)  # Handle missing photo_url gracefully
+        "photo_url": user.get("photo_url"),
+        "role": user.get("role", "student")
     }
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_access_token(request: RefreshTokenRequest):
+    """Generate new access token using refresh token."""
+    try:
+        # Verify refresh token
+        payload = verify_refresh_token(request.refresh_token)
+        user_id = payload.get("user_id")
+
+        # Get user data from Firestore
+        user_ref = db.collection("users").document(user_id).get()
+        if not user_ref.exists:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_data = user_ref.to_dict()
+        email = user_data.get("email")
+
+        # Determine current role
+        role = await determine_user_role(email, user_id)
+
+        # Generate new access token
+        access_token = create_access_token({
+            "id": user_id,
+            "email": email,
+            "student_class": user_data.get("student_class", "SELECT"),
+            "name": user_data.get("name", ""),
+            "photo_url": user_data.get("photo_url"),
+            "role": role
+        })
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=request.refresh_token,  # Return same refresh token
+            token_type="bearer",
+            expires_in=ACCESS_TOKEN_EXPIRY,
+            created_at=datetime.utcnow(),
+            id=user_id,
+            email=email,
+            student_class=user_data.get("student_class", "SELECT"),
+            name=user_data.get("name", ""),
+            photo_url=user_data.get("photo_url"),
+            role=role
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/logout")
+async def logout(user: dict = Depends(get_current_user), refresh_token: str = None):
+    """Logout user and revoke refresh token."""
+    try:
+        if refresh_token:
+            await revoke_refresh_token(refresh_token)
+
+        return {"message": "Successfully logged out"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/update_class/")
 async def update_user_class(update_data: UserUpdateClass, user: dict = Depends(get_current_user)):

@@ -18,6 +18,8 @@ class ApiEndpoints {
   static String get updateClass => '$baseUrl/api/users/update_class/';
   static String get adminEmails => '$baseUrl/api/users/admins';
   static String get googleSignin => '$baseUrl/api/users/google-signin';
+  static String get refreshToken => '$baseUrl/api/users/refresh';
+  static String get logout => '$baseUrl/api/users/logout';
 
   // Firebase Custom Token Endpoint
   static String get firebaseToken => '$baseUrl/api/users/firebase-token';

@@ -131,25 +131,26 @@ class _SignUpViewState extends State<SignUpView> {
     setState(() => _isVerifyingOtp = false);
 
     if (user != null) {
-      // Store email and password in secure storage
-      await _secureStorage.write(
-          key: 'email', value: _emailController.text.trim());
-      await _secureStorage.write(
-          key: 'password', value: _passwordController.text.trim());
+      // Store email and password
+      await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+      await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
 
-      // Force refresh HomeController user details
+      // Force refresh HomeController
       final homeController = HomeController();
       await homeController.forceRefreshUserDetails();
 
-      await UserRoleManager().fetchUserRole(_emailController.text.trim());
+      // Get role from stored value
+      String? role = await _secureStorage.read(key: 'user_role');
+      role = role ?? 'student';
+
+      bool isAdmin = (role == 'admin');
+      bool isTeacher = (role == 'teacher');
+
       if (!mounted) return;
-      bool isAdmin = UserRoleManager().isAdmin;
-      bool isTeacher = UserRoleManager().isTeacher;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              L10n.getTranslatedText(context, 'Account created successfully!')),
+          content: Text(L10n.getTranslatedText(context, 'Account created successfully!')),
           backgroundColor: Colors.green,
         ),
       );
@@ -281,17 +282,22 @@ class _SignUpViewState extends State<SignUpView> {
       }
 
       if (user != null) {
-        // Store email in secure storage
-        await _secureStorage.write(key: 'email', value: user.email);
+        // Store email and password
+        await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+        await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
 
-        // Force refresh HomeController user details
+        // Force refresh HomeController
         final homeController = HomeController();
         await homeController.forceRefreshUserDetails();
 
-        await UserRoleManager().fetchUserRole(user.email);
+        // Get role from stored value
+        String? role = await _secureStorage.read(key: 'user_role');
+        role = role ?? 'student';
+
+        bool isAdmin = (role == 'admin');
+        bool isTeacher = (role == 'teacher');
+
         if (!mounted) return;
-        bool isAdmin = UserRoleManager().isAdmin;
-        bool isTeacher = UserRoleManager().isTeacher;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
