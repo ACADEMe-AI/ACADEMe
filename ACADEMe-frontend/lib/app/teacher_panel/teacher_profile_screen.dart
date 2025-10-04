@@ -732,28 +732,55 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close dialog first
 
               try {
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => Center(
+                    child: CircularProgressIndicator(
+                      color: AcademeTheme.appColor,
+                    ),
+                  ),
+                );
+
+                // Perform logout
                 await authService.signOut();
+
+                // Close loading indicator
+                if (mounted) Navigator.pop(context);
 
                 if (!mounted) return;
 
-                // Navigate to login screen - same pattern as ProfilePage
+                // Navigate to login screen and clear navigation stack
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const LogInView()),
-                  (route) => false,
+                      (route) => false,
                 );
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('You have been logged out')),
-                );
-              } catch (e) {
-                debugPrint('❌ Error during logout: $e');
+                // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Error logging out'),
+                    content: Text('Successfully logged out'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                debugPrint('Error during logout: $e');
+
+                // Close loading indicator if still showing
+                if (mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error logging out: ${e.toString()}'),
                     backgroundColor: Colors.red,
                   ),
                 );

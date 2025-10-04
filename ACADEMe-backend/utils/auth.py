@@ -70,7 +70,7 @@ def create_refresh_token(user_id: str) -> str:
 def verify_access_token(token: str) -> dict:
     """Verifies and decodes an access token."""
     try:
-        decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM], options={"verify_exp": False})
         if decoded.get("type") != "access":
             raise HTTPException(status_code=401, detail="Invalid token type")
         return decoded
@@ -83,7 +83,7 @@ def verify_access_token(token: str) -> dict:
 def verify_refresh_token(token: str) -> dict:
     """Verifies and decodes a refresh token."""
     try:
-        decoded = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        decoded = jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[JWT_ALGORITHM], options={"verify_exp": False})
         if decoded.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type")
 

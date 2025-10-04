@@ -302,7 +302,7 @@ async def register_user(user: UserCreate, otp: str):
 
         # Decode refresh token to get token_id and expiry
         import jwt
-        refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False})
+        refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False}, algorithms=["HS256"])
         await store_refresh_token(
             user_record.uid,
             refresh_payload["token_id"],
@@ -362,7 +362,7 @@ async def login_user(user: UserLogin):
 
         # Store refresh token metadata
         import jwt
-        refresh_payload = jwt.decode(refresh_token, verify=False)
+        refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False}, algorithms=["HS256"])
         await store_refresh_token(
             user_id,
             refresh_payload["token_id"],
@@ -454,7 +454,7 @@ async def google_signin_or_signup(user_data: dict):
             refresh_token = create_refresh_token(user_id)
 
             import jwt
-            refresh_payload = jwt.decode(refresh_token, verify=False)
+            refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False}, algorithms=["HS256"])
             await store_refresh_token(
                 user_id,
                 refresh_payload["token_id"],
@@ -510,7 +510,7 @@ async def google_signin_or_signup(user_data: dict):
             refresh_token = create_refresh_token(user_record.uid)
 
             import jwt
-            refresh_payload = jwt.decode(refresh_token, verify=False)
+            refresh_payload = jwt.decode(refresh_token, options={"verify_signature": False}, algorithms=["HS256"])
             await store_refresh_token(
                 user_record.uid,
                 refresh_payload["token_id"],
