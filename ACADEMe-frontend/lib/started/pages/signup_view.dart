@@ -8,6 +8,7 @@ import 'package:ACADEMe/localization/l10n.dart';
 import '../../app/auth/role.dart';
 import '../../app/pages/bottom_nav/bottom_nav.dart';
 import '../../app/pages/homepage/controllers/home_controller.dart';
+import 'dart:async';
 
 class SignUpView extends StatefulWidget {
   const SignUpView({super.key});
@@ -31,14 +32,18 @@ class _SignUpViewState extends State<SignUpView> {
   bool _otpSent = false;
   bool _isOtpLoading = false;
   bool _isVerifyingOtp = false;
+  Timer? _otpTimer;
+  int _otpResendSeconds = 30;
+  bool _canResendOtp = false;
 
+  /// Send OTP to email
   /// Send OTP to email
   Future<void> _sendOtp() async {
     if (_emailController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content:
-              Text(L10n.getTranslatedText(context, 'Please enter an email')),
+          Text(L10n.getTranslatedText(context, 'Please enter an email')),
         ),
       );
       return;
@@ -57,13 +62,29 @@ class _SignUpViewState extends State<SignUpView> {
     setState(() => _isOtpLoading = true);
 
     final (success, message) =
-        await AuthService().sendOTP(_emailController.text.trim());
+    await AuthService().sendOTP(_emailController.text.trim());
 
     if (!mounted) return;
     setState(() => _isOtpLoading = false);
 
     if (success) {
-      setState(() => _otpSent = true);
+      setState(() {
+        _otpSent = true;
+        _canResendOtp = false;
+        _otpResendSeconds = 30;
+      });
+
+      // Start countdown timer
+      _otpTimer?.cancel();
+      _otpTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_otpResendSeconds > 0) {
+          setState(() => _otpResendSeconds--);
+        } else {
+          setState(() => _canResendOtp = true);
+          timer.cancel();
+        }
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message ??
@@ -106,11 +127,10 @@ class _SignUpViewState extends State<SignUpView> {
       return;
     }
 
-    if (_otpController.text.trim().isEmpty) {
+    if (_otpController.text.trim().isEmpty || _otpController.text.trim().length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(L10n.getTranslatedText(context, 'Please enter the OTP')),
+          content: Text(L10n.getTranslatedText(context, 'Please enter a valid 6-digit OTP')),
         ),
       );
       return;
@@ -118,60 +138,95 @@ class _SignUpViewState extends State<SignUpView> {
 
     setState(() => _isVerifyingOtp = true);
 
-    final (user, errorMessage) = await AuthService().signUp(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _usernameController.text.trim(),
-      "SELECT",
-      "https://www.w3schools.com/w3images/avatar2.png",
-      _otpController.text.trim(),
-    );
-
-    if (!mounted) return;
-    setState(() => _isVerifyingOtp = false);
-
-    if (user != null) {
-      // Store email and password
-      await _secureStorage.write(key: 'email', value: _emailController.text.trim());
-      await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
-
-      // Force refresh HomeController
-      final homeController = HomeController();
-      await homeController.forceRefreshUserDetails();
-
-      // Get role from stored value
-      String? role = await _secureStorage.read(key: 'user_role');
-      role = role ?? 'student';
-
-      bool isAdmin = (role == 'admin');
-      bool isTeacher = (role == 'teacher');
+    try {
+      final (user, errorMessage) = await AuthService().signUp(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _usernameController.text.trim(),
+        "SELECT",
+        "https://www.w3schools.com/w3images/avatar2.png",
+        _otpController.text.trim(),
+      );
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(L10n.getTranslatedText(context, 'Account created successfully!')),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (errorMessage != null) {
+        // Check if account was created despite error
+        String lowerError = errorMessage.toLowerCase();
+        if (lowerError.contains('already exists') || lowerError.contains('email already')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(L10n.getTranslatedText(context, 'Account already exists. Please login.')),
+              backgroundColor: Colors.orange,
+            ),
+          );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
-        ),
-      );
-    } else {
+          // Navigate to login
+          await Future.delayed(const Duration(seconds: 2));
+          if (!mounted) return;
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LogInView()),
+          );
+          return;
+        }
+
+        // Show error
+        String displayMessage = _getUserFriendlyErrorMessage(errorMessage);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (user != null) {
+        // Store credentials
+        await _secureStorage.write(key: 'email', value: _emailController.text.trim());
+        await _secureStorage.write(key: 'password', value: _passwordController.text.trim());
+
+        // Force refresh HomeController
+        final homeController = HomeController();
+        await homeController.forceRefreshUserDetails();
+
+        // Get role from stored value
+        String? role = await _secureStorage.read(key: 'user_role');
+        role = role ?? 'student';
+
+        bool isAdmin = (role == 'admin');
+        bool isTeacher = (role == 'teacher');
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10n.getTranslatedText(context, 'Account created successfully!')),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BottomNav(isAdmin: isAdmin, isTeacher: isTeacher),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Signup error: $e");
       if (!mounted) return;
-      String displayMessage = errorMessage != null
-          ? _getUserFriendlyErrorMessage(errorMessage)
-          : L10n.getTranslatedText(context, 'Signup failed. Please try again');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(displayMessage),
+          content: Text(_getUserFriendlyErrorMessage(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _isVerifyingOtp = false);
+      }
     }
   }
 
@@ -477,12 +532,12 @@ class _SignUpViewState extends State<SignUpView> {
                           ),
                           SizedBox(width: width * 0.02),
                           ElevatedButton(
-                            onPressed: _otpSent
+                            onPressed: (_otpSent && !_canResendOtp)
                                 ? null
                                 : (_isOtpLoading ? null : _sendOtp),
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
-                                  _otpSent ? Colors.green : Colors.blue,
+                              (_otpSent && !_canResendOtp) ? Colors.grey : (_otpSent ? Colors.blue : Colors.blue),
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(7),
@@ -494,21 +549,21 @@ class _SignUpViewState extends State<SignUpView> {
                             ),
                             child: _isOtpLoading
                                 ? SizedBox(
-                                    width: width * 0.04,
-                                    height: width * 0.04,
-                                    child: const CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                              width: width * 0.04,
+                              height: width * 0.04,
+                              child: const CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
                                 : Text(
-                                    _otpSent
-                                        ? L10n.getTranslatedText(
-                                            context, 'Sent')
-                                        : L10n.getTranslatedText(
-                                            context, 'Send OTP'),
-                                    style: TextStyle(fontSize: width * 0.03),
-                                  ),
+                              (_otpSent && !_canResendOtp)
+                                  ? '$_otpResendSeconds${L10n.getTranslatedText(context, 's')}'
+                                  : (_otpSent
+                                  ? L10n.getTranslatedText(context, 'Resend')
+                                  : L10n.getTranslatedText(context, 'Send OTP')),
+                              style: TextStyle(fontSize: width * 0.03),
+                            ),
                           ),
                         ],
                       ),
@@ -611,9 +666,25 @@ class _SignUpViewState extends State<SignUpView> {
                             return L10n.getTranslatedText(
                                 context, 'Please enter a password');
                           }
-                          if (value.length < 6) {
+                          if (value.length < 8) {
                             return L10n.getTranslatedText(context,
-                                'Password must be at least 6 characters');
+                                'Password must be at least 8 characters');
+                          }
+                          if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                            return L10n.getTranslatedText(context,
+                                'Password must contain at least one uppercase letter');
+                          }
+                          if (!RegExp(r'[a-z]').hasMatch(value)) {
+                            return L10n.getTranslatedText(context,
+                                'Password must contain at least one lowercase letter');
+                          }
+                          if (!RegExp(r'[0-9]').hasMatch(value)) {
+                            return L10n.getTranslatedText(context,
+                                'Password must contain at least one number');
+                          }
+                          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(value)) {
+                            return L10n.getTranslatedText(context,
+                                'Password must contain at least one special character');
                           }
                           return null;
                         },
@@ -780,6 +851,7 @@ class _SignUpViewState extends State<SignUpView> {
 
   @override
   void dispose() {
+    _otpTimer?.cancel();
     _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
