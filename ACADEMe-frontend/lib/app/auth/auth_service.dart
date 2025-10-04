@@ -534,10 +534,6 @@ class AuthService {
       try {
         final roleManager = UserRoleManager();
         await roleManager.clearRole();
-        AdminRoles.adminEmails.clear();
-        TeacherRoles.teacherEmails.clear();
-        AdminRoles.lastFetched = null;
-        TeacherRoles.lastFetched = null;
         debugPrint("User roles cleared");
       } catch (e) {
         debugPrint("Role clear error: $e");

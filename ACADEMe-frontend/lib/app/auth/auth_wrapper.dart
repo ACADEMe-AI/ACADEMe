@@ -112,12 +112,10 @@ class AuthWrapperState extends State<AuthWrapper> {
       List<String>? cachedTeachers = prefs.getStringList('cached_teacher_emails');
       
       if (cachedAdmins != null) {
-        AdminRoles.adminEmails = cachedAdmins;
         debugPrint("Loaded ${cachedAdmins.length} admin emails from cache");
       }
       
       if (cachedTeachers != null) {
-        TeacherRoles.teacherEmails = cachedTeachers;
         debugPrint("Loaded ${cachedTeachers.length} teacher emails from cache");
       }
     } catch (e) {
@@ -128,13 +126,7 @@ class AuthWrapperState extends State<AuthWrapper> {
   /// CRITICAL FIX 5: Enhanced refresh method with complete cleanup
   Future<void> refreshAuth() async {
     debugPrint("🔄 Refreshing authentication state...");
-    
-    // Clear all role-related caches
-    AdminRoles.adminEmails.clear();
-    TeacherRoles.teacherEmails.clear();
-    AdminRoles.lastFetched = null;
-    TeacherRoles.lastFetched = null;
-    
+
     // Clear role manager cache
     final roleManager = UserRoleManager();
     await roleManager.clearRole();
@@ -155,13 +147,7 @@ class AuthWrapperState extends State<AuthWrapper> {
       // Clear role manager
       final roleManager = UserRoleManager();
       await roleManager.clearRole();
-      
-      // Clear role lists
-      AdminRoles.adminEmails.clear();
-      TeacherRoles.teacherEmails.clear();
-      AdminRoles.lastFetched = null;
-      TeacherRoles.lastFetched = null;
-      
+
       setState(() {
         isUserLoggedIn = false;
         isAdmin = false;

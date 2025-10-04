@@ -29,19 +29,6 @@ class _LogInViewState extends State<LogInView> {
   @override
   void initState() {
     super.initState();
-    _fetchRoleLists();
-  }
-
-  /// Fetch admin and teacher email lists on initialization
-  Future<void> _fetchRoleLists() async {
-    try {
-      await Future.wait([
-        AdminRoles.fetchAdminEmails(),
-        TeacherRoles.fetchTeacherEmails(),
-      ]);
-    } catch (e) {
-      debugPrint("Error fetching role lists: $e");
-    }
   }
 
   /// Shows a snackbar message

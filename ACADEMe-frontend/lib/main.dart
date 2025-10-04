@@ -41,9 +41,6 @@ void main() async {
     debugPrint("❌ Firebase Initialization Error: $e");
   }
 
-  /// 🔹 Fetch admin emails first (blocking)
-  await AdminRoles.fetchAdminEmails();
-
   /// 🔹 Load user role asynchronously
   final prefs = await SharedPreferences.getInstance();
   String? userEmail = prefs.getString("user_email");
