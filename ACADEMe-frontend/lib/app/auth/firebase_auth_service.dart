@@ -1,5 +1,6 @@
 // firebase_auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -9,6 +10,7 @@ import '../../api_endpoints.dart';
 class FirebaseAuthService {
   final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  final DatabaseReference _usersRef = FirebaseDatabase.instance.ref().child('community_users');
 
   /// Get Firebase custom token from backend
   Future<String?> getFirebaseCustomToken() async {
@@ -66,6 +68,57 @@ class FirebaseAuthService {
     }
   }
 
+  /// Create/Update user in Firebase Realtime Database
+  Future<void> createUserInRealtimeDatabase() async {
+    try {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser == null) {
+        debugPrint("❌ No Firebase user found");
+        return;
+      }
+
+      // Get user data from secure storage
+      final userName = await _secureStorage.read(key: "user_name") ?? 'Anonymous';
+      final userPhotoUrl = await _secureStorage.read(key: "photo_url") ?? 
+          'https://www.w3schools.com/w3images/avatar2.png';
+      final userEmail = await _secureStorage.read(key: "user_email") ?? '';
+      final studentClass = await _secureStorage.read(key: "student_class") ?? '';
+
+      debugPrint("✅ Creating/updating user in Realtime Database...");
+      
+      final userRef = _usersRef.child(firebaseUser.uid);
+      
+      // Check if user exists (optional - for logging)
+      final snapshot = await userRef.get();
+      if (!snapshot.exists) {
+        debugPrint("✅ Creating NEW user in Realtime Database");
+      } else {
+        debugPrint("✅ Updating EXISTING user in Realtime Database");
+      }
+      
+      // Set user data (creates or updates)
+      await userRef.set({
+        'name': userName,
+        'photoUrl': userPhotoUrl,
+        'lastSeen': ServerValue.timestamp,
+        'isOnline': true,
+        'email': userEmail,
+        'studentClass': studentClass,
+      });
+
+      debugPrint("✅ User data written to Realtime Database successfully");
+
+      // Set up disconnect handlers
+      await userRef.child('isOnline').onDisconnect().set(false);
+      await userRef.child('lastSeen').onDisconnect().set(ServerValue.timestamp);
+      
+      debugPrint("✅ Disconnect handlers configured");
+
+    } catch (e) {
+      debugPrint("❌ Error creating user in Realtime Database: $e");
+    }
+  }
+
   /// Authenticate with Firebase using custom token with retry logic
   Future<bool> authenticateWithFirebase({int maxRetries = 3}) async {
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -80,6 +133,8 @@ class FirebaseAuthService {
           // Verify the UID matches stored user_id
           final storedUserId = await _secureStorage.read(key: "user_id");
           if (currentUser.uid == storedUserId) {
+            // Create/update user in Realtime Database
+            await createUserInRealtimeDatabase();
             return true;
           } else {
             debugPrint("⚠️ Firebase UID mismatch, re-authenticating...");
@@ -117,6 +172,9 @@ class FirebaseAuthService {
             debugPrint("⚠️ Warning: Firebase UID ($firebaseUid) doesn't match stored user_id ($storedUserId)");
           }
           
+          // Create/update user in Realtime Database
+          await createUserInRealtimeDatabase();
+          
           return true;
         } else {
           debugPrint("❌ Firebase authentication failed - no user returned on attempt $attempt");
@@ -149,6 +207,15 @@ class FirebaseAuthService {
   /// Sign out from Firebase
   Future<void> signOutFromFirebase() async {
     try {
+      // Update user status before signing out
+      final currentUser = _firebaseAuth.currentUser;
+      if (currentUser != null) {
+        await _usersRef.child(currentUser.uid).update({
+          'isOnline': false,
+          'lastSeen': ServerValue.timestamp,
+        });
+      }
+      
       await _firebaseAuth.signOut();
       await _secureStorage.delete(key: "firebase_uid");
       debugPrint("✅ Signed out from Firebase");
