@@ -43,6 +43,24 @@ class CourseListScreenState extends State<CourseListScreen>
     await controller.initializeCourses(context);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Schedule the check for after the current build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkAndRefreshIfNeeded();
+      }
+    });
+  }
+
+  Future<void> _checkAndRefreshIfNeeded() async {
+    final controller = Provider.of<CourseController>(context, listen: false);
+    if (!controller.hasInitialized) {
+      await _initializeCourses();
+    }
+  }
+
   Future<void> _refreshCourses() async {
     if (!mounted) return;
     final controller = Provider.of<CourseController>(context, listen: false);

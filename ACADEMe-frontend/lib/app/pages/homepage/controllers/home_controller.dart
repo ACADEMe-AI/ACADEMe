@@ -70,6 +70,17 @@ class HomeController extends ChangeNotifier {
       .toList();
 
   Future<void> initializeData(String language) async {
+    // Check if student has selected a valid class
+    String? studentClass = await getStudentClass();
+
+    if (studentClass == null) {
+      debugPrint("⚠️ Cannot initialize data: No valid student class selected");
+      _courses = [];
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
     if (_currentLanguage == language && _courses.isNotEmpty && !_isLoading) {
       return; // Data already loaded for this language
     }
@@ -80,14 +91,22 @@ class HomeController extends ChangeNotifier {
     ]);
   }
 
-  Future<void> fetchCourses(String language,
-      {bool forceRefresh = false}) async {
+  Future<void> fetchCourses(String language, {bool forceRefresh = false}) async {
     if (_isLoading) return;
+
+    // Validate student class BEFORE making request
+    String? studentClass = await getStudentClass();
+    if (studentClass == null) {
+      debugPrint("❌ Cannot fetch courses: No valid student class");
+      _courses = [];
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
 
     // Check cache first if not forcing refresh
     if (!forceRefresh) {
-      List<Map<String, dynamic>>? cachedCourses =
-          _cache.getCachedCourses(language);
+      List<Map<String, dynamic>>? cachedCourses = _cache.getCachedCourses(language);
       if (cachedCourses != null && _currentLanguage == language) {
         _courses = cachedCourses;
         return;
@@ -101,6 +120,7 @@ class HomeController extends ChangeNotifier {
     final String? token = await _secureStorage.read(key: 'access_token');
 
     if (token == null) {
+      debugPrint("❌ No access token found");
       _courses = [];
       _isLoading = false;
       notifyListeners();
@@ -108,6 +128,8 @@ class HomeController extends ChangeNotifier {
     }
 
     try {
+      debugPrint("🔄 Fetching courses for language: $language, class: $studentClass");
+
       final response = await http.get(
         ApiEndpoints.getUri(ApiEndpoints.courses(language)),
         headers: {
@@ -116,16 +138,19 @@ class HomeController extends ChangeNotifier {
         },
       );
 
+      debugPrint("📡 Courses API response: ${response.statusCode}");
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        debugPrint("✅ Received ${data.length} courses from backend");
+
         List<Map<String, dynamic>> coursesWithProgress = [];
 
         for (var course in data) {
           String courseId = course["id"].toString();
           int totalTopics = await _getTotalTopics(courseId);
           int completedCount = await _getCompletedTopicsCount(courseId);
-          double progress =
-              totalTopics > 0 ? completedCount / totalTopics : 0.0;
+          double progress = totalTopics > 0 ? completedCount / totalTopics : 0.0;
 
           coursesWithProgress.add({
             "id": courseId,
@@ -138,11 +163,14 @@ class HomeController extends ChangeNotifier {
 
         _courses = coursesWithProgress;
         _cache.setCachedCourses(coursesWithProgress, language);
+        debugPrint("✅ Successfully processed ${_courses.length} courses");
       } else {
+        debugPrint("❌ Failed to fetch courses: ${response.statusCode}");
+        debugPrint("Response body: ${response.body}");
         _courses = [];
       }
     } catch (e) {
-      debugPrint("Error fetching courses: $e");
+      debugPrint("❌ Error fetching courses: $e");
       _courses = [];
     } finally {
       _isLoading = false;
@@ -212,37 +240,63 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<Map<String, String?>> getUserDetails() async {
-    if (_userDetails.isNotEmpty) {
-      return _userDetails;
-    }
-
     try {
       final String? name = await _secureStorage.read(key: 'name');
       final String? photoUrl = await _secureStorage.read(key: 'photo_url');
-      _userDetails = {
+
+      // Read class from SharedPreferences for immediate updates
+      final prefs = await SharedPreferences.getInstance();
+      final String? studentClass = prefs.getString('student_class');
+
+      debugPrint("getUserDetails from storage: class=$studentClass");
+
+      return {
         'name': name,
         'photo_url': photoUrl,
+        'student_class': studentClass,
       };
-      return _userDetails;
     } catch (e) {
       debugPrint("Error getting user details: $e");
       return {
         'name': null,
         'photo_url': null,
+        'student_class': null,
       };
+    }
+  }
+
+  Future<String?> getStudentClass() async {
+    try {
+      // Read from SharedPreferences (same as getUserDetails)
+      final prefs = await SharedPreferences.getInstance();
+      String? studentClass = prefs.getString("student_class");
+
+      debugPrint("Student class for courses: $studentClass");
+
+      // Validate the class
+      if (studentClass == null || studentClass.isEmpty || studentClass == "SELECT") {
+        debugPrint("Invalid or missing student class");
+        return null;
+      }
+
+      return studentClass;
+    } catch (e) {
+      debugPrint("Error getting student class: $e");
+      return null;
     }
   }
 
   void clearCache() {
     _cache.clearCache();
-    _courses = [];
-    _userDetails = {};
+    _courses.clear();
+    _userDetails.clear();
     _userDetailsFetched = false;
     _currentLanguage = null;
+    _isLoading = false;
+    debugPrint("✅ HomeController: Complete cache cleared");
     notifyListeners();
   }
 
-// Add this new method
   void clearUserCache() {
     _userDetails = {};
     _userDetailsFetched = false;

@@ -82,6 +82,32 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Schedule the check for after the current build completes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _checkAndRefreshIfNeeded();
+      }
+    });
+  }
+
+  Future<void> _checkAndRefreshIfNeeded() async {
+    try {
+      final currentClass = await _secureStorage.read(key: 'student_class');
+      final lastLoadedClass = await _secureStorage.read(key: 'last_loaded_class');
+
+      if (currentClass != lastLoadedClass && currentClass != null) {
+        debugPrint("🔄 Class changed detected, refreshing data...");
+        await _secureStorage.write(key: 'last_loaded_class', value: currentClass);
+        await _refreshData();
+      }
+    } catch (e) {
+      debugPrint("Error checking class change: $e");
+    }
+  }
+
   Future<void> _refreshData() async {
     if (!mounted) return;
 

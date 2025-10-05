@@ -1,5 +1,6 @@
 import 'package:ACADEMe/started/pages/signup_view.dart';
 import 'package:ACADEMe/localization/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../academe_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:ACADEMe/app/auth/auth_service.dart';
@@ -82,15 +83,14 @@ class _LogInViewState extends State<LogInView> {
       final firebaseAuthService = FirebaseAuthService();
       await firebaseAuthService.authenticateWithFirebase();
 
-      // Get role from stored value (already stored during login)
+      // Get role from SharedPreferences (primary source)
       try {
-        String? role = await _secureStorage.read(key: 'user_role');
-        role = role ?? 'student';
+        final prefs = await SharedPreferences.getInstance();
+        String? role = prefs.getString('user_role') ?? 'student';
+        bool isAdmin = prefs.getBool('is_admin') ?? false;
+        bool isTeacher = prefs.getBool('is_teacher') ?? false;
 
-        bool isAdmin = (role == 'admin');
-        bool isTeacher = (role == 'teacher');
-
-        debugPrint("Login - Role: $role, Admin=$isAdmin, Teacher=$isTeacher");
+        debugPrint("✅ Login - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
 
         if (!mounted) return;
 
@@ -230,15 +230,14 @@ class _LogInViewState extends State<LogInView> {
         final firebaseAuthService = FirebaseAuthService();
         await firebaseAuthService.authenticateWithFirebase();
 
-        // Get role from stored value (already stored during login)
+        // Get role from SharedPreferences
         try {
-          String? role = await _secureStorage.read(key: 'user_role');
-          role = role ?? 'student';
+          final prefs = await SharedPreferences.getInstance();
+          String? role = prefs.getString('user_role') ?? 'student';
+          bool isAdmin = prefs.getBool('is_admin') ?? false;
+          bool isTeacher = prefs.getBool('is_teacher') ?? false;
 
-          bool isAdmin = (role == 'admin');
-          bool isTeacher = (role == 'teacher');
-
-          debugPrint("Login - Role: $role, Admin=$isAdmin, Teacher=$isTeacher");
+          debugPrint("✅ Google Login - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
 
           if (!mounted) return;
 

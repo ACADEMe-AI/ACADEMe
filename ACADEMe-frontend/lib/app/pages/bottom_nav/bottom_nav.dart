@@ -16,10 +16,32 @@ import '../../teacher_panel/teacher_live_classes_screen.dart';
 import '../../teacher_panel/teacher_student_management_screen.dart';
 import '../../teacher_panel/teacher_profile_screen.dart';
 
-class BottomNav extends StatelessWidget {
+class BottomNav extends StatefulWidget {
   final bool isAdmin;
   final bool isTeacher;
   const BottomNav({super.key, required this.isAdmin, this.isTeacher = false});
+
+  @override
+  State<BottomNav> createState() => _BottomNavState();
+}
+
+class _BottomNavState extends State<BottomNav> {
+  @override
+  void initState() {
+    super.initState();
+    // Reset index to 0 when BottomNav is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final provider = Provider.of<BottomNavProvider>(context, listen: false);
+        // Get max valid index for current role
+        final maxIndex = widget.isAdmin ? 4 : (widget.isTeacher ? 4 : 3);
+        // Reset to 0 if current index is out of bounds
+        if (provider.selectedIndex > maxIndex) {
+          provider.setIndex(0);
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +49,7 @@ class BottomNav extends StatelessWidget {
       builder: (context, bottomNavProvider, child) {
         final int selectedIndex = bottomNavProvider.selectedIndex;
 
-        final List<Widget> pages = isAdmin
+        final List<Widget> pages = widget.isAdmin
             ? [
           HomeScreen(
             onProfileTap: () => bottomNavProvider.setIndex(3),
@@ -39,7 +61,7 @@ class BottomNav extends StatelessWidget {
           const ProfilePage(),
           CourseManagementScreen(),
         ]
-            : isTeacher
+            : widget.isTeacher
             ? [
           TeacherHomeScreen(
             onProfileTap: () => bottomNavProvider.setIndex(4),
@@ -62,17 +84,20 @@ class BottomNav extends StatelessWidget {
           const ProfilePage(),
         ];
 
+        // Ensure selectedIndex is within bounds
+        final safeIndex = selectedIndex < pages.length ? selectedIndex : 0;
+
         return Scaffold(
-          body: pages[selectedIndex],
+          body: pages[safeIndex],
           bottomNavigationBar: BottomNavigationBar(
-            currentIndex: selectedIndex,
+            currentIndex: safeIndex,
             onTap: bottomNavProvider.setIndex,
             selectedItemColor: AcademeTheme.appColor.withAlpha(180),
             unselectedItemColor: Colors.grey,
             showUnselectedLabels: true,
             backgroundColor: Colors.white,
             type: BottomNavigationBarType.fixed,
-            items: isAdmin
+            items: widget.isAdmin
                 ? [
               BottomNavigationBarItem(
                   icon: Icon(Icons.home),
@@ -90,7 +115,7 @@ class BottomNav extends StatelessWidget {
                   icon: Icon(Icons.admin_panel_settings),
                   label: L10n.getTranslatedText(context, 'Admin')),
             ]
-                : isTeacher
+                : widget.isTeacher
                 ? [
               BottomNavigationBarItem(
                   icon: Icon(Icons.home),
@@ -100,7 +125,8 @@ class BottomNav extends StatelessWidget {
                   label: L10n.getTranslatedText(context, 'Content')),
               BottomNavigationBarItem(
                   icon: Icon(Icons.video_call),
-                  label: L10n.getTranslatedText(context, 'Live Classes')),
+                  label:
+                  L10n.getTranslatedText(context, 'Live Classes')),
               BottomNavigationBarItem(
                   icon: Icon(Icons.people),
                   label: L10n.getTranslatedText(context, 'Students')),

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app/auth/auth_service.dart';
+import '../../app/pages/courses/controllers/course_controller.dart';
 import '../../app/pages/homepage/controllers/home_controller.dart';
 
 class ClassSelectionBottomSheet extends StatefulWidget {
@@ -142,9 +145,33 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
       _storedClass = selectedClass;
       _isClassChanged = false;
 
-      // Force refresh HomeController user details
-      final homeController = HomeController();
-      await homeController.forceRefreshUserDetails();
+      // CRITICAL: Force fetch fresh user data from backend
+      final authService = AuthService();
+      final freshUserDetails = await authService.getUserDetails();
+
+      if (freshUserDetails != null) {
+        // Update secure storage with fresh data
+        await _secureStorage.write(key: 'name', value: freshUserDetails['name']);
+        await _secureStorage.write(key: 'email', value: freshUserDetails['email']);
+        await _secureStorage.write(key: 'student_class', value: freshUserDetails['student_class']);
+        await _secureStorage.write(key: 'photo_url', value: freshUserDetails['photo_url']);
+
+        debugPrint("Fresh user data updated in storage: class=${freshUserDetails['student_class']}");
+      }
+
+      // Clear all course caches AFTER updating user data
+      try {
+        final homeController = HomeController();
+        homeController.clearCache();
+        homeController.clearUserCache(); // This will force refetch on next access
+
+        final courseController = CourseController();
+        courseController.clearAllCaches();
+
+        debugPrint("All caches cleared after class change");
+      } catch (e) {
+        debugPrint("Error clearing caches: $e");
+      }
 
       // Notify parent widget
       if (widget.onClassUpdated != null) {
@@ -180,6 +207,8 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
     }
 
     try {
+      debugPrint("🔄 Sending class update to backend: $selectedClass");
+
       final response = await http.patch(
         ApiEndpoints.getUri(ApiEndpoints.updateClass),
         headers: {
@@ -189,22 +218,31 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         body: jsonEncode({'new_class': selectedClass}),
       );
 
+      debugPrint("📡 Backend response status: ${response.statusCode}");
+      debugPrint("📡 Backend response body: ${response.body}");
+
       if (response.statusCode == 200) {
         // Parse response to get updated user data
         final responseData = jsonDecode(response.body);
+        debugPrint("✅ Backend confirmed class update: ${responseData}");
 
         // Store the updated class locally
         await _secureStorage.write(key: 'student_class', value: selectedClass);
 
-        // If backend returns user_data, update all fields
-        if (responseData.containsKey('user_data')) {
-          final userData = responseData['user_data'];
+        // After backend confirms, update BOTH storages
+        final userData = responseData['user_data'];
+        if (userData != null) {
+          // Update FlutterSecureStorage
+          await _secureStorage.write(key: 'student_class', value: userData['student_class']);
           await _secureStorage.write(key: 'name', value: userData['name']);
           await _secureStorage.write(key: 'email', value: userData['email']);
-          await _secureStorage.write(key: 'student_class', value: userData['student_class']);
-          if (userData['photo_url'] != null) {
-            await _secureStorage.write(key: 'photo_url', value: userData['photo_url']);
-          }
+          await _secureStorage.write(key: 'photo_url', value: userData['photo_url']);
+
+          // CRITICAL: Also update SharedPreferences immediately
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('student_class', userData['student_class']);
+
+          debugPrint("✅ Updated BOTH storages with backend user_data: class=${userData['student_class']}");
         }
 
         _showSnackBar('${L10n.getTranslatedText(context, 'Selected')} $selectedClass');
@@ -216,10 +254,11 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         return false;
       }
 
-      _showSnackBar('${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
+      debugPrint("❌ Backend update failed: ${response.body}");
+      _showSnackBar('${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.statusCode}');
       return false;
     } catch (e) {
-      debugPrint('Error updating class: $e');
+      debugPrint('❌ Error updating class: $e');
       _showSnackBar(L10n.getTranslatedText(context, 'Network error. Please try again.'));
       return false;
     }

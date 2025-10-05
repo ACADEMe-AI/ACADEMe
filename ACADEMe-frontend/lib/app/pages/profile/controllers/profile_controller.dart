@@ -10,10 +10,13 @@ class ProfileController {
 
   Future<Map<String, dynamic>> loadUserDetails() async {
     try {
-      // Always fetch fresh data from secure storage
+      // Read from SharedPreferences for class (immediate updates)
+      final prefs = await SharedPreferences.getInstance();
+      final studentClass = prefs.getString('student_class');
+
+      // Read other data from secure storage
       final name = await _secureStorage.read(key: 'name');
       final email = await _secureStorage.read(key: 'email');
-      final studentClass = await _secureStorage.read(key: 'student_class');
       final photoUrl = await _secureStorage.read(key: 'photo_url');
 
       return {

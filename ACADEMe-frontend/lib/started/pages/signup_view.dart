@@ -1,5 +1,6 @@
 import 'package:ACADEMe/started/pages/login_view.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../academe_theme.dart';
 import 'package:flutter/material.dart';
 import '../../app/auth/auth_service.dart';
@@ -191,12 +192,13 @@ class _SignUpViewState extends State<SignUpView> {
         final homeController = HomeController();
         await homeController.forceRefreshUserDetails();
 
-        // Get role from stored value
-        String? role = await _secureStorage.read(key: 'user_role');
-        role = role ?? 'student';
+        // Get role from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        String? role = prefs.getString('user_role') ?? 'student';
+        bool isAdmin = prefs.getBool('is_admin') ?? false;
+        bool isTeacher = prefs.getBool('is_teacher') ?? false;
 
-        bool isAdmin = (role == 'admin');
-        bool isTeacher = (role == 'teacher');
+        debugPrint("✅ Signup - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
 
         if (!mounted) return;
 
@@ -345,12 +347,13 @@ class _SignUpViewState extends State<SignUpView> {
         final homeController = HomeController();
         await homeController.forceRefreshUserDetails();
 
-        // Get role from stored value
-        String? role = await _secureStorage.read(key: 'user_role');
-        role = role ?? 'student';
+        // Get role from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        String? role = prefs.getString('user_role') ?? 'student';
+        bool isAdmin = prefs.getBool('is_admin') ?? false;
+        bool isTeacher = prefs.getBool('is_teacher') ?? false;
 
-        bool isAdmin = (role == 'admin');
-        bool isTeacher = (role == 'teacher');
+        debugPrint("✅ Google Signup - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
 
         if (!mounted) return;
 

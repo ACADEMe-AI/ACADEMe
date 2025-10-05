@@ -193,7 +193,15 @@ class AuthService {
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: userClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
-        await _secureStorage.write(key: "user_role", value: role);  // NEW
+        await _secureStorage.write(key: "user_role", value: role);
+
+        // CRITICAL: Store in SharedPreferences for immediate access
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("student_class", userClass);
+        await prefs.setString("user_role", role);
+        await prefs.setBool("is_admin", role == "admin");
+        await prefs.setBool("is_teacher", role == "teacher");
+        debugPrint("✅ Stored - Class: $userClass, Role: $role");
 
         debugPrint("User credentials stored - User ID: $userId, Role: $role");
 
@@ -262,7 +270,15 @@ class AuthService {
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: photoUrl);
-        await _secureStorage.write(key: "user_role", value: role);  // NEW
+        await _secureStorage.write(key: "user_role", value: role);
+
+        // CRITICAL: Store in SharedPreferences for immediate access
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("student_class", studentClass);
+        await prefs.setString("user_role", role);
+        await prefs.setBool("is_admin", role == "admin");
+        await prefs.setBool("is_teacher", role == "teacher");
+        debugPrint("✅ Stored - Class: $studentClass, Role: $role, Admin: ${role == 'admin'}, Teacher: ${role == 'teacher'}");
 
         debugPrint("User credentials stored successfully - User ID: $userId, Role: $role");
 
@@ -439,7 +455,15 @@ class AuthService {
         await _secureStorage.write(key: "user_email", value: userEmail);
         await _secureStorage.write(key: "student_class", value: studentClass);
         await _secureStorage.write(key: "photo_url", value: userPhotoUrl);
-        await _secureStorage.write(key: "user_role", value: role);  // NEW
+        await _secureStorage.write(key: "user_role", value: role);
+
+        // CRITICAL: Store in SharedPreferences for immediate access
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("student_class", studentClass);
+        await prefs.setString("user_role", role);
+        await prefs.setBool("is_admin", role == "admin");
+        await prefs.setBool("is_teacher", role == "teacher");
+        debugPrint("✅ Google user - Class: $studentClass, Role: $role, Admin: ${role == 'admin'}, Teacher: ${role == 'teacher'}");
 
         debugPrint("Google user credentials stored - User ID: $finalUserId, Role: $role");
 
@@ -552,7 +576,8 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         final authKeys = [
           'isAdmin', 'isTeacher', 'userRole', 'cached_admin_emails',
-          'cached_teacher_emails', 'user_role', 'is_admin', 'is_teacher'
+          'cached_teacher_emails', 'user_role', 'is_admin', 'is_teacher',
+          'student_class'
         ];
         for (String key in authKeys) {
           await prefs.remove(key);
@@ -560,6 +585,16 @@ class AuthService {
         debugPrint("SharedPreferences cleared");
       } catch (e) {
         debugPrint("SharedPreferences clear error: $e");
+      }
+
+      // Reset BottomNavProvider
+      try {
+        // This will be picked up by the provider when app restarts
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('bottom_nav_index', 0);
+        debugPrint("BottomNavProvider index reset");
+      } catch (e) {
+        debugPrint("BottomNavProvider reset error: $e");
       }
 
       // Clear application caches

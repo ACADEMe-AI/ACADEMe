@@ -62,12 +62,38 @@ class CourseController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchCourses(BuildContext context,
-      {bool forceRefresh = false}) async {
-    String currentLanguage =
-        Provider.of<LanguageProvider>(context, listen: false)
-            .locale
-            .languageCode;
+  Future<String?> getStudentClass() async {
+    try {
+      // Read from SharedPreferences (consistent with home controller)
+      final prefs = await SharedPreferences.getInstance();
+      String? studentClass = prefs.getString("student_class");
+
+      debugPrint("CourseController - Student class: $studentClass");
+
+      if (studentClass == null || studentClass.isEmpty || studentClass == "SELECT") {
+        return null;
+      }
+
+      return studentClass;
+    } catch (e) {
+      debugPrint("Error getting student class: $e");
+      return null;
+    }
+  }
+
+  Future<void> fetchCourses(BuildContext context, {bool forceRefresh = false}) async {
+    String currentLanguage = Provider.of<LanguageProvider>(context, listen: false).locale.languageCode;
+
+    // Validate student class
+    String? studentClass = await getStudentClass();
+    if (studentClass == null) {
+      log("❌ Cannot fetch courses: No valid student class selected");
+      _isLoading = false;
+      _hasInitialized = true;
+      _courses = [];
+      notifyListeners();
+      return;
+    }
 
     // If not forcing refresh and we have valid cached data, use it
     if (!forceRefresh) {
@@ -85,7 +111,7 @@ class CourseController extends ChangeNotifier {
 
     String? token = await _storage.read(key: 'access_token');
     if (token == null) {
-      log("No access token found");
+      log("❌ No access token found");
       _isLoading = false;
       _hasInitialized = true;
       notifyListeners();
@@ -93,6 +119,8 @@ class CourseController extends ChangeNotifier {
     }
 
     try {
+      log("🔄 Fetching courses for language: $currentLanguage, class: $studentClass");
+
       final response = await http.get(
         ApiEndpoints.getUri(ApiEndpoints.courses(currentLanguage)),
         headers: {
@@ -100,6 +128,8 @@ class CourseController extends ChangeNotifier {
           'Content-Type': 'application/json',
         },
       );
+
+      log("📡 Course API response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -216,5 +246,13 @@ class CourseController extends ChangeNotifier {
       log("Error storing course ID: $error");
       rethrow;
     }
+  }
+
+  void clearAllCaches() {
+    _courses.clear();
+    _hasInitialized = false;
+    _cache.clearCache();
+    debugPrint("✅ CourseController: All caches cleared");
+    notifyListeners();
   }
 }

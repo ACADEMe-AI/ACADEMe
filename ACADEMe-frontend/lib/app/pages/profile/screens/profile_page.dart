@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:provider/provider.dart';
 import 'package:ACADEMe/app/auth/auth_service.dart';
 import 'package:ACADEMe/academe_theme.dart';
 import 'package:ACADEMe/localization/l10n.dart';
 import 'package:ACADEMe/localization/language_provider.dart';
 import 'package:ACADEMe/started/pages/login_view.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../started/pages/class.dart';
 import '../../../common/widgets/coming_soon_popup.dart';
+import '../../courses/controllers/course_controller.dart';
+import '../../homepage/controllers/home_controller.dart';
 import '../controllers/profile_controller.dart';
 import '../models/user_model.dart';
 import '../widgets/profile_dropdown.dart';
@@ -41,6 +45,7 @@ class ProfilePage extends StatefulWidget {
 
 class ProfilePageState extends State<ProfilePage> {
   final ProfileController _controller = ProfileController();
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   late Locale _selectedLocale;
   String? selectedClass;
   UserModel? userDetails;
@@ -108,19 +113,21 @@ class ProfilePageState extends State<ProfilePage> {
     try {
       setState(() => isLoading = true);
 
+      // Read from SharedPreferences for immediate updates
+      final prefs = await SharedPreferences.getInstance();
+      final cachedClass = prefs.getString('student_class');
+
       final details = await _controller.loadUserDetails();
       final newUserDetails = UserModel(
         name: details['name'],
         email: details['email'],
-        studentClass: details['student_class'],
+        studentClass: cachedClass ?? details['student_class'], // Prefer SharedPrefs
         photoUrl: details['photo_url'],
       );
 
       setState(() {
         userDetails = newUserDetails;
-        selectedClass = details['student_class']?.isNotEmpty == true
-            ? details['student_class']
-            : null;
+        selectedClass = cachedClass ?? details['student_class'];
         isLoading = false;
       });
     } catch (e) {
@@ -443,46 +450,56 @@ class ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showClassSelectionSheet() {
-    showModalBottomSheet(
+  void _showClassSelectionSheet() async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Padding(
         padding:
-            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: ClassSelectionBottomSheet(
           onClassSelected: () async {
-            // Set loading state
-            setState(() {
-              isLoading = true;
-            });
-
-            // Add a small delay to ensure the backend update is complete
-            await Future.delayed(const Duration(milliseconds: 500));
-
-            // Reload user details from backend
-            await _loadUserDetails();
+            // This runs when modal closes
+            debugPrint("Class selection completed, will refresh profile");
           },
-          // Add this callback for immediate UI update
           onClassUpdated: (newClass) {
-            setState(() {
-              selectedClass = newClass;
-              if (userDetails != null) {
-                userDetails = UserModel(
-                  name: userDetails!.name,
-                  email: userDetails!.email,
-                  studentClass: newClass,
-                  photoUrl: userDetails!.photoUrl,
-                );
-              }
-            });
+            // Immediate UI update
+            if (mounted) {
+              setState(() {
+                selectedClass = newClass;
+              });
+            }
           },
         ),
       ),
     );
+
+    // CRITICAL: This runs AFTER the modal closes
+    if (!mounted) return;
+
+    debugPrint("Modal closed, reading updated class from storage...");
+
+// Simply reload from storage (SharedPreferences already updated by class.dart)
+    await _loadUserDetails();
+
+// Clear caches
+    try {
+      final homeController = HomeController();
+      homeController.clearCache();
+      homeController.clearUserCache();
+
+      final courseController = CourseController();
+      courseController.clearAllCaches();
+
+      debugPrint("All caches cleared");
+    } catch (e) {
+      debugPrint("Error clearing caches: $e");
+    }
   }
 
   void _showLanguageSelectionSheet() {
