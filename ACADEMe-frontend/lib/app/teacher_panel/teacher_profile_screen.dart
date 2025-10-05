@@ -722,24 +722,27 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
   void _logout() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Logout'),
         content: Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
               // Close confirmation dialog
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
+
+              // Store the navigator reference before async operation
+              final navigator = Navigator.of(context);
 
               // Show loading dialog
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (context) => WillPopScope(
+                builder: (loadingContext) => WillPopScope(
                   onWillPop: () async => false,
                   child: Center(
                     child: CircularProgressIndicator(
@@ -753,29 +756,25 @@ class _TeacherProfileScreenState extends State<TeacherProfileScreen> {
                 // Perform logout
                 await authService.signOut();
 
-                // Close loading dialog and navigate in one go
-                if (mounted) {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => const LogInView()),
-                        (route) => false,
-                  );
-                }
+                // Use the stored navigator reference instead of context
+                navigator.pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LogInView()),
+                      (route) => false,
+                );
               } catch (e) {
                 debugPrint('Error during logout: $e');
 
-                // Close loading dialog
+                // Close loading dialog if still mounted
                 if (mounted) {
-                  Navigator.pop(context);
+                  Navigator.of(context).pop();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error logging out: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error logging out: ${e.toString()}'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../app/pages/homepage/controllers/home_controller.dart';
+
 class ClassSelectionBottomSheet extends StatefulWidget {
   final VoidCallback onClassSelected;
   final Function(String)? onClassUpdated;
@@ -131,18 +133,25 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
 
     try {
       final success = await _updateClassInBackend(selectedClass!);
-      if (!success) return;
+      if (!success) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       // Update stored class reference
       _storedClass = selectedClass;
       _isClassChanged = false;
 
-      // Notify parent widget FIRST
+      // Force refresh HomeController user details
+      final homeController = HomeController();
+      await homeController.forceRefreshUserDetails();
+
+      // Notify parent widget
       if (widget.onClassUpdated != null) {
         widget.onClassUpdated!(selectedClass!);
       }
 
-      // Then call the general callback
+      // Call the general callback
       widget.onClassSelected();
 
       // Close the bottom sheet
@@ -150,6 +159,7 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      debugPrint('Error in class selection: $e');
       if (mounted) {
         _showSnackBar(L10n.getTranslatedText(
             context, 'An error occurred. Please try again.'));
@@ -180,77 +190,37 @@ class _ClassSelectionBottomSheetState extends State<ClassSelectionBottomSheet> {
       );
 
       if (response.statusCode == 200) {
-        // Store locally FIRST
+        // Parse response to get updated user data
+        final responseData = jsonDecode(response.body);
+
+        // Store the updated class locally
         await _secureStorage.write(key: 'student_class', value: selectedClass);
 
-        // Then re-login to get fresh data
-        final reloginSuccess = await _reloginUser();
-        if (reloginSuccess) {
-          _showSnackBar(
-              '${L10n.getTranslatedText(context, 'Selected')} $selectedClass');
-          return true;
+        // If backend returns user_data, update all fields
+        if (responseData.containsKey('user_data')) {
+          final userData = responseData['user_data'];
+          await _secureStorage.write(key: 'name', value: userData['name']);
+          await _secureStorage.write(key: 'email', value: userData['email']);
+          await _secureStorage.write(key: 'student_class', value: userData['student_class']);
+          if (userData['photo_url'] != null) {
+            await _secureStorage.write(key: 'photo_url', value: userData['photo_url']);
+          }
         }
-        return false;
-      }
 
-      if (response.statusCode == 401) {
-        return await _reloginAndRetry(selectedClass);
-      }
-
-      _showSnackBar(
-          '${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
-      return false;
-    } catch (e) {
-      _showSnackBar(
-          L10n.getTranslatedText(context, 'Network error. Please try again.'));
-      return false;
-    }
-  }
-
-  Future<bool> _reloginAndRetry(String selectedClass) async {
-    final bool reloginSuccess = await _reloginUser();
-    if (reloginSuccess) {
-      return await _updateClassInBackend(selectedClass);
-    }
-    return false;
-  }
-
-  Future<bool> _reloginUser() async {
-    final String? email = await _secureStorage.read(key: 'email');
-    final String? password = await _secureStorage.read(key: 'password');
-
-    if (email == null || password == null) {
-      _showSnackBar(L10n.getTranslatedText(
-          context, 'Session expired. Please login again.'));
-      return false;
-    }
-
-    try {
-      final response = await http.post(
-        ApiEndpoints.getUri(ApiEndpoints.login),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        await _secureStorage.write(
-            key: 'access_token', value: responseData['access_token']);
+        _showSnackBar('${L10n.getTranslatedText(context, 'Selected')} $selectedClass');
         return true;
       }
 
-      _showSnackBar(L10n.getTranslatedText(
-          context, 'Login failed. Please login manually.'));
+      if (response.statusCode == 401) {
+        _showSnackBar(L10n.getTranslatedText(context, 'Session expired. Please login again.'));
+        return false;
+      }
+
+      _showSnackBar('${L10n.getTranslatedText(context, 'Failed to update class')}: ${response.body}');
       return false;
     } catch (e) {
-      _showSnackBar(
-          L10n.getTranslatedText(context, 'Network error during login'));
+      debugPrint('Error updating class: $e');
+      _showSnackBar(L10n.getTranslatedText(context, 'Network error. Please try again.'));
       return false;
     }
   }

@@ -36,7 +36,6 @@ class AuthWrapperState extends State<AuthWrapper> {
       String? accessToken = await _authService.getAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
-        // No token, user not logged in
         setState(() {
           isUserLoggedIn = false;
           isAdmin = false;
@@ -78,22 +77,28 @@ class AuthWrapperState extends State<AuthWrapper> {
 
       // Get role from backend response
       final String role = userDetails['role'] ?? 'student';
-      debugPrint("User role from backend: $role");
+      debugPrint("âœ… User role from backend: $role");
 
       // Store role locally
       await _secureStorage.write(key: "user_role", value: role);
 
+      // Set flags based on role
+      final bool adminFlag = (role.toLowerCase() == 'admin');
+      final bool teacherFlag = (role.toLowerCase() == 'teacher');
+
+      debugPrint("âœ… Role flags - Admin: $adminFlag, Teacher: $teacherFlag");
+
       setState(() {
         isUserLoggedIn = true;
-        isAdmin = (role == 'admin');
-        isTeacher = (role == 'teacher');
+        isAdmin = adminFlag;
+        isTeacher = teacherFlag;
         isLoading = false;
       });
 
-      debugPrint("Auth initialized - Role: $role, Admin: $isAdmin, Teacher: $isTeacher");
+      debugPrint("âœ… Auth initialized successfully");
 
     } catch (e) {
-      debugPrint("Error initializing auth: $e");
+      debugPrint("âŒ Error initializing auth: $e");
       await _authService.signOut();
       setState(() {
         isUserLoggedIn = false;

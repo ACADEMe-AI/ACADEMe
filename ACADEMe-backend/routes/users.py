@@ -177,8 +177,8 @@ async def logout(user: dict = Depends(get_current_user), refresh_token: str = No
 
 @router.patch("/update_class/")
 async def update_user_class(update_data: UserUpdateClass, user: dict = Depends(get_current_user)):
-    """Deletes user progress and updates their class."""
-    user_id = user["id"]  # Get the logged-in user's ID
+    """Deletes user progress and updates their class, returns updated user data."""
+    user_id = user["id"]
     user_ref = db.collection("users").document(user_id)
 
     # Check if user exists
@@ -186,14 +186,33 @@ async def update_user_class(update_data: UserUpdateClass, user: dict = Depends(g
     if not user_doc.exists:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 🔄 Delete user's progress before updating class
+    # Delete user's progress before updating class
     await delete_user_progress(user_id)
 
-    # ✅ Update class field asynchronously
+    # Update class field asynchronously
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, lambda: user_ref.update({"student_class": update_data.new_class}))
 
-    return {"message": "Class updated successfully after progress reset.", "new_class": update_data.new_class}
+    # Get updated user data
+    updated_user_doc = user_ref.get()
+    updated_user_data = updated_user_doc.to_dict()
+
+    # Determine role
+    email = updated_user_data.get("email")
+    role = await determine_user_role(email, user_id)
+
+    return {
+        "message": "Class updated successfully after progress reset.",
+        "new_class": update_data.new_class,
+        "user_data": {
+            "id": user_id,
+            "name": updated_user_data.get("name", ""),
+            "email": email,
+            "student_class": update_data.new_class,
+            "photo_url": updated_user_data.get("photo_url"),
+            "role": role
+        }
+    }
 
 @router.get("/admins", response_model=List[str])
 async def get_admin_ids():
