@@ -73,7 +73,7 @@ async def signup(user: UserCreateWithOTP):
     try:
         # Extract OTP from the request
         otp = user.otp
-        
+
         # Create UserCreate object without OTP
         user_data = UserCreate(
             name=user.name,
@@ -82,7 +82,7 @@ async def signup(user: UserCreateWithOTP):
             student_class=user.student_class,
             photo_url=user.photo_url
         )
-        
+
         # Register user with OTP verification
         created_user = await register_user(user_data, otp)
         if not created_user:
@@ -103,17 +103,30 @@ async def login(user: UserLogin):
 
 @router.get("/me")
 async def get_current_user_details(user: dict = Depends(get_current_user)):
-    """Fetches the currently authenticated user's details with role."""
+    """Fetches the currently authenticated user's details with role from Firestore."""
     if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
 
+    user_id = user.get("id")
+    email = user.get("email")
+
+    # Fetch user from Firestore
+    user_ref = db.collection("users").document(user_id).get()
+    if not user_ref.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_data = user_ref.to_dict()
+
+    # Determine the actual role dynamically
+    role = await determine_user_role(email, user_id)
+
     return {
-        "id": user.get("id"),
-        "name": user.get("name"),
-        "email": user.get("email"),
-        "student_class": user.get("student_class"),
-        "photo_url": user.get("photo_url"),
-        "role": user.get("role", "student")
+        "id": user_id,
+        "name": user_data.get("name"),
+        "email": user_data.get("email"),
+        "student_class": user_data.get("student_class"),
+        "photo_url": user_data.get("photo_url"),
+        "role": role
     }
 
 @router.post("/refresh", response_model=TokenResponse)

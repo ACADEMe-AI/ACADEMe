@@ -182,7 +182,7 @@ async def determine_user_role(email: str, user_id: str) -> str:
 
         admin_by_id_future = loop.run_in_executor(
             None,
-            lambda: db.collection("admins").document(user_id).get()
+            lambda: db.collection("admins").document(email).get()
         )
 
         admin_by_email_future = loop.run_in_executor(
